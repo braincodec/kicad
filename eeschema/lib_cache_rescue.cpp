@@ -351,7 +351,7 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aRunningOnDemand )
             // Clean up wire ends
             INSTALL_UNBUFFERED_DC( dc, m_canvas );
             GetScreen()->SchematicCleanUp( NULL, &dc );
-            m_canvas->Refresh();
+            m_canvas->Refresh( true );
             OnModify();
 
             return true;
