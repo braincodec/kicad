@@ -103,18 +103,13 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
 
     // Add the library to the list and save
     libNames.Insert( libName, aIndex );
+    PART_LIBS::LibNamesAndPaths( aProject, true, &libPaths, &libNames );
 
     // Save the old libraries in case there is a problem after clear(). We'll
     // put them back in.
-    std::vector<PART_LIB*> libsSave;
-    BOOST_FOREACH( PART_LIB& eachLib, *libs )
-    {
-        libsSave.push_back( &eachLib );
-    }
+    boost::ptr_vector<PART_LIB> libsSave;
+    libsSave.transfer( libsSave.end(), libs->begin(), libs->end(), *libs );
 
-    PART_LIBS::LibNamesAndPaths( aProject, true, &libPaths, &libNames );
-
-    libs->clear();
     try
     {
         libs->LoadAllLibraries( aProject );
@@ -123,10 +118,7 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
     {
         // Restore the old list
         libs->clear();
-        BOOST_FOREACH( PART_LIB* eachLib, libsSave )
-        {
-            libs->push_back( eachLib );
-        }
+        libs->transfer( libs->end(), libsSave.begin(), libsSave.end(), libsSave );
         return false;
     }
     aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, NULL );
@@ -243,7 +235,9 @@ static PART_LIB* create_rescue_library( wxFileName& aFileName )
     wxFileName fn( g_RootSheet->GetScreen()->GetFileName() );
     fn.SetName( fn.GetName() + wxT("-rescue") );
     fn.SetExt( SchematicLibraryFileExtension );
+    aFileName.SetPath( fn.GetPath() );
     aFileName.SetName( fn.GetName() );
+    aFileName.SetExt( wxT( "lib" ) );
     return new PART_LIB( LIBRARY_TYPE_EESCHEMA, fn.GetFullPath() );
 }
 
@@ -340,26 +334,29 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aRunningOnDemand )
     std::vector<RESCUE_LOG> rescue_log;
     update_components( components, candidates, part_name_suffix, rescue_log );
 
-    // Try inserting the library into the project
-    if( !insert_library( prj, rescue_lib.get(), 0 ) )
-    {
-        // Unsuccessful! Restore all the components
-        BOOST_FOREACH( RESCUE_LOG& rescue_log_item, rescue_log )
-        {
-            rescue_log_item.component->SetPartName( rescue_log_item.old_name );
-        }
-        return false;
-    }
-
-    // Display summary of changes
     if( rescue_log.empty() )
     {
         wxMessageDialog dlg( this, _( "No cached symbols were rescued." ) );
         dlg.ShowModal();
+        return true;
     }
     else
     {
-        InvokeDialogRescueSummary( this, rescue_log );
+        // Try inserting the library into the project
+        if( insert_library( prj, rescue_lib.get(), 0 ) )
+        {
+            InvokeDialogRescueSummary( this, rescue_log );
+            return true;
+        }
+        else
+        {
+            // Unsuccessful! Restore all the components
+            BOOST_FOREACH( RESCUE_LOG& rescue_log_item, rescue_log )
+            {
+                rescue_log_item.component->SetPartName( rescue_log_item.old_name );
+            }
+            wxMessageDialog dlg( this, _( "An error occurred while attempting to rescue components. No changes have been made." ) );
+            return false;
+        }
     }
-    return true;
 }
