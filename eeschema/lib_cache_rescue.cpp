@@ -22,17 +22,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-#include <lib_cache_rescue.h>
+#include <class_drawpanel.h>
 #include <class_library.h>
-#include <invoke_sch_dialog.h>
-#include <schframe.h>
-#include <sch_sheet.h>
-#include <sch_component.h>
-#include <wildcards_and_files_ext.h>
 #include <confirm.h>
+#include <invoke_sch_dialog.h>
+#include <kicad_device_context.h>
+#include <lib_cache_rescue.h>
+#include <sch_component.h>
+#include <sch_sheet.h>
+#include <schframe.h>
+#include <wildcards_and_files_ext.h>
 
 #include <boost/foreach.hpp>
-#include <cassert>
 #include <map>
 
 
@@ -346,6 +347,13 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aRunningOnDemand )
         if( insert_library( prj, rescue_lib.get(), 0 ) )
         {
             InvokeDialogRescueSummary( this, rescue_log );
+
+            // Clean up wire ends
+            INSTALL_UNBUFFERED_DC( dc, m_canvas );
+            GetScreen()->SchematicCleanUp( NULL, &dc );
+            m_canvas->Refresh();
+            OnModify();
+
             return true;
         }
         else
