@@ -86,9 +86,11 @@ DIALOG_RESCUE_EACH::DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RES
 {
 }
 
+
 DIALOG_RESCUE_EACH::~DIALOG_RESCUE_EACH()
 {
 }
+
 
 bool DIALOG_RESCUE_EACH::TransferDataToWindow()
 {
