@@ -39,14 +39,8 @@ DIALOG_RESCUE_SUMMARY_BASE::DIALOG_RESCUE_SUMMARY_BASE( wxWindow* parent, wxWind
 	
 	this->SetSizer( bmainSizer );
 	this->Layout();
-	
-	// Connect Events
-	m_sdbSizer1OK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_SUMMARY_BASE::OnOkClick ), NULL, this );
 }
 
 DIALOG_RESCUE_SUMMARY_BASE::~DIALOG_RESCUE_SUMMARY_BASE()
 {
-	// Disconnect Events
-	m_sdbSizer1OK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_SUMMARY_BASE::OnOkClick ), NULL, this );
-	
 }

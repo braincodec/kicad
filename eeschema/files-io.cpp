@@ -312,7 +312,7 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         bool rescueNeverShow = false;
         config->Read( wxT("RescueNeverShow"), &rescueNeverShow, false );
         if( !rescueNeverShow )
-            RescueCacheConflicts( true );
+            RescueCacheConflicts( false );
     }
 
     GetScreen()->SetGrid( ID_POPUP_GRID_LEVEL_1000 + m_LastGridSizeId );

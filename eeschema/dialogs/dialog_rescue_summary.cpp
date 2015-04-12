@@ -41,28 +41,25 @@ private:
     wxConfigBase*   m_Config;
     std::vector<RESCUE_LOG>* m_RescueLog;
 
-    void InitValues();
+    bool TransferDataToWindow();
     void OnOkClick( wxCommandEvent& event );
 };
 
-DIALOG_RESCUE_SUMMARY::DIALOG_RESCUE_SUMMARY( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_LOG>& aRescueLog )
-    : DIALOG_RESCUE_SUMMARY_BASE( aParent ), m_RescueLog( &aRescueLog )
-{
-    m_Parent = aParent;
-    
-    InitValues();
-    Layout();
-    GetSizer()->SetSizeHints( this );
-    Centre();
-}
 
-void DIALOG_RESCUE_SUMMARY::InitValues()
+DIALOG_RESCUE_SUMMARY::DIALOG_RESCUE_SUMMARY( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_LOG>& aRescueLog )
+    : DIALOG_RESCUE_SUMMARY_BASE( aParent ), m_Parent( aParent), m_RescueLog( &aRescueLog )
+{ }
+
+
+bool DIALOG_RESCUE_SUMMARY::TransferDataToWindow()
 {
+    if( !wxDialog::TransferDataToWindow() )
+        return false;
+
     m_Config = Kiface().KifaceSettings();
     m_ListOfChanges->AppendTextColumn( wxT( "Reference" ) );
     m_ListOfChanges->AppendTextColumn( wxT( "Old Symbol" ), wxDATAVIEW_CELL_INERT, /*width*/ 100);
     m_ListOfChanges->AppendTextColumn( wxT( "New Symbol" ), wxDATAVIEW_CELL_INERT, /*width*/ 100);
-    Fit();
 
     wxVector<wxVariant> data;
     BOOST_FOREACH( RESCUE_LOG& each_log_item, *m_RescueLog )
@@ -73,12 +70,15 @@ void DIALOG_RESCUE_SUMMARY::InitValues()
         data.push_back( each_log_item.new_name );
         m_ListOfChanges->AppendItem( data );
     }
+
+    GetSizer()->Layout();
+    GetSizer()->Fit( this );
+    GetSizer()->SetSizeHints( this );
+    Centre();
+
+    return true;
 }
 
-void DIALOG_RESCUE_SUMMARY::OnOkClick( wxCommandEvent& aEvent )
-{
-    EndModal( wxID_OK );
-}
 
 int InvokeDialogRescueSummary( SCH_EDIT_FRAME* aCaller, std::vector<RESCUE_LOG>& aRescueLog )
 {

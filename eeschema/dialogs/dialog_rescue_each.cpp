@@ -34,48 +34,55 @@
 #include <boost/foreach.hpp>
 #include <lib_cache_rescue.h>
 
-#include <iostream>
-
 class DIALOG_RESCUE_EACH: public DIALOG_RESCUE_EACH_BASE
 {
 public:
+    /**
+     * Constructor
+     * This dialog asks the user which rescuable, cached parts he wants to rescue.
+     * Any rejects will be pruned from aCandidates.
+     * @param aCaller - the SCH_EDIT_FRAME calling this
+     * @param aCandidates - the list of RESCUE_CANDIDATES
+     * @param aComponents - a vector of all the components in the schematic
+     * @param aAskShowAgain - if true, a "Never Show Again" button will be included
+     */
     DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_CANDIDATE>& aCandidates,
-            std::vector<SCH_COMPONENT*>& aComponents );
+            std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain );
 
 private:
     SCH_EDIT_FRAME* m_Parent;
     wxConfigBase*   m_Config;
     std::vector<RESCUE_CANDIDATE>* m_Candidates;
     std::vector<SCH_COMPONENT*>* m_Components;
+    bool            m_AskShowAgain;
 
-    void InitValues();
+    bool TransferDataToWindow();
+    bool TransferDataFromWindow();
     void PopulateConflictList();
     void PopulateInstanceList();
     void OnConflictSelect( wxCommandEvent& event );
-    void OnOkClick( wxCommandEvent& event );
-    void OnCancelClick( wxCommandEvent& event );
     void OnNeverShowClick( wxCommandEvent& event );
+    void OnCancelClick( wxCommandEvent& event );
     void OnHandleCachePreviewRepaint( wxPaintEvent& aRepaintEvent );
     void OnHandleLibraryPreviewRepaint( wxPaintEvent& aRepaintEvent );
     void OnDialogResize( wxSizeEvent& aSizeEvent );
     void renderPreview( LIB_PART* aComponent, int aUnit, wxPanel* panel );
 };
 
+
 DIALOG_RESCUE_EACH::DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_CANDIDATE>& aCandidates,
-        std::vector<SCH_COMPONENT*>& aComponents )
+        std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain )
 
-    : DIALOG_RESCUE_EACH_BASE( aParent ), m_Candidates( &aCandidates ), m_Components( &aComponents )
+    : DIALOG_RESCUE_EACH_BASE( aParent ), m_Parent( aParent ), m_Candidates( &aCandidates ),
+        m_Components( &aComponents ), m_AskShowAgain( aAskShowAgain )
+{ }
+
+
+bool DIALOG_RESCUE_EACH::TransferDataToWindow()
 {
-    m_Parent = aParent;
+    if( !wxDialog::TransferDataToWindow() )
+        return false;
 
-    InitValues();
-    Layout();
-    GetSizer()->SetSizeHints( this );
-    Centre();
-}
-
-void DIALOG_RESCUE_EACH::InitValues()
-{
     m_Config = Kiface().KifaceSettings();
     m_ListOfConflicts->AppendToggleColumn( wxT("Rescue") );
     m_ListOfConflicts->AppendTextColumn( wxT("Symbol Name") );
@@ -83,7 +90,18 @@ void DIALOG_RESCUE_EACH::InitValues()
     m_ListOfInstances->AppendTextColumn( wxT("Value") );
     PopulateConflictList();
     PopulateInstanceList();
+
+    if( !m_AskShowAgain )
+        m_btnNeverShowAgain->Hide();
+
+    GetSizer()->Layout();
+    GetSizer()->Fit( this );
+    GetSizer()->SetSizeHints( this );
+    Centre();
+
+    return true;
 }
+
 
 void DIALOG_RESCUE_EACH::PopulateConflictList()
 {
@@ -97,18 +115,22 @@ void DIALOG_RESCUE_EACH::PopulateConflictList()
     }
 }
 
+
 void DIALOG_RESCUE_EACH::PopulateInstanceList()
 {
     m_ListOfInstances->DeleteAllItems();
 
     int row = m_ListOfConflicts->GetSelectedRow();
-    if( row == wxNOT_FOUND ) row = 0;
+    if( row == wxNOT_FOUND )
+        row = 0;
+
     RESCUE_CANDIDATE& selected_part = (*m_Candidates)[row];
 
     wxVector<wxVariant> data;
     BOOST_FOREACH( SCH_COMPONENT* each_component, *m_Components )
     {
-        if( each_component->GetPartName() != selected_part.requested_name ) continue;
+        if( each_component->GetPartName() != selected_part.requested_name )
+            continue;
 
         SCH_FIELD* valueField = each_component->GetField( 1 );
 
@@ -120,29 +142,37 @@ void DIALOG_RESCUE_EACH::PopulateInstanceList()
     }
 }
 
+
 void DIALOG_RESCUE_EACH::OnHandleCachePreviewRepaint( wxPaintEvent& aRepaintEvent )
 {
     int row = m_ListOfConflicts->GetSelectedRow();
-    if( row == wxNOT_FOUND ) row = 0;
+    if( row == wxNOT_FOUND )
+        row = 0;
+
     RESCUE_CANDIDATE& selected_part = (*m_Candidates)[row];
 
     renderPreview( selected_part.cache_candidate, 0, m_componentViewOld );
 }
 
+
 void DIALOG_RESCUE_EACH::OnHandleLibraryPreviewRepaint( wxPaintEvent& aRepaintEvent )
 {
     int row = m_ListOfConflicts->GetSelectedRow();
-    if( row == wxNOT_FOUND ) row = 0;
+    if( row == wxNOT_FOUND )
+        row = 0;
+
     RESCUE_CANDIDATE& selected_part = (*m_Candidates)[row];
 
     renderPreview( selected_part.lib_candidate, 0, m_componentViewNew );
 }
+
 
 void DIALOG_RESCUE_EACH::OnDialogResize( wxSizeEvent& aSizeEvent )
 {
     // Placeholer - I was previously doing some extra reflow here.
     DIALOG_RESCUE_EACH_BASE::OnDialogResize( aSizeEvent );
 }
+
 
 // Render the preview in our m_componentView. If this gets more complicated, we should
 // probably have a derived class from wxPanel; but this keeps things local.
@@ -186,33 +216,34 @@ void DIALOG_RESCUE_EACH::renderPreview( LIB_PART* aComponent, int aUnit, wxPanel
                       UNSPECIFIED_COLOR, DefaultTransform, true, true, false );
 }
 
+
 void DIALOG_RESCUE_EACH::OnConflictSelect( wxCommandEvent& aEvent )
 {
     PopulateInstanceList();
 }
 
-void DIALOG_RESCUE_EACH::OnOkClick( wxCommandEvent& aEvent )
+
+bool DIALOG_RESCUE_EACH::TransferDataFromWindow()
 {
+    if( !wxDialog::TransferDataFromWindow() )
+        return false;
+
     std::vector<RESCUE_CANDIDATE>::iterator it = m_Candidates->begin();
     for( size_t index = 0; it != m_Candidates->end(); ++index )
     {
         wxVariant val;
         m_ListOfConflicts->GetValue( val, index, 0 );
         bool rescue_part = val.GetBool();
-            
+
         if( !rescue_part )
             m_Candidates->erase( it );
         else
             ++it;
     }
-    EndModal( wxID_OK );
+
+    return true;
 }
 
-void DIALOG_RESCUE_EACH::OnCancelClick( wxCommandEvent& aEvent )
-{
-    m_Candidates->clear();
-    EndModal( wxID_CANCEL );
-}
 
 void DIALOG_RESCUE_EACH::OnNeverShowClick( wxCommandEvent& aEvent )
 {
@@ -226,13 +257,21 @@ void DIALOG_RESCUE_EACH::OnNeverShowClick( wxCommandEvent& aEvent )
     {
         m_Config->Write( wxT("RescueNeverShow"), true );
         m_Candidates->clear();
-        EndModal( wxID_CANCEL );
+        Close();
     }
 }
 
-int InvokeDialogRescueEach( SCH_EDIT_FRAME* aCaller, std::vector<RESCUE_CANDIDATE>& aCandidates,
-        std::vector<SCH_COMPONENT*>& aComponents )
+
+void DIALOG_RESCUE_EACH::OnCancelClick( wxCommandEvent& aEvent )
 {
-    DIALOG_RESCUE_EACH dlg( aCaller, aCandidates, aComponents );
+    m_Candidates->clear();
+    DIALOG_RESCUE_EACH_BASE::OnCancelClick( aEvent );
+}
+
+
+int InvokeDialogRescueEach( SCH_EDIT_FRAME* aCaller, std::vector<RESCUE_CANDIDATE>& aCandidates,
+        std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain )
+{
+    DIALOG_RESCUE_EACH dlg( aCaller, aCandidates, aComponents, aAskShowAgain );
     return dlg.ShowModal();
 }

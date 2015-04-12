@@ -1263,11 +1263,13 @@ public:
      * in the project libraries to a new library, renaming them to add a suffix
      * of the root document's name to avoid conflicts.
      *
-     * @param aSilentIfNone - if true, do nothing if there are no components to rescue.
-     *      If false, an information dialog is displayed. This is set true for the on-load
-     *      check.
+     * @param aRunningOnDemand - indicates whether the tool has been called up by the user
+     *      (as opposed to being run automatically). If true, an information dialog is
+     *      displayed if there are no components to rescue. If false, the tool is silent
+     *      if there are no components to rescue, and a "Never Show Again" button is
+     *      displayed.
      */
-    bool RescueCacheConflicts( bool aSilentIfNone );
+    bool RescueCacheConflicts( bool aRunningOnDemand );
 
     /**
      * Function PrintPage

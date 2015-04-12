@@ -627,6 +627,7 @@ LIB_PIN* LIB_PART::GetPin( const wxString& aNumber, int aUnit, int aConvert )
     return NULL;
 }
 
+
 bool LIB_PART::PinsConflictWith( LIB_PART& aOtherPart, bool aTestNums, bool aTestNames,
         bool aTestType, bool aTestOrientation, bool aTestLength )
 {
@@ -644,25 +645,31 @@ bool LIB_PART::PinsConflictWith( LIB_PART& aOtherPart, bool aTestNums, bool aTes
         {
             wxASSERT( eachOtherPin );
             // Same position?
-            if( eachThisPin->GetPosition() != eachOtherPin->GetPosition() ) continue;
+            if( eachThisPin->GetPosition() != eachOtherPin->GetPosition() )
+                continue;
 
             // Same number?
             wxString eachThisPinNumber, eachOtherPinNumber;
             eachThisPin->PinStringNum( eachThisPinNumber );
             eachOtherPin->PinStringNum( eachOtherPinNumber );
-            if( aTestNums && ( eachThisPinNumber != eachOtherPinNumber )) continue;
+            if( aTestNums && ( eachThisPinNumber != eachOtherPinNumber ))
+                continue;
 
             // Same name?
-            if( aTestNames && ( eachThisPin->GetName() != eachOtherPin->GetName() )) continue;
+            if( aTestNames && ( eachThisPin->GetName() != eachOtherPin->GetName() ))
+                continue;
 
             // Same electrical type?
-            if( aTestType && ( eachThisPin->GetType() != eachOtherPin->GetType() )) continue;
+            if( aTestType && ( eachThisPin->GetType() != eachOtherPin->GetType() ))
+                continue;
 
             // Same orientation?
-            if( aTestOrientation && ( eachThisPin->GetOrientation() != eachOtherPin->GetOrientation() )) continue;
+            if( aTestOrientation && ( eachThisPin->GetOrientation() != eachOtherPin->GetOrientation() ))
+                continue;
 
             // Same length?
-            if( aTestLength && ( eachThisPin->GetLength() != eachOtherPin->GetLength() )) continue;
+            if( aTestLength && ( eachThisPin->GetLength() != eachOtherPin->GetLength() ))
+                continue;
 
             foundMatch = true;
         }
@@ -678,6 +685,7 @@ bool LIB_PART::PinsConflictWith( LIB_PART& aOtherPart, bool aTestNums, bool aTes
     // The loop never gave up, so no conflicts were found.
     return false;
 }
+
 
 bool LIB_PART::Save( OUTPUTFORMATTER& aFormatter )
 {

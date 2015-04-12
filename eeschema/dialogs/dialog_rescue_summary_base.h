@@ -40,10 +40,6 @@ class DIALOG_RESCUE_SUMMARY_BASE : public DIALOG_SHIM
 		wxDataViewListCtrl* m_ListOfChanges;
 		wxStdDialogButtonSizer* m_sdbSizer1;
 		wxButton* m_sdbSizer1OK;
-		
-		// Virtual event handlers, overide them in your derived class
-		virtual void OnOkClick( wxCommandEvent& event ) { event.Skip(); }
-		
 	
 	public:
 		

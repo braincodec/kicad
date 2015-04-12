@@ -112,7 +112,6 @@ DIALOG_RESCUE_EACH_BASE::DIALOG_RESCUE_EACH_BASE( wxWindow* parent, wxWindowID i
 	m_componentViewNew->Connect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_RESCUE_EACH_BASE::OnHandleLibraryPreviewRepaint ), NULL, this );
 	m_btnNeverShowAgain->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnNeverShowClick ), NULL, this );
 	m_stdButtonsCancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnCancelClick ), NULL, this );
-	m_stdButtonsOK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnOkClick ), NULL, this );
 }
 
 DIALOG_RESCUE_EACH_BASE::~DIALOG_RESCUE_EACH_BASE()
@@ -124,6 +123,5 @@ DIALOG_RESCUE_EACH_BASE::~DIALOG_RESCUE_EACH_BASE()
 	m_componentViewNew->Disconnect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_RESCUE_EACH_BASE::OnHandleLibraryPreviewRepaint ), NULL, this );
 	m_btnNeverShowAgain->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnNeverShowClick ), NULL, this );
 	m_stdButtonsCancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnCancelClick ), NULL, this );
-	m_stdButtonsOK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_RESCUE_EACH_BASE::OnOkClick ), NULL, this );
 	
 }

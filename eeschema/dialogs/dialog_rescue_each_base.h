@@ -58,7 +58,6 @@ class DIALOG_RESCUE_EACH_BASE : public DIALOG_SHIM
 		virtual void OnHandleLibraryPreviewRepaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnNeverShowClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCancelClick( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnOkClick( wxCommandEvent& event ) { event.Skip(); }
 		
 	
 	public:

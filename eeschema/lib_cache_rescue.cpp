@@ -35,6 +35,10 @@
 #include <cassert>
 #include <map>
 
+
+typedef std::pair<SCH_COMPONENT*, wxString> COMPONENT_NAME_PAIR;
+
+
 /**
  * Function save_library
  * writes the library out to disk. Returns true on success.
@@ -71,6 +75,7 @@ static bool save_library( const wxString& aFileName, PART_LIB* aLibrary, SCH_EDI
 
     return true;
 }
+
 
 /**
  * Function insert_library
@@ -129,6 +134,7 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
     return true;
 }
 
+
 /**
  * Function get_components
  * Fills a vector with all of the project's components, to ease iterating over them.
@@ -149,6 +155,7 @@ static void get_components( std::vector<SCH_COMPONENT*>& aComponents )
     }
 }
 
+
 /**
  * Function find_component
  * Search the libraries for the first component with a given name.
@@ -163,15 +170,20 @@ static LIB_PART* find_component( wxString aName, PART_LIBS* aLibs, bool aCached 
 
     BOOST_FOREACH( PART_LIB& each_lib, *aLibs )
     {
-        if( aCached && !each_lib.IsCache() ) continue;
-        if( !aCached && each_lib.IsCache() ) continue;
+        if( aCached && !each_lib.IsCache() )
+            continue;
+
+        if( !aCached && each_lib.IsCache() )
+            continue;
 
         part = each_lib.FindPart( aName );
-        if( part ) break;
+        if( part )
+            break;
     }
 
     return part;
 }
+
 
 /**
  * Function find_rescues
@@ -199,7 +211,8 @@ static void find_rescues( std::vector<SCH_COMPONENT*>& aComponents, PART_LIBS* a
         LIB_PART* lib_match = find_component( part_name, aLibs, /* aCached */ false );
 
         // Test whether there is a conflict
-        if( !cache_match || !lib_match ) continue;
+        if( !cache_match || !lib_match )
+            continue;
         if( !cache_match->PinsConflictWith( *lib_match, /* aTestNums */ true, /* aTestNames */ false,
                 /* aTestType */ true, /* aTestOrientation */ true, /* aTestLength */ false ))
             continue;
@@ -219,6 +232,7 @@ static void find_rescues( std::vector<SCH_COMPONENT*>& aComponents, PART_LIBS* a
     }
 }
 
+
 /**
  * Function create_rescue_library
  * Creates and returns a PART_LIB object for storing rescued components.
@@ -232,6 +246,7 @@ static PART_LIB* create_rescue_library( wxFileName& aFileName )
     aFileName.SetName( fn.GetName() );
     return new PART_LIB( LIBRARY_TYPE_EESCHEMA, fn.GetFullPath() );
 }
+
 
 /**
  * Function rescue_components
@@ -251,14 +266,13 @@ static void rescue_components( std::vector<RESCUE_CANDIDATE>& aCandidates, PART_
     }
 }
 
-typedef std::pair<SCH_COMPONENT*, wxString> COMPONENT_NAME_PAIR;
 
 /**
  * Function update_components
  * Update components to reflect changed names of rescued parts.
  * Saves components with the original names to aRescueLog to allow recovering from errors and
  * displaying summary.
- * 
+ *
  * @param aComponents - a populated list of all components
  * @param aCandidates - list of rescue candidates
  * @param aSuffix - part name suffix
@@ -285,7 +299,8 @@ static void update_components( std::vector<SCH_COMPONENT*>& aComponents, std::ve
     }
 }
 
-bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aSilentIfNone )
+
+bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aRunningOnDemand )
 {
     // Data that will be used throughout the operation
     std::vector<RESCUE_CANDIDATE>   candidates;
@@ -293,7 +308,7 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aSilentIfNone )
     PART_LIBS*              libs;
     wxString                part_name_suffix;
     PROJECT*                prj;
-    
+
     // Prepare data
     get_components( components );
     prj = &Prj();
@@ -304,14 +319,14 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aSilentIfNone )
     find_rescues( components, libs, candidates );
     if( candidates.empty() )
     {
-        if( !aSilentIfNone )
+        if( aRunningOnDemand )
         {
             wxMessageDialog dlg( this, _( "There are no conflicting symbols to rescue from the cache." ) );
             dlg.ShowModal();
         }
         return true;
     }
-    InvokeDialogRescueEach( this, candidates, components );
+    InvokeDialogRescueEach( this, candidates, components, /* aAskShowAgain */ !aRunningOnDemand );
     wxFileName library_fn;
     std::auto_ptr<PART_LIB> rescue_lib( create_rescue_library( library_fn ) );
     rescue_components( candidates, rescue_lib.get(), part_name_suffix );

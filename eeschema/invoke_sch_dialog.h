@@ -70,9 +70,10 @@ int InvokeDialogRescueSummary( SCH_EDIT_FRAME* aCaller, std::vector<RESCUE_LOG>&
  * @param aCaller - the SCH_EDIT_FRAME calling this
  * @param aCandidates - the list of RESCUE_CANDIDATES
  * @param aComponents - a vector of all the components in the schematic
+ * @param aAskShowAgain - if true, a "Never Show Again" button will be included
  */
 int InvokeDialogRescueEach( SCH_EDIT_FRAME* aCaller, std::vector<RESCUE_CANDIDATE>& aCandidates,
-        std::vector<SCH_COMPONENT*>& aComponents );
+        std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain );
 
 /// Create and show DIALOG_ANNOTATE and return whatever
 /// DIALOG_ANNOTATE::ShowModal() returns.

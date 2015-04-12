@@ -1061,7 +1061,7 @@ void SCH_EDIT_FRAME::OnOpenLibraryEditor( wxCommandEvent& event )
 
 void SCH_EDIT_FRAME::OnRescueCached( wxCommandEvent& event )
 {
-    RescueCacheConflicts( false );
+    RescueCacheConflicts( true );
 }
 
 void SCH_EDIT_FRAME::OnExit( wxCommandEvent& event )
