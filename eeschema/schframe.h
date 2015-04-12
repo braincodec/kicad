@@ -807,6 +807,7 @@ private:
     void OnOpenPcbModuleEditor( wxCommandEvent& event );
     void OnOpenCvpcb( wxCommandEvent& event );
     void OnOpenLibraryEditor( wxCommandEvent& event );
+    void OnRescueCached( wxCommandEvent& event );
     void OnPreferencesOptions( wxCommandEvent& event );
     void OnCancelCurrentCommand( wxCommandEvent& aEvent );
 
@@ -1255,6 +1256,18 @@ public:
      * @return True if \a aFileName was written successfully.
      */
     bool CreateArchiveLibrary( const wxString& aFileName );
+
+    /**
+     * Function RescueCacheConflicts
+     * exports components from the '-cache' library that conflict with parts
+     * in the project libraries to a new library, renaming them to add a suffix
+     * of the root document's name to avoid conflicts.
+     *
+     * @param aSilentIfNone - if true, do nothing if there are no components to rescue.
+     *      If false, an information dialog is displayed. This is set true for the on-load
+     *      check.
+     */
+    bool RescueCacheConflicts( bool aSilentIfNone );
 
     /**
      * Function PrintPage

@@ -98,6 +98,10 @@ const wxString PROJECT::GetProjectPath() const
     return m_project_name.GetPathWithSep();
 }
 
+const wxString PROJECT::GetProjectName() const
+{
+    return m_project_name.GetName();
+}
 
 const wxString PROJECT::FootprintLibTblName() const
 {
