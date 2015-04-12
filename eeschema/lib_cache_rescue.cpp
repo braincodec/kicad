@@ -94,7 +94,12 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
     wxString libPaths;
 
     wxString libName = aLibrary->GetName();
-    PART_LIBS *libs = aProject->SchLibs();
+    PART_LIBS *libs = dynamic_cast<PART_LIBS*>( aProject->GetElem( PROJECT::ELEM_SCH_PART_LIBS ) );
+    if( !libs )
+    {
+        libs = new PART_LIBS();
+        aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, libs );
+    }
 
     PART_LIBS::LibNamesAndPaths( aProject, false, &libPaths, &libNames );
 
@@ -111,18 +116,26 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
     boost::ptr_vector<PART_LIB> libsSave;
     libsSave.transfer( libsSave.end(), libs->begin(), libs->end(), *libs );
 
+    aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, NULL );
+
+    libs = new PART_LIBS();
     try
     {
         libs->LoadAllLibraries( aProject );
     }
-    catch( IO_ERROR e )
+    catch( const PARSE_ERROR& e )
+    {
+        // Some libraries were not found. There's no point in showing the error,
+        // because it was already shown. Just don't do anything.
+    }
+    catch( const IO_ERROR& e )
     {
         // Restore the old list
         libs->clear();
         libs->transfer( libs->end(), libsSave.begin(), libsSave.end(), libsSave );
         return false;
     }
-    aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, NULL );
+    aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, libs );
 
     return true;
 }
