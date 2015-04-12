@@ -49,6 +49,8 @@ public:
     DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_CANDIDATE>& aCandidates,
             std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain );
 
+    ~DIALOG_RESCUE_EACH();
+
 private:
     SCH_EDIT_FRAME* m_Parent;
     wxConfigBase*   m_Config;
@@ -56,11 +58,13 @@ private:
     std::vector<SCH_COMPONENT*>* m_Components;
     bool            m_AskShowAgain;
 
+    bool m_insideUpdateEvent;
+
     bool TransferDataToWindow();
     bool TransferDataFromWindow();
     void PopulateConflictList();
     void PopulateInstanceList();
-    void OnConflictSelect( wxCommandEvent& event );
+    void OnConflictSelect( wxDataViewEvent& event );
     void OnNeverShowClick( wxCommandEvent& event );
     void OnCancelClick( wxCommandEvent& event );
     void OnHandleCachePreviewRepaint( wxPaintEvent& aRepaintEvent );
@@ -73,10 +77,18 @@ private:
 DIALOG_RESCUE_EACH::DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RESCUE_CANDIDATE>& aCandidates,
         std::vector<SCH_COMPONENT*>& aComponents, bool aAskShowAgain )
 
-    : DIALOG_RESCUE_EACH_BASE( aParent ), m_Parent( aParent ), m_Candidates( &aCandidates ),
-        m_Components( &aComponents ), m_AskShowAgain( aAskShowAgain )
-{ }
+    : DIALOG_RESCUE_EACH_BASE( aParent ),
+      m_Parent( aParent ),
+      m_Candidates( &aCandidates ),
+      m_Components( &aComponents ),
+      m_AskShowAgain( aAskShowAgain ),
+      m_insideUpdateEvent( false )
+{
+}
 
+DIALOG_RESCUE_EACH::~DIALOG_RESCUE_EACH()
+{
+}
 
 bool DIALOG_RESCUE_EACH::TransferDataToWindow()
 {
@@ -217,9 +229,23 @@ void DIALOG_RESCUE_EACH::renderPreview( LIB_PART* aComponent, int aUnit, wxPanel
 }
 
 
-void DIALOG_RESCUE_EACH::OnConflictSelect( wxCommandEvent& aEvent )
+void DIALOG_RESCUE_EACH::OnConflictSelect( wxDataViewEvent& aEvent )
 {
+    // wxformbuilder connects this event to the _dialog_, not the data view.
+    // Make sure the correct item triggered it, otherwise we trigger recursively
+    // and get a stack overflow.
+    if( aEvent.GetEventObject() != m_ListOfConflicts ) return;
+
     PopulateInstanceList();
+
+    int row = m_ListOfConflicts->GetSelectedRow();
+    if( row == wxNOT_FOUND )
+        row = 0;
+
+    RESCUE_CANDIDATE& selected_part = (*m_Candidates)[row];
+
+    renderPreview( selected_part.cache_candidate, 0, m_componentViewOld );
+    renderPreview( selected_part.lib_candidate, 0, m_componentViewNew );
 }
 
 
