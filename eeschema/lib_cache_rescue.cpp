@@ -359,8 +359,6 @@ bool SCH_EDIT_FRAME::RescueCacheConflicts( bool aRunningOnDemand )
         // Try inserting the library into the project
         if( insert_library( prj, rescue_lib.get(), 0 ) )
         {
-            InvokeDialogRescueSummary( this, rescue_log );
-
             // Clean up wire ends
             INSTALL_UNBUFFERED_DC( dc, m_canvas );
             GetScreen()->SchematicCleanUp( NULL, &dc );
