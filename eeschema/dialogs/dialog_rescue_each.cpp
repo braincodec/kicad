@@ -86,6 +86,7 @@ DIALOG_RESCUE_EACH::DIALOG_RESCUE_EACH( SCH_EDIT_FRAME* aParent, std::vector<RES
       m_insideUpdateEvent( false )
 {
     m_Config = Kiface().KifaceSettings();
+    m_stdButtonsOK->SetDefault();
 }
 
 
