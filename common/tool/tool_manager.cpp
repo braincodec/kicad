@@ -202,11 +202,6 @@ TOOL_MANAGER::TOOL_MANAGER() :
     m_passEvent( false )
 {
     m_actionMgr = new ACTION_MANAGER( this );
-
-    // Register known actions
-    std::list<TOOL_ACTION*>& actionList = GetActionList();
-    BOOST_FOREACH( TOOL_ACTION* action, actionList )
-        RegisterAction( action );
 }
 
 
@@ -334,6 +329,12 @@ void TOOL_MANAGER::RunAction( const TOOL_ACTION& aAction, bool aNow, void* aPara
         ProcessEvent( event );
     else
         PostEvent( event );
+}
+
+
+void TOOL_MANAGER::UpdateHotKeys()
+{
+    m_actionMgr->UpdateHotKeys();
 }
 
 
@@ -728,6 +729,7 @@ void TOOL_MANAGER::SetEnvironment( EDA_ITEM* aModel, KIGFX::VIEW* aView,
     m_view = aView;
     m_viewControls = aViewControls;
     m_editFrame = aFrame;
+    m_actionMgr->UpdateHotKeys();
 }
 
 
