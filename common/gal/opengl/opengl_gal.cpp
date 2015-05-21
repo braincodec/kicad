@@ -70,7 +70,7 @@ OPENGL_GAL::OPENGL_GAL( wxWindow* aParent, wxEvtHandler* aMouseListener,
     isGrouping               = false;
     groupCounter             = 0;
 
-#ifdef __APPLE__
+#ifdef RETINA_OPENGL_PATCH
     SetViewWantsBestResolution( true );
 #endif
 
@@ -89,6 +89,9 @@ OPENGL_GAL::OPENGL_GAL( wxWindow* aParent, wxEvtHandler* aMouseListener,
     Connect( wxEVT_RIGHT_UP,        wxMouseEventHandler( OPENGL_GAL::skipMouseEvent ) );
     Connect( wxEVT_RIGHT_DCLICK,    wxMouseEventHandler( OPENGL_GAL::skipMouseEvent ) );
     Connect( wxEVT_MOUSEWHEEL,      wxMouseEventHandler( OPENGL_GAL::skipMouseEvent ) );
+#ifdef USE_OSX_MAGNIFY_EVENT
+    Connect( wxEVT_MAGNIFY,         wxMouseEventHandler( OPENGL_GAL::skipMouseEvent ) );
+#endif
 #if defined _WIN32 || defined _WIN64
     Connect( wxEVT_ENTER_WINDOW,    wxMouseEventHandler( OPENGL_GAL::skipMouseEvent ) );
 #endif
@@ -126,7 +129,7 @@ void OPENGL_GAL::BeginDrawing()
     SetCurrent( *glContext );
     clientDC = new wxClientDC( this );
 
-#ifdef __APPLE__
+#ifdef RETINA_OPENGL_PATCH
     const float scaleFactor = GetBackingScaleFactor();
 #else
     const float scaleFactor = 1.0f;
@@ -538,7 +541,7 @@ void OPENGL_GAL::ResizeScreen( int aWidth, int aHeight )
 {
     screenSize = VECTOR2I( aWidth, aHeight );
 
-#ifdef __APPLE__
+#ifdef RETINA_OPENGL_PATCH
     const float scaleFactor = GetBackingScaleFactor();
 #else
     const float scaleFactor = 1.0f;
