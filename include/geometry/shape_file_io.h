@@ -1,8 +1,8 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2015 Jean-Pierre Charras, jp.charras at wanadoo.fr
- * Copyright (C) 2014-2015 KiCad Developers, see CHANGELOG.TXT for contributors.
+ * Copyright (C) 2015 CERN
+ * @author Tomasz Wlostowski <tomasz.wlostowski@cern.ch>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,9 +22,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-#ifndef HELP_MESSAGE_FILE_H
-#define HELP_MESSAGE_FILE_H
 
-#define SAVE_HLP_MSG _( "Save footprint association in schematic component footprint fields" )
+#ifndef __SHAPE_FILE_IO_H
+#define __SHAPE_FILE_IO_H
 
-#endif      // HELP_MESSAGE_FILE_H
+#include <cstdio>
+
+class SHAPE;
+
+/**
+ * Class SHAPE_FILE_IO
+ *
+ * Helper class for saving/loading shapes from a file.
+ */
+class SHAPE_FILE_IO
+{
+    public:
+        SHAPE_FILE_IO ( const std::string& aFilename, bool aAppend = false );
+        ~SHAPE_FILE_IO ( );
+
+        void BeginGroup( const std::string aName = "<noname>");
+        void EndGroup( );
+
+        SHAPE *Read();
+
+        void Write ( const SHAPE *aShape, const std::string aName = "<noname>");
+
+        void Write ( const SHAPE &aShape, const std::string aName = "<noname>")
+        {
+            Write( &aShape, aName );
+        };
+
+    private:
+        FILE *m_file;
+        bool m_groupActive;
+};
+
+#endif
