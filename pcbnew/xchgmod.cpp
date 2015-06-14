@@ -43,6 +43,7 @@
 #include <pcbnew.h>
 #include <dialog_exchange_modules_base.h>
 #include <wildcards_and_files_ext.h>
+#include <kiway.h>
 
 #include <boost/bind.hpp>
 #include <tool/tool_manager.h>
@@ -95,14 +96,14 @@ void PCB_EDIT_FRAME::InstallExchangeModuleFrame( MODULE* Module )
 {
     DIALOG_EXCHANGE_MODULE dialog( this, Module );
 
-    dialog.ShowModal();
+    dialog.ShowQuasiModal();
 }
 
 
 void DIALOG_EXCHANGE_MODULE::OnQuit( wxCommandEvent& event )
 {
     m_selectionMode = m_Selection->GetSelection();
-    EndModal( 0 );
+    EndQuasiModal( wxID_CANCEL );
 }
 
 
@@ -507,11 +508,14 @@ void DIALOG_EXCHANGE_MODULE::BrowseAndSelectFootprint( wxCommandEvent& event )
 {
     wxString newname;
 
-    newname = m_parent->SelectFootprint( m_parent, wxEmptyString, wxEmptyString, wxEmptyString,
-                                         Prj().PcbFootprintLibs() );
+    KIWAY_PLAYER* frame = Kiway().Player( FRAME_PCB_MODULE_VIEWER_MODAL, true );
 
-    if( newname != wxEmptyString )
+    if( frame->ShowModal( &newname, this ) )
+    {
         m_NewModule->SetValue( newname );
+    }
+
+    frame->Destroy();
 }
 
 
