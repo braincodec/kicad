@@ -159,6 +159,9 @@ void SCH_EDIT_FRAME::EditComponent( SCH_COMPONENT* aComponent )
     int ret = dlg->ShowQuasiModal();
     (void) ret;     // not used. Make coverity and static analysers quiet.
 
+    if( m_autoplaceFields && aComponent->GetFieldsAutoplaced() )
+        aComponent->AutoplaceFields();
+
     m_canvas->SetIgnoreMouseEvents( false );
     m_canvas->MoveCursorToCrossHair();
     dlg->Destroy();
