@@ -138,20 +138,6 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
         sides[2] = temp;
     }
 
-    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_90 || orient_angle == CMP_ORIENT_270 ) )
-    {
-        struct side temp = sides[1];
-        sides[1] = sides[3];
-        sides[3] = temp;
-    }
-
-    std::cout << "PINS ON SIDES:";
-    BOOST_FOREACH( struct side& each_side, sides )
-    {
-        std::cout << " " << each_side.side_pins;
-    }
-    std::cout << std::endl;
-
     BOOST_FOREACH( struct side& each_side, sides )
     {
         if( !each_side.side_pins ) return each_side.side_name;
