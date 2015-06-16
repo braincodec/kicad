@@ -82,6 +82,8 @@ class SCH_COMPONENT : public SCH_ITEM
 
     std::vector<bool> m_isDangling; ///< One isDangling per pin
 
+    bool        m_fieldsAutoplaced; ///< true if fields have not been moved since last autoplace
+
     /**
      * A temporary sheet path is required to generate the correct reference designator string
      * in complex heirarchies.  Hopefully this is only a temporary hack to decouple schematic
@@ -289,14 +291,32 @@ public:
     {
         m_Fields = aFields;     // vector copying, length is changed possibly
     }
-
-    //-----</Fields>----------------------------------------------------------
-
     /**
      * Function GetFieldCount
      * returns the number of fields in this component.
      */
     int GetFieldCount() const { return (int) m_Fields.size(); }
+
+    /**
+     * Function GetFieldsAutoplaced
+     * returns whether the fields are autoplaced.
+     */
+    bool GetFieldsAutoplaced() const { return m_fieldsAutoplaced; }
+
+    /**
+     * Function ClearFieldsAutoplaced
+     * Set fields autoplaced flag false.
+     */
+    void ClearFieldsAutoplaced() { m_fieldsAutoplaced = false; }
+
+    /**
+     * Function AutoplaceFields
+     * Automatically orient all the fields in the component.
+     */
+    void AutoplaceFields();
+
+    //-----</Fields>----------------------------------------------------------
+
 
     /**
      * Function GetPin

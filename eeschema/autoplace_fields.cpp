@@ -198,20 +198,27 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 
     SCH_COMPONENT *component = dynamic_cast<SCH_COMPONENT*>( item );
 
-    EDA_RECT body_box = component->GetBodyBoundingBox();
+    component->AutoplaceFields();
 
-    enum component_side field_side = choose_side_for_fields( component );
+    GetCanvas()->Refresh();
+}
+
+void SCH_COMPONENT::AutoplaceFields()
+{
+    EDA_RECT body_box = GetBodyBoundingBox();
+
+    enum component_side field_side = choose_side_for_fields( this );
 
     int max_field_width = 0;
     unsigned n_fields = 0;
-    for( size_t field_idx = 0; field_idx < component->GetFieldCount(); ++field_idx )
+    for( size_t field_idx = 0; field_idx < GetFieldCount(); ++field_idx )
     {
-        SCH_FIELD* field = component->GetField( field_idx );
+        SCH_FIELD* field = GetField( field_idx );
         if( ! field->IsVisible() ) continue;
         if( field->GetText() == wxEmptyString ) continue;
         ++n_fields;
 
-        if( component->GetTransform().y1 )
+        if( GetTransform().y1 )
             field->SetOrientation( TEXT_ORIENT_VERT );
         else
             field->SetOrientation( TEXT_ORIENT_HORIZ );
@@ -247,9 +254,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
     }
 
     // Move the field
-    for( size_t field_idx = 0; field_idx < component->GetFieldCount(); ++field_idx )
+    for( size_t field_idx = 0; field_idx < GetFieldCount(); ++field_idx )
     {
-        SCH_FIELD* field = component->GetField( field_idx );
+        SCH_FIELD* field = GetField( field_idx );
         if( ! field->IsVisible() ) continue;
         if( field->GetText() == wxEmptyString ) continue;
         wxPoint pos = field->GetPosition();
@@ -259,5 +266,5 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
         field->SetPosition( pos );
     }
 
-    GetCanvas()->Refresh();
+    m_fieldsAutoplaced = true;
 }
