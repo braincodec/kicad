@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Mar  9 2015)
+// C++ code generated with wxFormBuilder (version Mar 13 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -106,6 +106,7 @@ class DIALOG_EESCHEMA_OPTIONS_BASE : public DIALOG_SHIM
 		wxCheckBox* m_checkAutoPan;
 		wxCheckBox* m_checkHVOrientation;
 		wxCheckBox* m_checkPageLimits;
+		wxCheckBox* m_checkAutoplaceFields;
 		wxPanel* m_panel2;
 		wxListView* templateFieldListCtrl;
 		wxStaticText* fieldNameLabel;

@@ -428,6 +428,18 @@ public:
     bool GetShowPageLimits( void ) { return m_checkPageLimits->GetValue(); }
 
     /**
+     * Function
+     * Set the AutoplaceFields setting in the dialog
+     */
+    void SetAutoplaceFields( bool enable ) { m_checkAutoplaceFields->SetValue( enable ); }
+
+    /**
+     * Function
+     * Return the current AutoplaceFields setting from the dialog
+     */
+    bool GetAutoplaceFields() { return m_checkAutoplaceFields->GetValue(); }
+
+    /**
      * Function SetTemplateFields
      * Set the template field data in the dialog
      *

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Mar  9 2015)
+// C++ code generated with wxFormBuilder (version Mar 13 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -202,6 +202,9 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	
 	m_checkPageLimits = new wxCheckBox( m_panel1, wxID_ANY, _("Show p&age limits"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer2->Add( m_checkPageLimits, 0, wxALL|wxEXPAND, 3 );
+	
+	m_checkAutoplaceFields = new wxCheckBox( m_panel1, wxID_ANY, _("Automatically place component fields"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer2->Add( m_checkAutoplaceFields, 0, wxALL, 3 );
 	
 	
 	bSizer3->Add( bSizer2, 0, wxEXPAND, 0 );

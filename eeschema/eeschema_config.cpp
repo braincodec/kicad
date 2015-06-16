@@ -335,6 +335,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     dlg.SetEnableAutoPan( m_canvas->GetEnableAutoPan() );
     dlg.SetEnableHVBusOrientation( GetForceHVLines() );
     dlg.SetShowPageLimits( m_showPageLimits );
+    dlg.SetAutoplaceFields( m_autoplaceFields );
     dlg.Layout();
     dlg.Fit();
     dlg.SetMinSize( dlg.GetSize() );
@@ -382,6 +383,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     m_canvas->SetEnableAutoPan( dlg.GetEnableAutoPan() );
     SetForceHVLines( dlg.GetEnableHVBusOrientation() );
     m_showPageLimits = dlg.GetShowPageLimits();
+    m_autoplaceFields = dlg.GetAutoplaceFields();
 
     // Delete all template fieldnames and then restore them using the template field data from
     // the options dialog
