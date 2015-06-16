@@ -2005,7 +2005,7 @@ void LIB_PIN::GetMsgPanelInfo( MSG_PANEL_ITEMS& aList )
 }
 
 
-const EDA_RECT LIB_PIN::GetBoundingBox() const
+const EDA_RECT LIB_PIN::GetBoundingBox( bool aIncludeInvisibles ) const
 {
     LIB_PART*      entry = (LIB_PART*     ) m_Parent;
     EDA_RECT       bbox;
@@ -2016,6 +2016,8 @@ const EDA_RECT LIB_PIN::GetBoundingBox() const
     bool           showNum = m_number != 0;
     int            minsizeV = TARGET_PIN_RADIUS;
 
+    if( !aIncludeInvisibles && !IsVisible() )
+        showName = false;
 
     if( entry )
     {

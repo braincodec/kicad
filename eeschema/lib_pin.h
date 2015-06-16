@@ -149,7 +149,14 @@ public:
 
     bool Matches( wxFindReplaceData& aSearchData, void* aAuxData, wxPoint* aFindLocation );
 
-    const EDA_RECT GetBoundingBox() const;    // Virtual
+    const EDA_RECT GetBoundingBox() const { return GetBoundingBox( false ); }
+
+    /**
+     * Function GetBoundingBox
+     * @param aIncludeInvisibles - if false, do not include labels for invisible pins
+     *      in the calculation.
+     */
+    const EDA_RECT GetBoundingBox( bool aIncludeInvisibles ) const;
 
     /**
      * Function PinEndPoint
@@ -383,7 +390,7 @@ public:
      *
      * @return True if draw object is visible otherwise false.
      */
-    bool IsVisible() { return ( m_attributes & PIN_INVISIBLE ) == 0; }
+    bool IsVisible() const { return ( m_attributes & PIN_INVISIBLE ) == 0; }
 
     int GetPenSize() const;
 
