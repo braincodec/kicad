@@ -27,6 +27,7 @@
 #include <sch_component.h>
 #include <lib_pin.h>
 #include <class_drawpanel.h>
+#include <class_libentry.h>
 #include <boost/foreach.hpp>
 #include <vector>
 #include <iostream>
@@ -191,6 +192,10 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 
 void SCH_COMPONENT::AutoplaceFields()
 {
+    // Do not autoplace on power symbols
+    if( PART_SPTR part = m_part.lock() )
+        if( part->IsPower() ) return;
+
     EDA_RECT body_box = GetBodyBoundingBox();
 
     enum component_side field_side = choose_side_for_fields( this );
