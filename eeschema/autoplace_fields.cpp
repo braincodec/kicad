@@ -127,6 +127,24 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
         { SIDE_LEFT,    pins_on_side( aComponent, SIDE_LEFT ) },
         { SIDE_BOTTOM,  pins_on_side( aComponent, SIDE_BOTTOM ) } };
 
+    // If the component is mirrored, swap the preferred locations in that direction.
+    int orient = aComponent->GetOrientation();
+    int orient_angle = orient & 0xff; // enum is a bitmask
+
+    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+    {
+        struct side temp = sides[0];
+        sides[0] = sides[2];
+        sides[2] = temp;
+    }
+
+    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_90 || orient_angle == CMP_ORIENT_270 ) )
+    {
+        struct side temp = sides[1];
+        sides[1] = sides[3];
+        sides[3] = temp;
+    }
+
     std::cout << "PINS ON SIDES:";
     BOOST_FOREACH( struct side& each_side, sides )
     {
@@ -140,9 +158,9 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
     }
 
     unsigned min_pins = (unsigned)(-1);
-    enum component_side min_side;
+    enum component_side min_side = SIDE_RIGHT;
 
-    BOOST_FOREACH( struct side& each_side, sides )
+    BOOST_REVERSE_FOREACH( struct side& each_side, sides )
     {
         if( each_side.side_pins < min_pins )
         {
@@ -151,10 +169,7 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
         }
     }
 
-    if( sides[0].side_pins == min_pins )
-        return sides[0].side_name; // Prefer first side when all are equal
-    else
-        return min_side;
+    return min_side;
 }
 
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
