@@ -502,6 +502,7 @@ void SCH_EDIT_FRAME::SaveProjectSettings( bool aAskForSave )
 }
 
 
+static const wxChar AutoplaceFieldsEntry[] =        wxT( "AutoplaceFields" );
 static const wxChar DefaultBusWidthEntry[] =        wxT( "DefaultBusWidth" );
 static const wxChar DefaultDrawLineWidthEntry[] =   wxT( "DefaultDrawLineWidth" );
 static const wxChar ShowHiddenPinsEntry[] =         wxT( "ShowHiddenPins" );
@@ -585,6 +586,7 @@ void SCH_EDIT_FRAME::LoadSettings( wxConfigBase* aCfg )
     SetDefaultLineThickness( aCfg->Read( DefaultDrawLineWidthEntry, DEFAULTDRAWLINETHICKNESS ) );
     aCfg->Read( ShowHiddenPinsEntry, &m_showAllPins, false );
     aCfg->Read( HorzVertLinesOnlyEntry, &m_forceHVLines, true );
+    aCfg->Read( AutoplaceFieldsEntry, &m_autoplaceFields, true );
 
     // Load print preview window session settings.
     aCfg->Read( PreviewFramePositionXEntry, &tmp, -1 );
@@ -675,6 +677,7 @@ void SCH_EDIT_FRAME::SaveSettings( wxConfigBase* aCfg )
     aCfg->Write( DefaultDrawLineWidthEntry, (long) GetDefaultLineThickness() );
     aCfg->Write( ShowHiddenPinsEntry, m_showAllPins );
     aCfg->Write( HorzVertLinesOnlyEntry, GetForceHVLines() );
+    aCfg->Write( AutoplaceFieldsEntry, m_autoplaceFields );
 
     // Save print preview window session settings.
     aCfg->Write( PreviewFramePositionXEntry, m_previewPosition.x );
