@@ -242,6 +242,9 @@ SCH_COMPONENT* SCH_EDIT_FRAME::Load_Component( wxDC*           aDC,
     SetMsgPanel( items );
     component->Draw( m_canvas, aDC, wxPoint( 0, 0 ), g_XorMode );
     component->SetFlags( IS_NEW );
+
+    if( m_autoplaceFields ) component->AutoplaceFields();
+
     PrepareMoveItem( (SCH_ITEM*) component, aDC );
 
     return component;
