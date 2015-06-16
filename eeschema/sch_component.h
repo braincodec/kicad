@@ -308,6 +308,12 @@ public:
     LIB_PIN* GetPin( const wxString& number );
 
     /**
+     * Function GetPins
+     * populate a vector with all the pins.
+     */
+    void GetPins( std::vector<LIB_PIN*>& aPinsList );
+
+    /**
      * Virtual function, from the base class SCH_ITEM::Draw
      */
     void Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOffset,
