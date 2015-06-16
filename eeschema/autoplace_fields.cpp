@@ -178,6 +178,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
     if( item->Type() != SCH_COMPONENT_T )
         return;
 
+    if( !item->IsNew() )
+        SaveCopyInUndoList( item, UR_CHANGED );
+
     SCH_COMPONENT *component = dynamic_cast<SCH_COMPONENT*>( item );
 
     EDA_RECT body_box = component->GetBodyBoundingBox();
