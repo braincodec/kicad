@@ -30,7 +30,7 @@
 #include <class_libentry.h>
 #include <boost/foreach.hpp>
 #include <vector>
-#include <iostream>
+#include <algorithm>
 
 enum component_side {
     SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
@@ -111,33 +111,54 @@ struct side {
     unsigned side_pins;
 };
 
+
+/**
+ * Function populate_preferred_sides
+ * Populate a list with the preferred field sides for the component, in
+ * decreasing order of preference.
+ */
+static void populate_preferred_sides( std::vector<struct side>& aSides, SCH_COMPONENT* aComponent )
+{
+    struct side sides[] = {
+        { SIDE_RIGHT,   pins_on_side( aComponent, SIDE_RIGHT ) },
+        { SIDE_TOP,     pins_on_side( aComponent, SIDE_TOP ) },
+        { SIDE_LEFT,    pins_on_side( aComponent, SIDE_LEFT ) },
+        { SIDE_BOTTOM,  pins_on_side( aComponent, SIDE_BOTTOM ) },
+    };
+
+    int orient = aComponent->GetOrientation();
+    int orient_angle = orient & 0xff; // enum is a bitmask
+
+    // If the component is horizontally mirrored, swap left and right
+    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+    {
+        std::swap( sides[0], sides[2] );
+    }
+
+    // If the component is very long, swap H and V
+    EDA_RECT body_box = aComponent->GetBodyBoundingBox();
+    if( double( body_box.GetWidth() ) / double( body_box.GetHeight() ) > 3.0 )
+    {
+        std::swap( sides[0], sides[1] );
+        std::swap( sides[1], sides[3] );
+    }
+
+    BOOST_FOREACH( struct side& each_side, sides )
+    {
+        aSides.push_back( each_side );
+    }
+}
+
+
 /**
  * Function choose_side_for_component
  * Look where a component's pins are to pick a side to put the fields on
  */
 static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
 {
-    // Place fields on the first side with no pins, in this order:
-    // RIGHT, TOP, LEFT, BOTTOM
-    // If all four sides have pins, go with the side with fewer.
-    // If all four sides are equal, go with TOP - it's probably a large IC.
+    std::vector<struct side> sides;
+    populate_preferred_sides( sides, aComponent );
 
-    struct side sides[] = {
-        { SIDE_RIGHT,   pins_on_side( aComponent, SIDE_RIGHT ) },
-        { SIDE_TOP,     pins_on_side( aComponent, SIDE_TOP ) },
-        { SIDE_LEFT,    pins_on_side( aComponent, SIDE_LEFT ) },
-        { SIDE_BOTTOM,  pins_on_side( aComponent, SIDE_BOTTOM ) } };
-
-    // If the component is mirrored, swap the preferred locations in that direction.
-    int orient = aComponent->GetOrientation();
-    int orient_angle = orient & 0xff; // enum is a bitmask
-
-    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
-    {
-        struct side temp = sides[0];
-        sides[0] = sides[2];
-        sides[2] = temp;
-    }
 
     BOOST_FOREACH( struct side& each_side, sides )
     {
