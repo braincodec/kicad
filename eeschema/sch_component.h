@@ -100,8 +100,6 @@ class SCH_COMPONENT : public SCH_ITEM
 
     void Init( const wxPoint& pos = wxPoint( 0, 0 ) );
 
-    EDA_RECT GetBodyBoundingBox() const;
-
 public:
     SCH_COMPONENT( const wxPoint& pos = wxPoint( 0, 0 ), SCH_ITEM* aParent = NULL );
 
@@ -254,6 +252,13 @@ public:
     void SetTimeStamp( time_t aNewTimeStamp );
 
     const EDA_RECT GetBoundingBox() const;    // Virtual
+
+    /**
+     * Function GetBodyBoundingBox
+     * Return a bounding box for the component body but not the fields.
+     */
+    EDA_RECT GetBodyBoundingBox() const;
+
 
     //-----<Fields>-----------------------------------------------------------
 

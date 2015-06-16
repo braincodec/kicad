@@ -765,6 +765,12 @@ public:
 private:
 
     /**
+     * Function OnAutoplaceFields
+     * handles the #ID_AUTOPLACE_FIELDS event.
+     */
+    void OnAutoplaceFields( wxCommandEvent& aEvent );
+
+    /**
      * Function OnMoveItem
      * handles the #ID_SCH_MOVE_ITEM event used to move schematic itams.
      */
