@@ -379,7 +379,7 @@ void SCH_COMPONENT::Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOff
         field->Draw( aPanel, aDC, aOffset, aDrawMode );
     }
 
-#if 1
+#if 0
     // Only for testing purposes, draw the component bounding box
     {
         EDA_RECT boundingBox = GetBodyBoundingBox();

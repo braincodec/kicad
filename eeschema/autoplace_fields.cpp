@@ -35,6 +35,7 @@
 #include <algorithm>
 
 #define FIELD_V_SPACING 100
+#define HORIZ_PADDING 50
 
 enum component_side {
     SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
@@ -282,7 +283,7 @@ void SCH_COMPONENT::AutoplaceFields()
     switch( field_side )
     {
     case SIDE_RIGHT:
-        fbox_pos.x = body_box.GetRight();
+        fbox_pos.x = body_box.GetRight() + HORIZ_PADDING;
         fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
         h_round_up = true;
         break;
@@ -292,7 +293,7 @@ void SCH_COMPONENT::AutoplaceFields()
         h_round_up = true;
         break;
     case SIDE_LEFT:
-        fbox_pos.x = body_box.GetLeft() - fbox_size.GetWidth();
+        fbox_pos.x = body_box.GetLeft() - fbox_size.GetWidth() - HORIZ_PADDING;
         fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
         h_round_up = false;
         break;
