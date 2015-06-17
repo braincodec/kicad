@@ -665,7 +665,7 @@ void SCH_COMPONENT::GetFields( std::vector<SCH_FIELD*>& aVector, bool aVisibleOn
 {
     BOOST_FOREACH( SCH_FIELD& each_field, m_Fields )
     {
-        if( !aVisibleOnly || ( each_field.IsVisible() && each_field.GetText() != wxEmptyString ) )
+        if( !aVisibleOnly || ( each_field.IsVisible() && !each_field.IsVoid() ) )
             aVector.push_back( &each_field );
     }
 }

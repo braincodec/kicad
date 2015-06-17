@@ -221,17 +221,16 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
  *
  * @param aField - the field to place.
  * @param aFieldBox - box in which fields will be placed
- * @param aMirror - true if the component will be displayed mirrored or rotated,
- *  such that the justification inverts
  *
  * @return Correct field horizontal position
  */
-static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool aMirror )
+static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
 {
     EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
-    if( aMirror && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
+    bool flipped = aField->IsHorizJustifyFlipped();
+    if( flipped && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
         field_hjust = GR_TEXT_HJUSTIFY_RIGHT;
-    else if( aMirror && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
+    else if( flipped && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
         field_hjust = GR_TEXT_HJUSTIFY_LEFT;
 
     int field_xcoord;
@@ -253,28 +252,6 @@ static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool
     }
 
     return round_up_50( field_xcoord );
-}
-
-
-/**
- * Function field_is_mirrored
- * Determine whether a field will be displayed with mirrored horizontal justification.
- */
-static bool field_is_mirrored( SCH_FIELD *aField )
-{
-    EDA_RECT bbox = aField->GetBoundingBox();
-    wxPoint render_center = bbox.Centre();
-    wxPoint pos = aField->GetPosition();
-
-    switch( aField->GetHorizJustify() )
-    {
-    case GR_TEXT_HJUSTIFY_LEFT:
-        return render_center.x < pos.x;
-    case GR_TEXT_HJUSTIFY_RIGHT:
-        return render_center.x > pos.x;
-    default:
-        return false;
-    }
 }
 
 
@@ -336,7 +313,7 @@ void SCH_COMPONENT::AutoplaceFields()
     {
         wxPoint pos;
         SCH_FIELD* field = fields[field_idx];
-        pos.x = place_field_horiz( field, field_box, field_is_mirrored( field ) );
+        pos.x = place_field_horiz( field, field_box );
         pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);;
         new_field_y += FIELD_V_SPACING;
         field->SetPosition( pos );
