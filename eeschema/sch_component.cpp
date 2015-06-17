@@ -661,6 +661,16 @@ SCH_FIELD* SCH_COMPONENT::GetField( int aFieldNdx ) const
 }
 
 
+void SCH_COMPONENT::GetFields( std::vector<SCH_FIELD*>& aVector, bool aVisibleOnly )
+{
+    BOOST_FOREACH( SCH_FIELD& each_field, m_Fields )
+    {
+        if( !aVisibleOnly || ( each_field.IsVisible() && each_field.GetText() != wxEmptyString ) )
+            aVector.push_back( &each_field );
+    }
+}
+
+
 SCH_FIELD* SCH_COMPONENT::AddField( const SCH_FIELD& aField )
 {
     int newNdx = m_Fields.size();

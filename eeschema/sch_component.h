@@ -273,6 +273,14 @@ public:
     SCH_FIELD* GetField( int aFieldNdx ) const;
 
     /**
+     * Function GetFields
+     * populates a std::vector with SCH_FIELDs.
+     * @param aVector - vector to populate.
+     * @param aVisibleOnly - if true, only get fields that are visible and contain text.
+     */
+    void GetFields( std::vector<SCH_FIELD*>& aVector, bool aVisibleOnly );
+
+    /**
      * Function AddField
      * adds a field to the component.  The field is copied as it is put into
      * the component.

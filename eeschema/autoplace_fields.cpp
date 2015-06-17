@@ -285,29 +285,25 @@ void SCH_COMPONENT::AutoplaceFields()
         if( part->IsPower() ) return;
 
     EDA_RECT body_box = GetBodyBoundingBox();
+    std::vector<SCH_FIELD*> fields;
+    GetFields( fields, /* aVisibleOnly */ true );
 
     enum component_side field_side = choose_side_for_fields( this );
 
     int max_field_width = 0;
-    unsigned n_fields = 0;
-    for( size_t field_idx = 0; field_idx < GetFieldCount(); ++field_idx )
+    for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
-        SCH_FIELD* field = GetField( field_idx );
-        if( ! field->IsVisible() ) continue;
-        if( field->GetText() == wxEmptyString ) continue;
-        ++n_fields;
-
         if( GetTransform().y1 )
-            field->SetOrientation( TEXT_ORIENT_VERT );
+            fields[field_idx]->SetOrientation( TEXT_ORIENT_VERT );
         else
-            field->SetOrientation( TEXT_ORIENT_HORIZ );
+            fields[field_idx]->SetOrientation( TEXT_ORIENT_HORIZ );
 
-        int field_width = field->GetBoundingBox().GetWidth();
+        int field_width = fields[field_idx]->GetBoundingBox().GetWidth();
         if( field_width > max_field_width )
             max_field_width = field_width;
     }
 
-    wxSize fbox_size( max_field_width, FIELD_V_SPACING * (n_fields - 1) );
+    wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
     wxPoint fbox_pos;
 
     switch( field_side )
@@ -336,14 +332,12 @@ void SCH_COMPONENT::AutoplaceFields()
     int new_field_y = field_box.GetY();
 
     // Move the field
-    for( size_t field_idx = 0; field_idx < GetFieldCount(); ++field_idx )
+    for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
-        SCH_FIELD* field = GetField( field_idx );
-        if( ! field->IsVisible() ) continue;
-        if( field->GetText() == wxEmptyString ) continue;
-        wxPoint pos = field->GetPosition();
+        wxPoint pos;
+        SCH_FIELD* field = fields[field_idx];
         pos.x = place_field_horiz( field, field_box, field_is_mirrored( field ) );
-        pos.y = new_field_y;
+        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);;
         new_field_y += FIELD_V_SPACING;
         field->SetPosition( pos );
     }
