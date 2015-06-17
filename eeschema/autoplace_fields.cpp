@@ -40,26 +40,15 @@ enum component_side {
 
 
 /**
- * Function round_up_50
- * Round up to the nearest 50
+ * Function round_n
+ * Round up/down to the nearest multiple of n
  */
-template<typename T> T round_up_50( const T& value )
+template<typename T> T round_n( const T& value, const T& n, bool aRoundUp )
 {
-    if( value % 50 )
-        return 50 * (value / 50 + 1);
-    return value;
-}
-
-
-/**
- * Function round_down_50
- * Round down to the nearest 50
- */
-template<typename T> T round_down_50( const T& value )
-{
-    if( value % 50 )
-        return 50 * (value / 50);
-    return value;
+    if( value % n )
+        return n * (value / n + (aRoundUp ? 1 : 0));
+    else
+        return value;
 }
 
 
@@ -221,10 +210,11 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
  *
  * @param aField - the field to place.
  * @param aFieldBox - box in which fields will be placed
+ * @param aRoundUp - whether to round horizontal coordinate up (else round down)
  *
  * @return Correct field horizontal position
  */
-static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
+static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool aRoundUp )
 {
     EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
     bool flipped = aField->IsHorizJustifyFlipped();
@@ -251,7 +241,7 @@ static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
         field_xcoord = aFieldBox.GetCenter().x; // Most are centered
     }
 
-    return round_up_50( field_xcoord );
+    return round_n( field_xcoord, 50, aRoundUp );
 }
 
 
@@ -282,27 +272,35 @@ void SCH_COMPONENT::AutoplaceFields()
 
     wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
     wxPoint fbox_pos;
+    bool h_round_up;
 
     switch( field_side )
     {
     case SIDE_RIGHT:
         fbox_pos.x = body_box.GetRight();
-        fbox_pos.y = round_down_50( body_box.GetCenter().y - fbox_size.GetHeight()/2 );
+        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
+        h_round_up = true;
         break;
     case SIDE_BOTTOM:
         fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
-        fbox_pos.y = round_up_50( body_box.GetBottom() + 25 );
+        fbox_pos.y = round_n( body_box.GetBottom() + 25, 50, true );
+        h_round_up = true;
         break;
     case SIDE_LEFT:
         fbox_pos.x = body_box.GetLeft() - fbox_size.GetWidth();
-        fbox_pos.y = round_down_50( body_box.GetCenter().y - fbox_size.GetHeight()/2 );
+        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
+        h_round_up = false;
         break;
     case SIDE_TOP:
         fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
-        fbox_pos.y = round_down_50( body_box.GetTop() - fbox_size.GetHeight() - 25 );
+        fbox_pos.y = round_n( body_box.GetTop() - fbox_size.GetHeight() - 25, 50, false );
+        h_round_up = true;
         break;
     default:
         wxFAIL_MSG( "Bad enum component_side value" );
+        fbox_pos.x = body_box.GetRight();
+        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
+        h_round_up = true;
     }
 
     EDA_RECT field_box( fbox_pos, fbox_size );
@@ -313,8 +311,8 @@ void SCH_COMPONENT::AutoplaceFields()
     {
         wxPoint pos;
         SCH_FIELD* field = fields[field_idx];
-        pos.x = place_field_horiz( field, field_box );
-        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);;
+        pos.x = place_field_horiz( field, field_box, h_round_up );
+        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
         new_field_y += FIELD_V_SPACING;
         field->SetPosition( pos );
     }
