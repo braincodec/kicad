@@ -304,16 +304,33 @@ void SCH_COMPONENT::AutoplaceFields()
     }
 
     EDA_RECT field_box( fbox_pos, fbox_size );
-    int new_field_y = field_box.GetY();
 
     // Move the field
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
         wxPoint pos;
         SCH_FIELD* field = fields[field_idx];
+
+        // Set field justification
+        // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
+        switch( field_side )
+        {
+        case SIDE_LEFT:
+            field->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
+            field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
+            break;
+        case SIDE_RIGHT:
+            field->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
+            field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
+            break;
+        case SIDE_TOP:
+        case SIDE_BOTTOM:
+            field->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
+            break;
+        }
+
         pos.x = place_field_horiz( field, field_box, h_round_up );
         pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
-        new_field_y += FIELD_V_SPACING;
         field->SetPosition( pos );
     }
 
