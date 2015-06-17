@@ -114,7 +114,7 @@ struct side {
  * decreasing order of preference.
  */
 static void populate_preferred_sides( std::vector<struct side>& aSides,
-            `                         SCH_COMPONENT* aComponent )
+                                      SCH_COMPONENT* aComponent )
 {
     struct side sides[] = {
         { SIDE_RIGHT,   pins_on_side( aComponent, SIDE_RIGHT ) },
