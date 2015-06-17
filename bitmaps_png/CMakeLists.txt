@@ -401,8 +401,6 @@ set( BMAPS_MID
     new_project
     new_project_with_template
     new_sch
-    new_txt
-    new
     noconn
     normal
     online_help
@@ -509,6 +507,12 @@ set( BMAPS_MID
     select_w_layer
     shape_3d
     sheetset
+    setcolor_3d_bg
+    setcolor_silkscreen
+    setcolor_soldermask
+    setcolor_solderpaste
+    setcolor_copper
+    setcolor_board_body
     show_dcodenumber
     show_footprint
     show_mod_edge
