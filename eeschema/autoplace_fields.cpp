@@ -32,6 +32,8 @@
 #include <vector>
 #include <algorithm>
 
+#define FIELD_V_SPACING 100
+
 enum component_side {
     SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
 };
@@ -211,6 +213,71 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
     GetCanvas()->Refresh();
 }
 
+
+/**
+ * Function place_field_horiz
+ * Place a field horizontally, taking into account the field width and
+ * justification.
+ *
+ * @param aField - the field to place.
+ * @param aFieldBox - box in which fields will be placed
+ * @param aMirror - true if the component will be displayed mirrored or rotated,
+ *  such that the justification inverts
+ *
+ * @return Correct field horizontal position
+ */
+static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool aMirror )
+{
+    EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
+    if( aMirror && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
+        field_hjust = GR_TEXT_HJUSTIFY_RIGHT;
+    else if( aMirror && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
+        field_hjust = GR_TEXT_HJUSTIFY_LEFT;
+
+    int field_xcoord;
+
+    switch( field_hjust )
+    {
+    case GR_TEXT_HJUSTIFY_LEFT:
+        field_xcoord = aFieldBox.GetLeft();
+        break;
+    case GR_TEXT_HJUSTIFY_CENTER:
+        field_xcoord = aFieldBox.GetCenter().x;
+        break;
+    case GR_TEXT_HJUSTIFY_RIGHT:
+        field_xcoord = aFieldBox.GetRight();
+        break;
+    default:
+        wxFAIL_MSG( "Unexpected value for SCH_FIELD::GetHorizJustify()" );
+        field_xcoord = aFieldBox.GetCenter().x; // Most are centered
+    }
+
+    return round_up_50( field_xcoord );
+}
+
+
+/**
+ * Function field_is_mirrored
+ * Determine whether a field will be displayed with mirrored horizontal justification.
+ */
+static bool field_is_mirrored( SCH_FIELD *aField )
+{
+    EDA_RECT bbox = aField->GetBoundingBox();
+    wxPoint render_center = bbox.Centre();
+    wxPoint pos = aField->GetPosition();
+
+    switch( aField->GetHorizJustify() )
+    {
+    case GR_TEXT_HJUSTIFY_LEFT:
+        return render_center.x < pos.x;
+    case GR_TEXT_HJUSTIFY_RIGHT:
+        return render_center.x > pos.x;
+    default:
+        return false;
+    }
+}
+
+
 void SCH_COMPONENT::AutoplaceFields()
 {
     // Do not autoplace on power symbols
@@ -240,30 +307,33 @@ void SCH_COMPONENT::AutoplaceFields()
             max_field_width = field_width;
     }
 
-    int new_field_x, new_field_y;
-    unsigned fields_height = 100 * (n_fields - 1);
+    wxSize fbox_size( max_field_width, FIELD_V_SPACING * (n_fields - 1) );
+    wxPoint fbox_pos;
 
     switch( field_side )
     {
     case SIDE_RIGHT:
-        new_field_x = round_up_50( body_box.GetRight() + (max_field_width / 2) );
-        new_field_y = round_down_50( body_box.GetY() + (body_box.GetHeight() / 2) - fields_height / 2 );
+        fbox_pos.x = body_box.GetRight();
+        fbox_pos.y = round_down_50( body_box.GetCenter().y - fbox_size.GetHeight()/2 );
         break;
     case SIDE_BOTTOM:
-        new_field_x = round_up_50( body_box.GetLeft() + (body_box.GetWidth() / 2) );
-        new_field_y = round_up_50( body_box.GetBottom() + 25 );
+        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
+        fbox_pos.y = round_up_50( body_box.GetBottom() + 25 );
         break;
     case SIDE_LEFT:
-        new_field_x = round_down_50( body_box.GetLeft() - (max_field_width / 2) );
-        new_field_y = round_down_50( body_box.GetY() + (body_box.GetHeight() / 2) - fields_height / 2 );
+        fbox_pos.x = body_box.GetLeft() - fbox_size.GetWidth();
+        fbox_pos.y = round_down_50( body_box.GetCenter().y - fbox_size.GetHeight()/2 );
         break;
     case SIDE_TOP:
-        new_field_x = round_up_50( body_box.GetLeft() + (body_box.GetWidth() / 2) );
-        new_field_y = round_down_50( body_box.GetY() - fields_height - 25 );
+        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
+        fbox_pos.y = round_down_50( body_box.GetTop() - fbox_size.GetHeight() - 25 );
         break;
     default:
         wxFAIL_MSG( "Bad enum component_side value" );
     }
+
+    EDA_RECT field_box( fbox_pos, fbox_size );
+    int new_field_y = field_box.GetY();
 
     // Move the field
     for( size_t field_idx = 0; field_idx < GetFieldCount(); ++field_idx )
@@ -272,9 +342,9 @@ void SCH_COMPONENT::AutoplaceFields()
         if( ! field->IsVisible() ) continue;
         if( field->GetText() == wxEmptyString ) continue;
         wxPoint pos = field->GetPosition();
-        pos.x = new_field_x;
+        pos.x = place_field_horiz( field, field_box, field_is_mirrored( field ) );
         pos.y = new_field_y;
-        new_field_y += 100;
+        new_field_y += FIELD_V_SPACING;
         field->SetPosition( pos );
     }
 
