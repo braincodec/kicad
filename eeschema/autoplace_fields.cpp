@@ -92,6 +92,8 @@ static unsigned pins_on_side( SCH_COMPONENT* aComponent, enum component_side aSi
 
     BOOST_FOREACH( LIB_PIN* each_pin, pins )
     {
+        if( !each_pin->IsVisible() )
+            continue;
         if( get_pin_side( aComponent, each_pin ) == aSide )
             ++pin_count;
     }
