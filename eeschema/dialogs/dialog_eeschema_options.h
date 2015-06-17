@@ -440,6 +440,18 @@ public:
     bool GetAutoplaceFields() { return m_checkAutoplaceFields->GetValue(); }
 
     /**
+     * Function
+     * Set the AutoplaceJustify setting in the dialog
+     */
+    void SetAutoplaceJustify( bool enable ) { m_checkAutoplaceJustify->SetValue( enable ); }
+
+    /**
+     * Function
+     * Return the current AutoplaceJustify setting from the dialog
+     */
+    bool GetAutoplaceJustify() { return m_checkAutoplaceJustify->GetValue(); }
+
+    /**
      * Function SetTemplateFields
      * Set the template field data in the dialog
      *

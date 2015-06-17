@@ -336,6 +336,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     dlg.SetEnableHVBusOrientation( GetForceHVLines() );
     dlg.SetShowPageLimits( m_showPageLimits );
     dlg.SetAutoplaceFields( m_autoplaceFields );
+    dlg.SetAutoplaceJustify( m_autoplaceJustify );
     dlg.Layout();
     dlg.Fit();
     dlg.SetMinSize( dlg.GetSize() );
@@ -384,6 +385,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     SetForceHVLines( dlg.GetEnableHVBusOrientation() );
     m_showPageLimits = dlg.GetShowPageLimits();
     m_autoplaceFields = dlg.GetAutoplaceFields();
+    m_autoplaceJustify = dlg.GetAutoplaceJustify();
 
     // Delete all template fieldnames and then restore them using the template field data from
     // the options dialog
@@ -505,6 +507,7 @@ void SCH_EDIT_FRAME::SaveProjectSettings( bool aAskForSave )
 
 
 static const wxChar AutoplaceFieldsEntry[] =        wxT( "AutoplaceFields" );
+static const wxChar AutoplaceJustifyEntry[] =       AUTOPLACE_JUSTIFY_KEY;
 static const wxChar DefaultBusWidthEntry[] =        wxT( "DefaultBusWidth" );
 static const wxChar DefaultDrawLineWidthEntry[] =   wxT( "DefaultDrawLineWidth" );
 static const wxChar ShowHiddenPinsEntry[] =         wxT( "ShowHiddenPins" );
@@ -589,6 +592,7 @@ void SCH_EDIT_FRAME::LoadSettings( wxConfigBase* aCfg )
     aCfg->Read( ShowHiddenPinsEntry, &m_showAllPins, false );
     aCfg->Read( HorzVertLinesOnlyEntry, &m_forceHVLines, true );
     aCfg->Read( AutoplaceFieldsEntry, &m_autoplaceFields, true );
+    aCfg->Read( AutoplaceJustifyEntry, &m_autoplaceJustify, true );
 
     // Load print preview window session settings.
     aCfg->Read( PreviewFramePositionXEntry, &tmp, -1 );
@@ -680,6 +684,7 @@ void SCH_EDIT_FRAME::SaveSettings( wxConfigBase* aCfg )
     aCfg->Write( ShowHiddenPinsEntry, m_showAllPins );
     aCfg->Write( HorzVertLinesOnlyEntry, GetForceHVLines() );
     aCfg->Write( AutoplaceFieldsEntry, m_autoplaceFields );
+    aCfg->Write( AutoplaceJustifyEntry, m_autoplaceJustify );
 
     // Save print preview window session settings.
     aCfg->Write( PreviewFramePositionXEntry, m_previewPosition.x );

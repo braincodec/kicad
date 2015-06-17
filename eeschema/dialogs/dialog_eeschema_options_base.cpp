@@ -206,6 +206,9 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	m_checkAutoplaceFields = new wxCheckBox( m_panel1, wxID_ANY, _("Automatically place component fields"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer2->Add( m_checkAutoplaceFields, 0, wxALL, 3 );
 	
+	m_checkAutoplaceJustify = new wxCheckBox( m_panel1, wxID_ANY, _("Allow field autoplace to change justification"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer2->Add( m_checkAutoplaceJustify, 0, wxALL, 3 );
+	
 	
 	bSizer3->Add( bSizer2, 0, wxEXPAND, 0 );
 	

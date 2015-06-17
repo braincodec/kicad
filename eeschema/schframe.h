@@ -147,6 +147,7 @@ private:
     bool                    m_forceHVLines;       ///< force H or V directions for wires, bus, line
 
     bool                    m_autoplaceFields;    ///< automatically place component fields
+    bool                    m_autoplaceJustify;   ///< allow autoplace to change justification
 
     /// An index to the last find item in the found items list #m_foundItems.
     int         m_foundItemIndex;

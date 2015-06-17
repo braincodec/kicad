@@ -28,6 +28,8 @@
 #include <lib_pin.h>
 #include <class_drawpanel.h>
 #include <class_libentry.h>
+#include <eeschema_config.h>
+#include <kiface_i.h>
 #include <boost/foreach.hpp>
 #include <vector>
 #include <algorithm>
@@ -255,6 +257,9 @@ void SCH_COMPONENT::AutoplaceFields()
     std::vector<SCH_FIELD*> fields;
     GetFields( fields, /* aVisibleOnly */ true );
 
+    bool allow_rejustify = true;
+    Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &allow_rejustify, true );
+
     enum component_side field_side = choose_side_for_fields( this );
 
     int max_field_width = 0;
@@ -313,20 +318,23 @@ void SCH_COMPONENT::AutoplaceFields()
 
         // Set field justification
         // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
-        switch( field_side )
+        if( allow_rejustify )
         {
-        case SIDE_LEFT:
-            field->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
-            field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
-            break;
-        case SIDE_RIGHT:
-            field->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
-            field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
-            break;
-        case SIDE_TOP:
-        case SIDE_BOTTOM:
-            field->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
-            break;
+            switch( field_side )
+            {
+            case SIDE_LEFT:
+                field->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
+                field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
+                break;
+            case SIDE_RIGHT:
+                field->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
+                field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
+                break;
+            case SIDE_TOP:
+            case SIDE_BOTTOM:
+                field->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
+                break;
+            }
         }
 
         pos.x = place_field_horiz( field, field_box, h_round_up );
