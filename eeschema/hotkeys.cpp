@@ -218,7 +218,8 @@ static EDA_HOTKEY HkSaveSchematic( _HKI( "Save Schematic" ), HK_SAVE_SCH, 'S' + 
 static EDA_HOTKEY HkLoadSchematic( _HKI( "Load Schematic" ), HK_LOAD_SCH, 'L' + GR_KB_CTRL );
 
 // Autoplace fields
-static EDA_HOTKEY HkAutoplaceFields( _HKI( "Autoplace Fields" ), HK_AUTOPLACE_FIELDS, 'O', ID_AUTOPLACE_FIELDS );
+static EDA_HOTKEY HkAutoplaceFields( _HKI( "Autoplace Fields" ), HK_AUTOPLACE_FIELDS, 'O',
+                                        ID_AUTOPLACE_FIELDS );
 
 // List of common hotkey descriptors
 static EDA_HOTKEY* common_Hotkey_List[] =

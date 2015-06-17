@@ -113,7 +113,8 @@ struct side {
  * Populate a list with the preferred field sides for the component, in
  * decreasing order of preference.
  */
-static void populate_preferred_sides( std::vector<struct side>& aSides, SCH_COMPONENT* aComponent )
+static void populate_preferred_sides( std::vector<struct side>& aSides,
+            `                         SCH_COMPONENT* aComponent )
 {
     struct side sides[] = {
         { SIDE_RIGHT,   pins_on_side( aComponent, SIDE_RIGHT ) },
@@ -187,9 +188,11 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
         if( aEvent.GetInt() == 0 )
             return;
 
-        EDA_HOTKEY_CLIENT_DATA* data = dynamic_cast<EDA_HOTKEY_CLIENT_DATA*>( aEvent.GetClientObject() );
+        EDA_HOTKEY_CLIENT_DATA* data;
+        data = dynamic_cast<EDA_HOTKEY_CLIENT_DATA*>( aEvent.GetClientObject() );
         wxCHECK_RET( data, wxT( "Invalid hot key client object." ) );
-        item = LocateAndShowItem( data->GetPosition(), SCH_COLLECTOR::MovableItems, aEvent.GetInt() );
+        item = LocateAndShowItem( data->GetPosition(),
+                SCH_COLLECTOR::MovableItems, aEvent.GetInt() );
         if( !item || item->GetFlags() )
             return;
     }
@@ -327,11 +330,13 @@ void SCH_COMPONENT::AutoplaceFields()
             {
             case SIDE_LEFT:
                 field->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
-                field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
+                field->SetHorizJustify( field->IsHorizJustifyFlipped()
+                        ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
                 break;
             case SIDE_RIGHT:
                 field->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
-                field->SetHorizJustify( field->IsHorizJustifyFlipped() ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
+                field->SetHorizJustify( field->IsHorizJustifyFlipped()
+                        ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
                 break;
             case SIDE_TOP:
             case SIDE_BOTTOM:

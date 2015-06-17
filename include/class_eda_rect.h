@@ -106,7 +106,8 @@ public:
     int GetTop() const { return m_Pos.y; }
     int GetBottom() const { return m_Pos.y + m_Size.y; }    // Y axis from top to bottom
 
-    wxPoint GetCenter() const { return wxPoint( m_Pos.x + m_Size.x / 2, m_Pos.y + m_Size.y / 2 ); }
+    wxPoint GetCenter() const { return wxPoint( m_Pos.x + m_Size.x / 2,
+                                                m_Pos.y + m_Size.y / 2 ); }
 
     void SetOrigin( const wxPoint& pos ) { m_Pos = pos; }
     void SetOrigin( int x, int y ) { m_Pos.x = x; m_Pos.y = y; }
