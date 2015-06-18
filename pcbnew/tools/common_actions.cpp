@@ -383,6 +383,18 @@ TOOL_ACTION COMMON_ACTIONS::placeModule( "pcbnew.EditorControl.placeModule",
         AS_GLOBAL, TOOL_ACTION::LegacyHotKey( HK_ADD_MODULE ),
         _( "Add modules" ), _( "Add modules" ), NULL, AF_ACTIVATE );
 
+TOOL_ACTION COMMON_ACTIONS::drillOrigin( "pcbnew.EditorControl.drillOrigin",
+        AS_GLOBAL, 0,
+        "", "" );
+
+TOOL_ACTION COMMON_ACTIONS::highlightNet( "pcbnew.EditorControl.highlightNet",
+        AS_GLOBAL, 0,
+        "", "" );
+
+TOOL_ACTION COMMON_ACTIONS::highlightNetCursor( "pcbnew.EditorControl.highlightNetCursor",
+        AS_GLOBAL, 0,
+        "", "" );
+
 
 // Module editor tools
 TOOL_ACTION COMMON_ACTIONS::placePad( "pcbnew.ModuleEditor.placePad",
@@ -415,6 +427,8 @@ TOOL_ACTION COMMON_ACTIONS::selectionTool( "pcbnew.Control.selectionTool",
         AS_GLOBAL, 0,
         "", "", NULL, AF_ACTIVATE );
 
+TOOL_ACTION COMMON_ACTIONS::pickerTool( "pcbnew.Picker", AS_GLOBAL, 0, "", "", NULL, AF_ACTIVATE );
+
 TOOL_ACTION COMMON_ACTIONS::resetCoords( "pcbnew.Control.resetCoords",
         AS_GLOBAL, ' ',
         "", "" );
@@ -427,8 +441,12 @@ TOOL_ACTION COMMON_ACTIONS::switchUnits( "pcbnew.Control.switchUnits",
         AS_GLOBAL, TOOL_ACTION::LegacyHotKey( HK_SWITCH_UNITS ),
         "", "" );
 
+TOOL_ACTION COMMON_ACTIONS::deleteItemCursor( "pcbnew.Control.deleteItemCursor",
+        AS_GLOBAL, 0,
+        "", "" );
+
 TOOL_ACTION COMMON_ACTIONS::showHelp( "pcbnew.Control.showHelp",
-        AS_GLOBAL, '?',
+        AS_GLOBAL, TOOL_ACTION::LegacyHotKey( HK_HELP ),
         "", "" );
 
 TOOL_ACTION COMMON_ACTIONS::toBeDone( "pcbnew.Control.toBeDone",
@@ -631,14 +649,17 @@ boost::optional<TOOL_EVENT> COMMON_ACTIONS::TranslateLegacyId( int aId )
         return COMMON_ACTIONS::selectionTool.MakeEvent();
 
     case ID_PCB_DELETE_ITEM_BUTT:
-    case ID_PCB_HIGHLIGHT_BUTT:
-    case ID_PCB_SHOW_1_RATSNEST_BUTT:
-    case ID_PCB_PLACE_OFFSET_COORD_BUTT:
-    case ID_TB_OPTIONS_SHOW_MODULE_RATSNEST:
-    case ID_TB_OPTIONS_SHOW_EXTRA_VERTICAL_TOOLBAR_MICROWAVE:
-    case ID_MENU_PCB_SHOW_HIDE_MUWAVE_TOOLBAR:
-    case ID_MICROWAVE_V_TOOLBAR:
     case ID_MODEDIT_DELETE_TOOL:
+        return COMMON_ACTIONS::deleteItemCursor.MakeEvent();
+
+    case ID_PCB_PLACE_OFFSET_COORD_BUTT:
+        return COMMON_ACTIONS::drillOrigin.MakeEvent();
+
+    case ID_PCB_HIGHLIGHT_BUTT:
+        return COMMON_ACTIONS::highlightNetCursor.MakeEvent();
+
+    case ID_PCB_SHOW_1_RATSNEST_BUTT:
+    case ID_TB_OPTIONS_SHOW_MODULE_RATSNEST:
         return COMMON_ACTIONS::toBeDone.MakeEvent();
     }
 

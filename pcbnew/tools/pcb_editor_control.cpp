@@ -29,7 +29,9 @@
 #include <tool/tool_manager.h>
 
 #include "selection_tool.h"
+#include "picker_tool.h"
 
+#include <painter.h>
 #include <project.h>
 #include <pcbnew_id.h>
 #include <wxPcbStruct.h>
@@ -39,9 +41,11 @@
 #include <class_module.h>
 #include <class_mire.h>
 #include <ratsnest_data.h>
+#include <collectors.h>
 
 #include <view/view_group.h>
 #include <view/view_controls.h>
+#include <origin_viewitem.h>
 
 
 class ZONE_CONTEXT_MENU : public CONTEXT_MENU
@@ -61,12 +65,27 @@ public:
 PCB_EDITOR_CONTROL::PCB_EDITOR_CONTROL() :
     TOOL_INTERACTIVE( "pcbnew.EditorControl" ), m_frame( NULL )
 {
+    m_placeOrigin = new KIGFX::ORIGIN_VIEWITEM( KIGFX::COLOR4D( 0.8, 0.0, 0.0, 1.0 ),
+                                                KIGFX::ORIGIN_VIEWITEM::CROSS );
+}
+
+
+PCB_EDITOR_CONTROL::~PCB_EDITOR_CONTROL()
+{
+    delete m_placeOrigin;
 }
 
 
 void PCB_EDITOR_CONTROL::Reset( RESET_REASON aReason )
 {
     m_frame = getEditFrame<PCB_EDIT_FRAME>();
+
+    if( aReason == MODEL_RELOAD || aReason == GAL_SWITCH )
+    {
+        m_placeOrigin->SetPosition( getModel<BOARD>()->GetAuxOrigin() );
+        getView()->Remove( m_placeOrigin );
+        getView()->Add( m_placeOrigin );
+    }
 }
 
 
@@ -466,6 +485,83 @@ int PCB_EDITOR_CONTROL::SelectionCrossProbe( const TOOL_EVENT& aEvent )
 }
 
 
+static bool setDrillOrigin( KIGFX::VIEW* aView, PCB_BASE_FRAME* aFrame,
+                            KIGFX::ORIGIN_VIEWITEM* aItem, const VECTOR2D& aPosition )
+{
+    aFrame->SetAuxOrigin( wxPoint( aPosition.x, aPosition.y ) );
+    aItem->SetPosition( aPosition );
+    aView->MarkDirty();
+
+    return true;
+}
+
+
+int PCB_EDITOR_CONTROL::DrillOrigin( const TOOL_EVENT& aEvent )
+{
+    PICKER_TOOL* picker = m_toolMgr->GetTool<PICKER_TOOL>();
+    assert( picker );
+
+    m_frame->SetToolID( ID_PCB_PLACE_OFFSET_COORD_BUTT, wxCURSOR_PENCIL, _( "Adjust zero" ) );
+    picker->SetClickHandler( boost::bind( setDrillOrigin, getView(), m_frame, m_placeOrigin, _1 ) );
+    picker->Activate();
+
+    return 0;
+}
+
+/**
+ * Function highlightNet()
+ * Looks for a BOARD_CONNECTED_ITEM in a given spot, and if one is found - it enables
+ * highlight for its net.
+ * @param aPoint is the point where an item is expected (world coordinates).
+ */
+static bool highlightNet( TOOL_MANAGER* aToolMgr, const VECTOR2D& aPosition )
+{
+    KIGFX::RENDER_SETTINGS* render = aToolMgr->GetView()->GetPainter()->GetSettings();
+    GENERAL_COLLECTORS_GUIDE guide = static_cast<PCB_BASE_FRAME*>( aToolMgr->GetEditFrame() )->GetCollectorsGuide();
+    BOARD* board = static_cast<BOARD*>( aToolMgr->GetModel() );
+    GENERAL_COLLECTOR collector;
+    int net = -1;
+
+    // Find a connected item for which we are going to highlight a net
+    collector.Collect( board, GENERAL_COLLECTOR::PadsTracksOrZones,
+                       wxPoint( aPosition.x, aPosition.y ), guide );
+    bool enableHighlight = ( collector.GetCount() > 0 );
+
+    // Obtain net code for the clicked item
+    if( enableHighlight )
+        net = static_cast<BOARD_CONNECTED_ITEM*>( collector[0] )->GetNetCode();
+
+    if( enableHighlight != render->GetHighlight() || net != render->GetHighlightNetCode() )
+    {
+        render->SetHighlight( enableHighlight, net );
+        aToolMgr->GetView()->UpdateAllLayersColor();
+    }
+
+    return true;
+}
+
+
+int PCB_EDITOR_CONTROL::HighlightNet( const TOOL_EVENT& aEvent )
+{
+    highlightNet( m_toolMgr, getView()->ToWorld( getViewControls()->GetMousePosition() ) );
+
+    return 0;
+}
+
+
+int PCB_EDITOR_CONTROL::HighlightNetCursor( const TOOL_EVENT& aEvent )
+{
+    PICKER_TOOL* picker = m_toolMgr->GetTool<PICKER_TOOL>();
+    assert( picker );
+
+    m_frame->SetToolID( ID_PCB_HIGHLIGHT_BUTT, wxCURSOR_PENCIL, _( "Highlight net" ) );
+    picker->SetClickHandler( boost::bind( highlightNet, m_toolMgr, _1 ) );
+    picker->Activate();
+
+    return 0;
+}
+
+
 void PCB_EDITOR_CONTROL::SetTransitions()
 {
     // Track & via size control
@@ -484,7 +580,11 @@ void PCB_EDITOR_CONTROL::SetTransitions()
     Go( &PCB_EDITOR_CONTROL::PlaceTarget,        COMMON_ACTIONS::placeTarget.MakeEvent() );
     Go( &PCB_EDITOR_CONTROL::PlaceModule,        COMMON_ACTIONS::placeModule.MakeEvent() );
 
+    // Other
     Go( &PCB_EDITOR_CONTROL::SelectionCrossProbe, SELECTION_TOOL::SelectedEvent );
+    Go( &PCB_EDITOR_CONTROL::DrillOrigin,         COMMON_ACTIONS::drillOrigin.MakeEvent() );
+    Go( &PCB_EDITOR_CONTROL::HighlightNet,        COMMON_ACTIONS::highlightNet.MakeEvent() );
+    Go( &PCB_EDITOR_CONTROL::HighlightNetCursor,  COMMON_ACTIONS::highlightNetCursor.MakeEvent() );
 }
 
 
