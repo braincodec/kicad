@@ -383,8 +383,7 @@ void SCH_COMPONENT::Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOff
 #if 0
     // Only for testing purposes, draw the component bounding box
     {
-        EDA_RECT boundingBox = GetBodyBoundingBox();
-
+        EDA_RECT boundingBox = GetBoundingBox();
         GRRect( aPanel->GetClipBox(), aDC, boundingBox, 0, BROWN );
 #if 1
         if( GetField( REFERENCE )->IsVisible() )
