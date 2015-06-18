@@ -101,6 +101,7 @@ static unsigned pins_on_side( SCH_COMPONENT* aComponent, enum component_side aSi
     return pin_count;
 }
 
+
 // Used for iteration
 struct side {
     enum component_side side_name;
@@ -176,6 +177,7 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
 
     return min_side;
 }
+
 
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 {
@@ -259,14 +261,13 @@ void SCH_COMPONENT::AutoplaceFields()
     if( PART_SPTR part = m_part.lock() )
         if( part->IsPower() ) return;
 
+    // Gather information
     EDA_RECT body_box = GetBodyBoundingBox();
     std::vector<SCH_FIELD*> fields;
     GetFields( fields, /* aVisibleOnly */ true );
 
     bool allow_rejustify = true;
     Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &allow_rejustify, true );
-
-    enum component_side field_side = choose_side_for_fields( this );
 
     int max_field_width = 0;
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
@@ -281,6 +282,10 @@ void SCH_COMPONENT::AutoplaceFields()
             max_field_width = field_width;
     }
 
+    // Determine which side the fields will be placed on
+    enum component_side field_side = choose_side_for_fields( this );
+
+    // Compute the box into which fields will go
     wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
     wxPoint fbox_pos;
     bool h_round_up;
@@ -316,7 +321,7 @@ void SCH_COMPONENT::AutoplaceFields()
 
     EDA_RECT field_box( fbox_pos, fbox_size );
 
-    // Move the field
+    // Move the fields
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
         wxPoint pos;
