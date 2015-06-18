@@ -1142,7 +1142,6 @@ bool LIB_PART::LoadFootprints( LINE_READER& aLineReader, wxString& aErrorMsg )
 const EDA_RECT LIB_PART::GetBoundingBox( int aUnit, int aConvert ) const
 {
     EDA_RECT bBox( wxPoint( 0, 0 ), wxSize( 0, 0 ) );
-    bool first = true;
 
     for( unsigned ii = 0; ii < drawings.size(); ii++  )
     {
@@ -1158,21 +1157,7 @@ const EDA_RECT LIB_PART::GetBoundingBox( int aUnit, int aConvert ) const
         if ( ( item.Type() == LIB_FIELD_T ) && !( ( LIB_FIELD& ) item ).IsVisible() )
             continue;
 
-        EDA_RECT item_bb = item.GetBoundingBox();
-
-        if( item.Type() == LIB_TEXT_T || item.Type() == LIB_FIELD_T )
-        {
-            item_bb.SetY( -item_bb.GetY() );
-            item_bb.SetSize( item_bb.GetSize().x, -item_bb.GetSize().y );
-        }
-
-        if( first )
-        {
-            bBox = item_bb;
-            first = false;
-        }
-        else
-            bBox.Merge( item_bb );
+        bBox.Merge( item.GetBoundingBox() );
     }
 
     return bBox;
@@ -1182,7 +1167,6 @@ const EDA_RECT LIB_PART::GetBoundingBox( int aUnit, int aConvert ) const
 const EDA_RECT LIB_PART::GetBodyBoundingBox( int aUnit, int aConvert ) const
 {
     EDA_RECT bBox( wxPoint( 0, 0 ), wxSize( 0, 0 ) );
-    bool first = true;
 
     for( unsigned ii = 0; ii < drawings.size(); ii++  )
     {
@@ -1198,21 +1182,7 @@ const EDA_RECT LIB_PART::GetBodyBoundingBox( int aUnit, int aConvert ) const
         if ( item.Type() == LIB_FIELD_T )
             continue;
 
-        EDA_RECT item_bb = item.GetBoundingBox();
-
-        if( item.Type() == LIB_TEXT_T )
-        {
-            item_bb.SetY( -item_bb.GetY() );
-            item_bb.SetSize( item_bb.GetSize().x, -item_bb.GetSize().y );
-        }
-
-        if( first )
-        {
-            bBox = item_bb;
-            first = false;
-        }
-        else
-            bBox.Merge( item_bb );
+        bBox.Merge( item.GetBoundingBox() );
     }
 
     return bBox;
