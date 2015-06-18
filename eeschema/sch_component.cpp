@@ -217,6 +217,7 @@ SCH_COMPONENT::SCH_COMPONENT( const SCH_COMPONENT& aComponent ) :
     }
 
     m_isDangling = aComponent.m_isDangling;
+    m_fieldsAutoplaced = aComponent.m_fieldsAutoplaced;
 }
 
 
