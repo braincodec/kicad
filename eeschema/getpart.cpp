@@ -328,13 +328,12 @@ void SCH_EDIT_FRAME::OnSelectUnit( wxCommandEvent& aEvent )
         component->ClearFlags();
         component->SetFlags( flags );   // Restore m_Flag modified by SetUnit()
 
-        /* Redraw the component in the new position. */
-        if( flags )
-            component->Draw( m_canvas, &dc, wxPoint( 0, 0 ), g_XorMode, g_GhostColor );
-        else
-            component->Draw( m_canvas, &dc, wxPoint( 0, 0 ), GR_DEFAULT_DRAWMODE );
+        if( m_autoplaceFields && component->GetFieldsAutoplaced() ) {
+            component->AutoplaceFields();
+        }
 
         screen->TestDanglingEnds( m_canvas, &dc );
+        m_canvas->Refresh();
         OnModify();
     }
 }
