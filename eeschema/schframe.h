@@ -841,7 +841,7 @@ private:
     void OnOpenPcbModuleEditor( wxCommandEvent& event );
     void OnOpenCvpcb( wxCommandEvent& event );
     void OnOpenLibraryEditor( wxCommandEvent& event );
-    void OnRescueCached( wxCommandEvent& event );
+    void OnRescueProject( wxCommandEvent& event );
     void OnPreferencesOptions( wxCommandEvent& event );
     void OnCancelCurrentCommand( wxCommandEvent& aEvent );
 
@@ -1316,10 +1316,13 @@ public:
     bool CreateArchiveLibrary( const wxString& aFileName );
 
     /**
-     * Function RescueCacheConflicts
-     * exports components from the '-cache' library that conflict with parts
-     * in the project libraries to a new library, renaming them to add a suffix
-     * of the root document's name to avoid conflicts.
+     * Function RescueProject
+     * performs rescue operations to recover old projects from before certain
+     * changes were made.
+     *
+     * - Exports cached symbols that conflict with new symbols to a separate
+     *   library
+     * - Renames symbols named before libraries were case sensitive
      *
      * @param aRunningOnDemand - indicates whether the tool has been called up by the user
      *      (as opposed to being run automatically). If true, an information dialog is
@@ -1327,7 +1330,7 @@ public:
      *      if there are no components to rescue, and a "Never Show Again" button is
      *      displayed.
      */
-    bool RescueCacheConflicts( bool aRunningOnDemand );
+    bool RescueProject( bool aRunningOnDemand );
 
     /**
      * Function PrintPage

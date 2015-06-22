@@ -40,9 +40,7 @@
 
 #include <help_common_strings.h>
 
-/**
- * @brief (Re)Create the menubar for the schematic frame
- */
+
 void SCH_EDIT_FRAME::ReCreateMenuBar()
 {
     // Create and try to get the current menubar
@@ -433,8 +431,8 @@ void SCH_EDIT_FRAME::ReCreateMenuBar()
 
     AddMenuItem( toolsMenu,
                  ID_RESCUE_CACHED,
-                 _( "&Rescue Cached Components" ),
-                 _( "Find old components in the project cache and rescue them to a new library" ),
+                 _( "&Rescue Old Components" ),
+                 _( "Find old components in the project and rename/rescue them" ),
                  KiBitmap( copycomponent_xpm ) );
 
     toolsMenu->AppendSeparator();
