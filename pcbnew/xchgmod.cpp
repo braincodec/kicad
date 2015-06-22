@@ -49,6 +49,8 @@
 #include <tool/tool_manager.h>
 #include <tools/common_actions.h>
 
+
+
 static bool RecreateCmpFile( BOARD * aBrd, const wxString& aFullCmpFileName );
 
 class DIALOG_EXCHANGE_MODULE : public DIALOG_EXCHANGE_MODULE_BASE
@@ -67,6 +69,7 @@ private:
     void OnOkClick( wxCommandEvent& event );
     void OnQuit( wxCommandEvent& event );
     void BrowseAndSelectFootprint( wxCommandEvent& event );
+    void ViewAndSelectFootprint( wxCommandEvent& event );
     void RebuildCmpList( wxCommandEvent& event );
     void init();
 
@@ -103,6 +106,7 @@ void PCB_EDIT_FRAME::InstallExchangeModuleFrame( MODULE* Module )
 void DIALOG_EXCHANGE_MODULE::OnQuit( wxCommandEvent& event )
 {
     m_selectionMode = m_Selection->GetSelection();
+    Show( false );
     EndQuasiModal( wxID_CANCEL );
 }
 
@@ -502,9 +506,26 @@ void PCB_EDIT_FRAME::Exchange_Module( MODULE*            aOldModule,
 
 
 /*
- * Displays the list of modules in library name and select 1 name.
+ * Displays the list of modules in library name and select a footprint.
  */
 void DIALOG_EXCHANGE_MODULE::BrowseAndSelectFootprint( wxCommandEvent& event )
+{
+    wxString newname;
+
+    KIWAY_PLAYER* frame = Kiway().Player( FRAME_PCB_MODULE_VIEWER_MODAL, true );
+
+    if( frame->ShowModal( &newname, this ) )
+    {
+        m_NewModule->SetValue( newname );
+    }
+
+    frame->Destroy();
+}
+
+/*
+ * Displays the footprint viewer to select a footprint.
+ */
+void DIALOG_EXCHANGE_MODULE::ViewAndSelectFootprint( wxCommandEvent& event )
 {
     wxString newname;
 
