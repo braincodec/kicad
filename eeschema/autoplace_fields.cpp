@@ -193,8 +193,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
         EDA_HOTKEY_CLIENT_DATA* data;
         data = dynamic_cast<EDA_HOTKEY_CLIENT_DATA*>( aEvent.GetClientObject() );
         wxCHECK_RET( data, wxT( "Invalid hot key client object." ) );
-        item = LocateAndShowItem( data->GetPosition(),
+        item = LocateItem( data->GetPosition(),
                 SCH_COLLECTOR::MovableItems, aEvent.GetInt() );
+        screen->SetCurItem( NULL );
         if( !item || item->GetFlags() )
             return;
     }
@@ -210,6 +211,7 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
     component->AutoplaceFields();
 
     GetCanvas()->Refresh();
+    OnModify();
 }
 
 
