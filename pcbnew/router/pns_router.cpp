@@ -212,7 +212,7 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
     else if( orient != 0.0 && orient != 180.0 )
     {
         // rotated pads are replaced by for the moment by circles due to my laziness ;)
-        solid->SetShape( new SHAPE_CIRCLE( c, std::min( sz.x, sz.y ) / 2 ) );
+        solid->SetShape( new SHAPE_CIRCLE( c, std::max( sz.x, sz.y ) / 2 ) );
         nonOrtho = true;
     }
 

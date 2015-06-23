@@ -71,11 +71,17 @@ static void RemoveBacktracks( DLIST<SCH_ITEM>& aWires )
     SCH_LINE* last_line = NULL;
 
     EDA_ITEM* first = aWires.GetFirst();
-    for( EDA_ITEM* p = first; p; p = p->Next() )
+    for( EDA_ITEM* p = first; p; )
     {
         SCH_LINE *line = dynamic_cast<SCH_LINE*>( p );
+        if( !line )
+        {
+            wxFAIL_MSG( "RemoveBacktracks() requires SCH_LINE items" );
+            break;
+        }
+        p = line->Next();
 
-        if( p != first )
+        if( last_line )
         {
             wxASSERT_MSG( last_line->GetEndPoint() == line->GetStartPoint(),
                     "RemoveBacktracks() requires contiguous lines" );
@@ -84,10 +90,12 @@ static void RemoveBacktracks( DLIST<SCH_ITEM>& aWires )
             {
                 last_line->SetEndPoint( line->GetEndPoint() );
                 delete s_wires.Remove( line );
-                p = line;
             }
+            else
+                last_line = line;
         }
-        last_line = line;
+        else
+            last_line = line;
     }
 }
 
