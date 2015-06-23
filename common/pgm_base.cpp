@@ -282,8 +282,7 @@ PGM_BASE::PGM_BASE()
 
 PGM_BASE::~PGM_BASE()
 {
-    // Destroying the wx items from the actual destructor results in a crash,
-    // because wx itself is already being deinitialized. Do not free them here.
+    destroy();
 }
 
 
