@@ -38,10 +38,10 @@
 #define HPADDING 25
 #define VPADDING 50
 
-enum component_side {
+enum component_side
+{
     SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
 };
-
 
 /**
  * Function round_n
@@ -105,8 +105,8 @@ static unsigned pins_on_side( SCH_COMPONENT* aComponent, enum component_side aSi
 
 // Used for iteration
 struct side {
-    enum component_side side_name;
-    unsigned side_pins;
+    enum component_side name;
+    unsigned pins;
 };
 
 
@@ -161,18 +161,18 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
 
     BOOST_FOREACH( struct side& each_side, sides )
     {
-        if( !each_side.side_pins ) return each_side.side_name;
+        if( !each_side.pins ) return each_side.name;
     }
 
-    unsigned min_pins = (unsigned)(-1);
+    unsigned min_pins = UINT_MAX;
     enum component_side min_side = SIDE_RIGHT;
 
     BOOST_REVERSE_FOREACH( struct side& each_side, sides )
     {
-        if( each_side.side_pins < min_pins )
+        if( each_side.pins < min_pins )
         {
-            min_pins = each_side.side_pins;
-            min_side = each_side.side_name;
+            min_pins = each_side.pins;
+            min_side = each_side.name;
         }
     }
 
@@ -206,6 +206,7 @@ static void justify_field( SCH_FIELD* aField, enum component_side aFieldSide )
         aField->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
         break;
     }
+    aField->SetVertJustify( GR_TEXT_VJUSTIFY_CENTER );
 }
 
 
@@ -213,7 +214,7 @@ static void justify_field( SCH_FIELD* aField, enum component_side aFieldSide )
  * Function place_field_box
  * Return the position of the field bounding box for a component.
  */
-static wxPoint place_field_box( SCH_COMPONENT* aComponent, enum component_side aFieldSide,
+static wxPoint field_box_placement( SCH_COMPONENT* aComponent, enum component_side aFieldSide,
             wxSize aBoxSize )
 {
     EDA_RECT body_box = aComponent->GetBodyBoundingBox();
@@ -258,11 +259,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
         if( aEvent.GetInt() == 0 )
             return;
 
-        EDA_HOTKEY_CLIENT_DATA* data;
-        data = dynamic_cast<EDA_HOTKEY_CLIENT_DATA*>( aEvent.GetClientObject() );
-        wxCHECK_RET( data, wxT( "Invalid hot key client object." ) );
-        item = LocateItem( data->GetPosition(),
-                SCH_COLLECTOR::MovableItems, aEvent.GetInt() );
+        EDA_HOTKEY_CLIENT_DATA& data = dynamic_cast<EDA_HOTKEY_CLIENT_DATA&>(
+                *aEvent.GetClientObject() );
+        item = LocateItem( data.GetPosition(), SCH_COLLECTOR::MovableItems, aEvent.GetInt() );
         screen->SetCurItem( NULL );
         if( !item || item->GetFlags() )
             return;
@@ -274,9 +273,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
     if( !item->IsNew() )
         SaveCopyInUndoList( item, UR_CHANGED );
 
-    SCH_COMPONENT *component = dynamic_cast<SCH_COMPONENT*>( item );
+    SCH_COMPONENT& component = dynamic_cast<SCH_COMPONENT&>( *item );
 
-    component->AutoplaceFields();
+    component.AutoplaceFields();
 
     GetCanvas()->Refresh();
     OnModify();
@@ -284,7 +283,7 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 
 
 /**
- * Function place_field_horiz
+ * Function field_horiz_placement
  * Place a field horizontally, taking into account the field width and
  * justification.
  *
@@ -293,7 +292,7 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
  *
  * @return Correct field horizontal position
  */
-static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
+static int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
 {
     EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
     bool flipped = aField->IsHorizJustifyFlipped();
@@ -332,10 +331,11 @@ void SCH_COMPONENT::AutoplaceFields()
 
     // Gather information
     std::vector<SCH_FIELD*> fields;
-    GetFields( fields, /* aVisibleOnly */ true );
-
     bool allow_rejustify = true;
+    bool align_to_grid = false;
+    GetFields( fields, /* aVisibleOnly */ true );
     Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &allow_rejustify, true );
+    Kiface().KifaceSettings()->Read( AUTOPLACE_ALIGN_KEY, &align_to_grid, true );
 
     int max_field_width = 0;
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
@@ -355,7 +355,7 @@ void SCH_COMPONENT::AutoplaceFields()
 
     // Compute the box into which fields will go
     wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
-    wxPoint fbox_pos = place_field_box( this, field_side, fbox_size );
+    wxPoint fbox_pos = field_box_placement( this, field_side, fbox_size );
     EDA_RECT field_box( fbox_pos, fbox_size );
 
     bool h_round_up, v_round_up;
@@ -363,24 +363,21 @@ void SCH_COMPONENT::AutoplaceFields()
     v_round_up = ( field_side == SIDE_BOTTOM );
 
     // Move the fields
-    bool align_to_grid = false;
-    Kiface().KifaceSettings()->Read( AUTOPLACE_ALIGN_KEY, &align_to_grid, true );
-
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
-        wxPoint pos;
         SCH_FIELD* field = fields[field_idx];
 
         if( allow_rejustify )
             justify_field( field, field_side );
 
-        pos.x = place_field_horiz( field, field_box );
+        wxPoint pos;
+        pos.x = field_horiz_placement( field, field_box );
         pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
 
         if( align_to_grid )
         {
             pos.x = round_n( pos.x, 50, h_round_up );
-            pos.y = round_n( pos.y, 50, false );
+            pos.y = round_n( pos.y, 50, v_round_up );
         }
 
         field->SetPosition( pos );
