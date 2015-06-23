@@ -275,6 +275,7 @@ void SCH_EDIT_FRAME::OrientComponent( COMPONENT_ORIENTATION_T aOrientation )
 
     m_canvas->CrossHairOn( &dc );
     GetScreen()->TestDanglingEnds( m_canvas, &dc );
+    m_canvas->Refresh();
     OnModify();
 }
 
