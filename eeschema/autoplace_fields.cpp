@@ -35,7 +35,8 @@
 #include <algorithm>
 
 #define FIELD_V_SPACING 100
-#define HORIZ_PADDING 50
+#define HPADDING 25
+#define VPADDING 50
 
 enum component_side {
     SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
@@ -179,6 +180,73 @@ static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
 }
 
 
+/**
+ * Function justify_field
+ * Set the justification of a field based on the side it's supposed to be on, taking into
+ * account whether the field will be displayed with flipped justification due to mirroring.
+ */
+static void justify_field( SCH_FIELD* aField, enum component_side aFieldSide )
+{
+    // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
+    switch( aFieldSide )
+    {
+    case SIDE_LEFT:
+        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
+        aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
+                ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
+        break;
+
+    case SIDE_RIGHT:
+        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
+        aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
+                ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
+        break;
+    case SIDE_TOP:
+    case SIDE_BOTTOM:
+        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
+        break;
+    }
+}
+
+
+/**
+ * Function place_field_box
+ * Return the position of the field bounding box for a component.
+ */
+static wxPoint place_field_box( SCH_COMPONENT* aComponent, enum component_side aFieldSide,
+            wxSize aBoxSize )
+{
+    EDA_RECT body_box = aComponent->GetBodyBoundingBox();
+    wxPoint fbox_pos;
+
+    switch( aFieldSide )
+    {
+    case SIDE_RIGHT:
+        fbox_pos.x = body_box.GetRight() + HPADDING;
+        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+        break;
+    case SIDE_BOTTOM:
+        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
+        fbox_pos.y = body_box.GetBottom() + VPADDING;
+        break;
+    case SIDE_LEFT:
+        fbox_pos.x = body_box.GetLeft() - aBoxSize.GetWidth() - HPADDING;
+        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+        break;
+    case SIDE_TOP:
+        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
+        fbox_pos.y = body_box.GetTop() - aBoxSize.GetHeight() - VPADDING;
+        break;
+    default:
+        wxFAIL_MSG( "Bad enum component_side value" );
+        fbox_pos.x = body_box.GetRight();
+        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+    }
+
+    return fbox_pos;
+}
+
+
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 {
     SCH_SCREEN* screen = GetScreen();
@@ -222,11 +290,10 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
  *
  * @param aField - the field to place.
  * @param aFieldBox - box in which fields will be placed
- * @param aRoundUp - whether to round horizontal coordinate up (else round down)
  *
  * @return Correct field horizontal position
  */
-static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool aRoundUp )
+static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
 {
     EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
     bool flipped = aField->IsHorizJustifyFlipped();
@@ -253,7 +320,7 @@ static int place_field_horiz( SCH_FIELD *aField, const EDA_RECT &aFieldBox, bool
         field_xcoord = aFieldBox.GetCenter().x; // Most are centered
     }
 
-    return round_n( field_xcoord, 50, aRoundUp );
+    return field_xcoord;
 }
 
 
@@ -264,7 +331,6 @@ void SCH_COMPONENT::AutoplaceFields()
         if( part->IsPower() ) return;
 
     // Gather information
-    EDA_RECT body_box = GetBodyBoundingBox();
     std::vector<SCH_FIELD*> fields;
     GetFields( fields, /* aVisibleOnly */ true );
 
@@ -289,71 +355,34 @@ void SCH_COMPONENT::AutoplaceFields()
 
     // Compute the box into which fields will go
     wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
-    wxPoint fbox_pos;
-    bool h_round_up;
-
-    switch( field_side )
-    {
-    case SIDE_RIGHT:
-        fbox_pos.x = body_box.GetRight() + HORIZ_PADDING;
-        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
-        h_round_up = true;
-        break;
-    case SIDE_BOTTOM:
-        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
-        fbox_pos.y = round_n( body_box.GetBottom() + 25, 50, true );
-        h_round_up = true;
-        break;
-    case SIDE_LEFT:
-        fbox_pos.x = body_box.GetLeft() - fbox_size.GetWidth() - HORIZ_PADDING;
-        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
-        h_round_up = false;
-        break;
-    case SIDE_TOP:
-        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - fbox_size.GetWidth()) / 2;
-        fbox_pos.y = round_n( body_box.GetTop() - fbox_size.GetHeight() - 25, 50, false );
-        h_round_up = true;
-        break;
-    default:
-        wxFAIL_MSG( "Bad enum component_side value" );
-        fbox_pos.x = body_box.GetRight();
-        fbox_pos.y = round_n( body_box.GetCenter().y - fbox_size.GetHeight()/2, 50, false );
-        h_round_up = true;
-    }
-
+    wxPoint fbox_pos = place_field_box( this, field_side, fbox_size );
     EDA_RECT field_box( fbox_pos, fbox_size );
 
+    bool h_round_up, v_round_up;
+    h_round_up = ( field_side != SIDE_LEFT );
+    v_round_up = ( field_side == SIDE_BOTTOM );
+
     // Move the fields
+    bool align_to_grid = false;
+    Kiface().KifaceSettings()->Read( AUTOPLACE_ALIGN_KEY, &align_to_grid, true );
+
     for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
     {
         wxPoint pos;
         SCH_FIELD* field = fields[field_idx];
 
-        // Set field justification
-        // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
         if( allow_rejustify )
+            justify_field( field, field_side );
+
+        pos.x = place_field_horiz( field, field_box );
+        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
+
+        if( align_to_grid )
         {
-            switch( field_side )
-            {
-            case SIDE_LEFT:
-                field->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
-                field->SetHorizJustify( field->IsHorizJustifyFlipped()
-                        ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
-                break;
-            case SIDE_RIGHT:
-                field->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
-                field->SetHorizJustify( field->IsHorizJustifyFlipped()
-                        ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
-                break;
-            case SIDE_TOP:
-            case SIDE_BOTTOM:
-                field->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
-                break;
-            }
+            pos.x = round_n( pos.x, 50, h_round_up );
+            pos.y = round_n( pos.y, 50, false );
         }
 
-        pos.x = place_field_horiz( field, field_box, h_round_up );
-        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
         field->SetPosition( pos );
     }
 

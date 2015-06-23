@@ -12,5 +12,6 @@
 
 // define autoplace key here to avoid having to take the long trip to get at the SCH_EDIT_FRAME
 #define AUTOPLACE_JUSTIFY_KEY wxT("AutoplaceJustify")
+#define AUTOPLACE_ALIGN_KEY wxT("AutoplaceAlign")
 
 #endif      // EESCHEMA_CONFIG_H

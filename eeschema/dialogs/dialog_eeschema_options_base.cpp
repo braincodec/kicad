@@ -209,6 +209,9 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	m_checkAutoplaceJustify = new wxCheckBox( m_panel1, wxID_ANY, _("Allow field autoplace to change justification"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer2->Add( m_checkAutoplaceJustify, 0, wxALL, 3 );
 	
+	m_checkAutoplaceAlign = new wxCheckBox( m_panel1, wxID_ANY, _("Always align autoplaced fields to the 50 mil grid"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer2->Add( m_checkAutoplaceAlign, 0, wxALL, 3 );
+	
 	
 	bSizer3->Add( bSizer2, 0, wxEXPAND, 0 );
 	
