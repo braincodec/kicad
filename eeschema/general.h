@@ -34,7 +34,7 @@
 class TRANSFORM;
 class SCH_SHEET;
 
-#define EESCHEMA_VERSION 2
+#define EESCHEMA_VERSION 3
 #define SCHEMATIC_HEAD_STRING "Schematic File Version"
 
 #define TXTMARGE 10                     // Offset in mils for placement of labels and pin numbers
@@ -79,6 +79,7 @@ typedef enum {
     LAYER_LOCLABEL,
     LAYER_GLOBLABEL,
     LAYER_HIERLABEL,
+    LAYER_POWERLABEL,
     LAYER_PINNUM,
     LAYER_PINNAM,
     LAYER_REFERENCEPART,

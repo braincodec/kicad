@@ -267,12 +267,6 @@ void SCH_EDIT_FRAME::ReCreateMenuBar()
                  HELP_PLACE_COMPONENTS,
                  KiBitmap( add_component_xpm ) );
 
-    text = AddHotkeyName( _( "&Power Port" ), g_Schematic_Hokeys_Descr,
-                          HK_ADD_NEW_POWER, IS_ACCELERATOR );    // add an accelerator, not a shortcut
-    AddMenuItem( placeMenu, ID_PLACE_POWER_BUTT, text,
-                 HELP_PLACE_POWERPORT,
-                 KiBitmap( add_power_xpm ) );
-
     text = AddHotkeyName( _( "&Wire" ), g_Schematic_Hokeys_Descr,
                           HK_BEGIN_WIRE, IS_ACCELERATOR );    // add an accelerator, not a shortcut
     AddMenuItem( placeMenu, ID_WIRE_BUTT, text,
@@ -318,6 +312,12 @@ void SCH_EDIT_FRAME::ReCreateMenuBar()
     AddMenuItem( placeMenu, ID_GLABEL_BUTT, text,
                  HELP_PLACE_GLOBALLABEL,
                  KiBitmap( add_glabel_xpm ) );
+
+    text = AddHotkeyName( _( "&Power Label" ), g_Schematic_Hokeys_Descr,
+                        HK_ADD_PLABEL, IS_ACCELERATOR );    // add an accelerator, not a shortcut
+    AddMenuItem( placeMenu, ID_PLABEL_BUTT, text,
+                HELP_PLACE_POWERLABEL,
+                KiBitmap( add_power_xpm ) );
 
     placeMenu->AppendSeparator();
 

@@ -73,6 +73,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
             case SCH_LABEL_T:
             case SCH_GLOBAL_LABEL_T:
             case SCH_HIERARCHICAL_LABEL_T:
+            case SCH_POWER_LABEL_T:
             case SCH_TEXT_T:
             case SCH_SHEET_PIN_T:
             case SCH_SHEET_T:
@@ -240,6 +241,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
 
     case ID_GLABEL_BUTT:
     case ID_HIERLABEL_BUTT:
+    case ID_PLABEL_BUTT:
         if( (item == NULL) || (item->GetFlags() == 0) )
         {
             if( GetToolId() == ID_GLABEL_BUTT )
@@ -247,6 +249,9 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
 
             if( GetToolId() == ID_HIERLABEL_BUTT )
                 GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_HIERLABEL ) );
+
+            if( GetToolId() == ID_PLABEL_BUTT )
+                GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_POWERLABEL ) );
 
             m_canvas->SetAutoPanRequest( true );
         }
@@ -299,21 +304,6 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
         {
             GetScreen()->SetCurItem( Load_Component( aDC, NULL,
                                                      s_CmpNameList, s_CmpLastUnit, true ) );
-            m_canvas->SetAutoPanRequest( true );
-        }
-        else
-        {
-            addCurrentItemToList( aDC );
-        }
-        break;
-
-    case ID_PLACE_POWER_BUTT:
-        if( ( item == NULL ) || ( item->GetFlags() == 0 ) )
-        {
-            SCHLIB_FILTER filter;
-            filter.FilterPowerParts( true );
-            GetScreen()->SetCurItem( Load_Component( aDC, &filter,
-                                                     s_PowerNameList, s_LastPowerUnit, false ) );
             m_canvas->SetAutoPanRequest( true );
         }
         else

@@ -51,7 +51,6 @@
 #define HELP_FIND _( "Find components and text" )
 #define HELP_REPLACE _( "Find and replace text in schematic items" )
 #define HELP_PLACE_COMPONENTS     _( "Place component" )
-#define HELP_PLACE_POWERPORT      _( "Place power port" )
 #define HELP_PLACE_WIRE           _( "Place wire" )
 #define HELP_PLACE_BUS            _( "Place bus" )
 #define HELP_PLACE_WIRE2BUS_ENTRY _( "Place wire to bus entry" )
@@ -62,6 +61,7 @@
 #define HELP_PLACE_GLOBALLABEL \
     _(\
         "Place global label.\nWarning: inside global hierarchy , all global labels with same name are connected" )
+#define HELP_PLACE_POWERLABEL _( "Place power label" )
 #define HELP_PLACE_HIER_LABEL \
     _( "Place a hierarchical label. Label will be seen as a hierarchical pin in the sheet symbol" )
 

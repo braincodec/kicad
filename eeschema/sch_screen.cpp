@@ -1088,6 +1088,7 @@ SCH_TEXT* SCH_SCREEN::GetLabel( const wxPoint& aPosition, int aAccuracy )
         case SCH_LABEL_T:
         case SCH_GLOBAL_LABEL_T:
         case SCH_HIERARCHICAL_LABEL_T:
+        case SCH_POWER_LABEL_T:
             if( item->HitTest( aPosition, aAccuracy ) )
                 return (SCH_TEXT*) item;
 

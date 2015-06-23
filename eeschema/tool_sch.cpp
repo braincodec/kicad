@@ -203,9 +203,6 @@ void SCH_EDIT_FRAME::ReCreateVToolbar()
     m_drawToolBar->AddTool( ID_SCH_PLACE_COMPONENT, wxEmptyString, KiBitmap( add_component_xpm ),
                             HELP_PLACE_COMPONENTS, wxITEM_CHECK );
 
-    m_drawToolBar->AddTool( ID_PLACE_POWER_BUTT, wxEmptyString, KiBitmap( add_power_xpm ),
-                            HELP_PLACE_POWERPORT, wxITEM_CHECK );
-
     m_drawToolBar->AddTool( ID_WIRE_BUTT, wxEmptyString, KiBitmap( add_line_xpm ),
                             HELP_PLACE_WIRE, wxITEM_CHECK );
 
@@ -229,6 +226,9 @@ void SCH_EDIT_FRAME::ReCreateVToolbar()
 
     m_drawToolBar->AddTool( ID_GLABEL_BUTT, wxEmptyString, KiBitmap( add_glabel_xpm ),
                             HELP_PLACE_GLOBALLABEL, wxITEM_CHECK );
+
+    m_drawToolBar->AddTool( ID_PLABEL_BUTT, wxEmptyString, KiBitmap( add_power_xpm ),
+                            HELP_PLACE_POWERLABEL, wxITEM_CHECK );
 
     m_drawToolBar->AddTool( ID_HIERLABEL_BUTT, wxEmptyString,
                             KiBitmap( add_hierarchical_label_xpm ),

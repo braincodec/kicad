@@ -93,6 +93,11 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
         textItem->SetShape( lastGlobalLabelShape );
         break;
 
+    case LAYER_POWERLABEL:
+        textItem = new SCH_POWERLABEL( GetCrossHairPosition() );
+        textItem->SetShape( lastGlobalLabelShape );
+        break;
+
     default:
         DisplayError( this, wxT( "SCH_EDIT_FRAME::CreateNewText() Internal error" ) );
         return NULL;
@@ -117,6 +122,7 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
     lastTextOrientation = textItem->GetOrientation();
 
     if( ( textItem->Type() == SCH_GLOBAL_LABEL_T ) ||
+        ( textItem->Type() == SCH_POWER_LABEL_T ) ||
         ( textItem->Type() == SCH_HIERARCHICAL_LABEL_T ) )
     {
         lastGlobalLabelShape = textItem->GetShape();

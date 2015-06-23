@@ -443,6 +443,7 @@ void SCH_EDIT_FRAME::OnMoveItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
+    case SCH_POWER_LABEL_T:
     case SCH_TEXT_T:
     case SCH_COMPONENT_T:
     case SCH_SHEET_PIN_T:
@@ -542,6 +543,10 @@ void SCH_EDIT_FRAME::OnSelectTool( wxCommandEvent& aEvent )
         SetToolID( id, wxCURSOR_PENCIL, _( "Add global label" ) );
         break;
 
+    case ID_PLABEL_BUTT:
+        SetToolID( id, wxCURSOR_PENCIL, _( "Add power label" ) );
+        break;
+
     case ID_HIERLABEL_BUTT:
         SetToolID( id, wxCURSOR_PENCIL, _( "Add hierarchical label" ) );
         break;
@@ -576,10 +581,6 @@ void SCH_EDIT_FRAME::OnSelectTool( wxCommandEvent& aEvent )
 
     case ID_SCH_PLACE_COMPONENT:
         SetToolID( id, wxCURSOR_PENCIL, _( "Add component" ) );
-        break;
-
-    case ID_PLACE_POWER_BUTT:
-        SetToolID( id, wxCURSOR_PENCIL, _( "Add power" ) );
         break;
 
     case ID_SCHEMATIC_DELETE_ITEM_BUTT:
@@ -830,6 +831,7 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
+    case SCH_POWER_LABEL_T:
         m_canvas->MoveCursorToCrossHair();
         ChangeTextOrient( (SCH_TEXT*) item, &dc );
         break;
@@ -966,6 +968,7 @@ void SCH_EDIT_FRAME::OnEditItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
+    case SCH_POWER_LABEL_T:
         EditSchematicText( (SCH_TEXT*) item );
         break;
 
@@ -1040,6 +1043,7 @@ void SCH_EDIT_FRAME::OnDragItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
+    case SCH_POWER_LABEL_T:
     case SCH_SHEET_T:
         m_canvas->MoveCursorToCrossHair();
 
