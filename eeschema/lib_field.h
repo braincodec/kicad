@@ -64,17 +64,6 @@ class LIB_FIELD : public LIB_ITEM, public EDA_TEXT
     bool     m_updateText;   ///< Flag to indicate text change occurred while editing.
 
     /**
-     * Draw the field.
-     * <p>
-     * If \a aData not NULL, \a aData must point a wxString which is used instead of
-     * the m_Text
-     * </p>
-     */
-    void drawGraphic( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOffset,
-                      EDA_COLOR_T aColor, GR_DRAWMODE aDrawMode, void* aData,
-                      const TRANSFORM& aTransform );
-
-    /**
      * Calculate the new circle at \a aPosition when editing.
      *
      * @param aPosition - The position to edit the circle in drawing coordinates.
@@ -254,6 +243,17 @@ public:
     BITMAP_DEF GetMenuImage() const { return  move_field_xpm; }
 
     EDA_ITEM* Clone() const;
+
+    /**
+     * Draw the field.
+     * <p>
+     * If \a aData not NULL, \a aData must point a wxString which is used instead of
+     * the m_Text
+     * </p>
+     */
+    void drawGraphic( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOffset,
+                      EDA_COLOR_T aColor, GR_DRAWMODE aDrawMode, void* aData,
+                      const TRANSFORM& aTransform );
 
 private:
 

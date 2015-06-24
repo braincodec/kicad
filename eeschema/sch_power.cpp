@@ -46,6 +46,9 @@
 
 #include <lib_rectangle.h>
 #include <lib_text.h>
+#include <boost/foreach.hpp>
+
+#include <iostream>
 
 /**
  * Used when a LIB_PART is not found in library
@@ -427,44 +430,32 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
                             GR_DRAWMODE     aDrawMode,
                             EDA_COLOR_T     aColor )
 {
+    LIB_FIELDS fields;
+
     if( PART_SPTR part = m_part.lock() )
     {
+        part->GetFields( fields );
         part->Draw( aPanel, aDC, m_Pos + aOffset, m_unit, m_convert, aDrawMode, aColor,
                 m_transform, true, false, false, NULL );
     }
-    return;
 
-    static std::vector <wxPoint> Poly;
-    EDA_COLOR_T color;
-    wxPoint     text_offset = aOffset + GetSchematicTextOffset();
-
-    if( aColor >= 0 )
-        color = aColor;
-    else
-        color = GetLayerColor( m_Layer );
-
-    GRSetDrawMode( aDC, aDrawMode );
-
-    int linewidth = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
-    linewidth = Clamp_Text_PenSize( linewidth, m_Size, m_Bold );
-    EXCHG( linewidth, m_Thickness );            // Set the minimum width
-    EDA_RECT* clipbox = aPanel ? aPanel->GetClipBox() : NULL;
-    EDA_TEXT::Draw( clipbox, aDC, text_offset, color, aDrawMode, FILLED, UNSPECIFIED_COLOR );
-    EXCHG( linewidth, m_Thickness );            // set initial value
-
-    CreateGraphicShape( Poly, m_Pos + aOffset );
-    GRPoly( clipbox, aDC, Poly.size(), &Poly[0], 0, linewidth, color, color );
-
-    if( m_isDangling && aPanel )
-        DrawDanglingSymbol( aPanel, aDC, m_Pos + aOffset, color );
-
-    // Enable these line to draw the bounding box (debug tests purposes only)
-#if 0
+    BOOST_FOREACH( LIB_FIELD& field, fields )
     {
-        EDA_RECT BoundaryBox = GetBoundingBox();
-        GRRect( clipbox, DC, BoundaryBox, 0, BROWN );
+        if( field.GetId() != VALUE )
+            continue;
+
+        if( field.IsVisible() && !m_label_hidden )
+        {
+            wxString text;
+            if( m_visible_text == wxEmptyString )
+                text = GetText();
+            else
+                text = m_visible_text;
+
+            field.drawGraphic( aPanel, aDC, m_Pos + aOffset, aColor, aDrawMode,
+                    (void*) &text, m_transform );
+        }
     }
-#endif
 }
 
 
@@ -561,7 +552,24 @@ void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoin
 
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
-    return GetBodyBoundingBox();
+    EDA_RECT bbox = GetBodyBoundingBox();
+    if( PART_SPTR part = m_part.lock() )
+    {
+        LIB_FIELDS fields;
+        part->GetFields( fields );
+        BOOST_FOREACH( LIB_FIELD& field, fields )
+        {
+            if( field.GetId() != VALUE )
+                continue;
+            if( !field.IsVisible() )
+                continue;
+
+            EDA_RECT fbbox = field.GetBoundingBox();
+            fbbox.Move( m_Pos );
+            bbox.Merge( fbbox );
+        }
+    }
+    return bbox;
 }
 
 
@@ -641,6 +649,7 @@ bool SCH_POWER::Resolve( PART_LIBS* aLibs )
     {
         m_part = dummy()->SharedPtr();
     }
+
     return true;
 }
 

@@ -20,11 +20,13 @@ class DIALOG_SHIM;
 #include <wx/font.h>
 #include <wx/colour.h>
 #include <wx/settings.h>
-#include <wx/dataview.h>
-#include <wx/sizer.h>
+#include <wx/tglbtn.h>
 #include <wx/textctrl.h>
-#include <wx/valtext.h>
+#include <wx/sizer.h>
+#include <wx/checkbox.h>
 #include <wx/panel.h>
+#include <wx/dataview.h>
+#include <wx/valtext.h>
 #include <wx/button.h>
 #include <wx/dialog.h>
 
@@ -44,6 +46,12 @@ class DIALOG_EDIT_POWER_BASE : public DIALOG_SHIM
 		};
 		
 		wxStaticText* m_stInfo;
+		wxToggleButton* m_btnAdvanced;
+		wxPanel* m_panAdvanced;
+		wxBoxSizer* mbsz_Advanced;
+		wxStaticText* m_stLabelText;
+		wxTextCtrl* m_textLabelText;
+		wxCheckBox* m_cbHideLabel;
 		wxStaticText* m_stLib;
 		wxDataViewListCtrl* m_dvlLib;
 		wxStaticText* m_stNet;
@@ -57,6 +65,9 @@ class DIALOG_EDIT_POWER_BASE : public DIALOG_SHIM
 		wxButton* m_stdButtonsCancel;
 		
 		// Virtual event handlers, overide them in your derived class
+		virtual void OnToggleAdvanced( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDataChanged( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnPreviewRepaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnCancelClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnOkClick( wxCommandEvent& event ) { event.Skip(); }
 		

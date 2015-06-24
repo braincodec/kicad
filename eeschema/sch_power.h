@@ -35,6 +35,8 @@
 #include <class_library.h>
 
 
+typedef std::vector<SCH_FIELD>      SCH_FIELDS;
+
 class SCH_POWER : public SCH_TEXT
 {
     PART_REF    m_part;
@@ -42,6 +44,8 @@ class SCH_POWER : public SCH_TEXT
     int         m_unit;
     int         m_convert;
     wxString    m_part_name;
+    wxString    m_visible_text;
+    bool        m_label_hidden;
 
 public:
     SCH_POWER( const wxPoint& pos = wxPoint( 0, 0 ), const wxString& text = wxEmptyString );
@@ -104,6 +108,21 @@ public:
     static void ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs );
 
     virtual void SetText( const wxString& aText );
+
+    /**
+     * Provide an alternate text label to be displayed, in place of the net name.
+     * Set to wxEmptyString to use the default name instead.
+     */
+    void SetVisibleText( const wxString& aText ) { m_visible_text = aText; }
+
+    /**
+     * Get the visible text. Returns wxEmptyString if the default name will be
+     * used instead; in this case, use GetText() to see what will be displayed.
+     */
+    wxString GetVisibleText() const { return m_visible_text; }
+
+    void SetLabelHidden( bool aHidden ) { m_label_hidden = aHidden; }
+    bool GetLabelHidden() const { return m_label_hidden; }
 
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }
