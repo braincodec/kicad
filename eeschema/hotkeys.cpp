@@ -499,6 +499,7 @@ bool SCH_EDIT_FRAME::OnHotKey( wxDC* aDC, int aHotKey, const wxPoint& aPosition,
     case HK_ADD_LABEL:
     case HK_ADD_HLABEL:
     case HK_ADD_GLABEL:
+    case HK_ADD_PLABEL:
     case HK_ADD_JUNCTION:
     case HK_ADD_WIRE_ENTRY:
     case HK_ADD_BUS_ENTRY:
