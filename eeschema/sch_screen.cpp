@@ -51,6 +51,7 @@
 #include <sch_no_connect.h>
 #include <sch_sheet.h>
 #include <sch_component.h>
+#include <sch_power.h>
 #include <sch_text.h>
 #include <lib_pin.h>
 
@@ -561,6 +562,10 @@ void SCH_SCREEN::CheckComponentsToPartsLinks()
             c.Collect( GetDrawItems(), SCH_COLLECTOR::ComponentsOnly );
 
             SCH_COMPONENT::ResolveAll( c, libs );
+
+            SCH_TYPE_COLLECTOR c_power;
+            c_power.Collect( GetDrawItems(), SCH_COLLECTOR::PowersOnly );
+            SCH_POWER::ResolveAll( c_power, libs );
 
             m_modification_sync = mod_hash;     // note the last mod_hash
 

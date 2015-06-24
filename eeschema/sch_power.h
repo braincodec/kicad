@@ -32,6 +32,7 @@
 
 #include <sch_text.h>
 #include <class_libentry.h>
+#include <class_library.h>
 
 
 class SCH_POWER : public SCH_TEXT
@@ -40,6 +41,7 @@ class SCH_POWER : public SCH_TEXT
     TRANSFORM   m_transform;
     int         m_unit;
     int         m_convert;
+    wxString    m_part_name;
 
 public:
     SCH_POWER( const wxPoint& pos = wxPoint( 0, 0 ), const wxString& text = wxEmptyString );
@@ -94,6 +96,14 @@ public:
             SetModified();
         }
     }
+
+    void SetPartName( const wxString& aName, PART_LIBS* aLibs = NULL );
+
+    bool Resolve( PART_LIBS* aLibs );
+
+    static void ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs );
+
+    virtual void SetText( const wxString& aText );
 
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }

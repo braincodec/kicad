@@ -97,6 +97,7 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
     case LAYER_POWER:
         textItem = new SCH_POWER( GetCrossHairPosition() );
         textItem->SetShape( lastGlobalLabelShape );
+        static_cast<SCH_POWER*>( textItem )->Resolve( Prj().SchLibs() );
         break;
 
     default:
@@ -110,7 +111,10 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
     textItem->SetSize( wxSize( GetDefaultTextSize(), GetDefaultTextSize() ) );
     textItem->SetFlags( IS_NEW | IS_MOVED );
 
-    EditSchematicText( textItem );
+    if( aType == LAYER_POWER )
+        EditPower( static_cast<SCH_POWER*>( textItem ) );
+    else
+        EditSchematicText( textItem );
 
     if( textItem->GetText().IsEmpty() )
     {

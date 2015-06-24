@@ -50,6 +50,7 @@ class SCH_BUS_WIRE_ENTRY;
 class SCH_BUS_BUS_ENTRY;
 class SCH_GLOBALLABEL;
 class SCH_TEXT;
+class SCH_POWER;
 class SCH_BITMAP;
 class SCH_SHEET;
 class SCH_SHEET_PATH;
@@ -900,6 +901,7 @@ private:
     SCH_TEXT* CreateNewText( wxDC* aDC, int aType );
     void EditSchematicText( SCH_TEXT* TextStruct );
     void ChangeTextOrient( SCH_TEXT* aTextItem, wxDC* aDC );
+    void EditPower( SCH_POWER* aPowerItem );
 
     /**
      * Function OnCovertTextType

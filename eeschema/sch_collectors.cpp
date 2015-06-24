@@ -185,6 +185,12 @@ const KICAD_T SCH_COLLECTOR::ComponentsOnly[] = {
 };
 
 
+const KICAD_T SCH_COLLECTOR::PowersOnly[] = {
+    SCH_POWER_T,
+    EOT
+};
+
+
 const KICAD_T SCH_COLLECTOR::SheetsOnly[] = {
     SCH_SHEET_T,
     EOT

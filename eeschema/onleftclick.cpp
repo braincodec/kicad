@@ -36,6 +36,7 @@
 
 #include <sch_bus_entry.h>
 #include <sch_text.h>
+#include <sch_power.h>
 #include <sch_marker.h>
 #include <sch_junction.h>
 #include <sch_line.h>
@@ -361,6 +362,10 @@ void SCH_EDIT_FRAME::OnLeftDClick( wxDC* aDC, const wxPoint& aPosition )
         case SCH_GLOBAL_LABEL_T:
         case SCH_HIERARCHICAL_LABEL_T:
             EditSchematicText( (SCH_TEXT*) item );
+            break;
+
+        case SCH_POWER_T:
+            EditPower( static_cast<SCH_POWER*>( item ) );
             break;
 
         case SCH_BITMAP_T:

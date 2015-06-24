@@ -98,6 +98,11 @@ public:
     static const KICAD_T ComponentsOnly[];
 
     /**
+     * A scan list for SCH_POWER items only.
+     */
+    static const KICAD_T PowersOnly[];
+
+    /**
      * A scan list for schematic sheet items only.
      */
     static const KICAD_T SheetsOnly[];

@@ -49,6 +49,7 @@
 #include <sch_line.h>
 #include <sch_sheet.h>
 #include <sch_sheet_path.h>
+#include <sch_power.h>
 
 
 void SCH_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
@@ -968,8 +969,11 @@ void SCH_EDIT_FRAME::OnEditItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_T:
         EditSchematicText( (SCH_TEXT*) item );
+        break;
+
+    case SCH_POWER_T:
+        EditPower( static_cast<SCH_POWER*>( item ) );
         break;
 
     case SCH_FIELD_T:

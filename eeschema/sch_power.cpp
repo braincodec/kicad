@@ -94,8 +94,9 @@ SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
     m_shape = NET_BIDI;
     m_isDangling = true;
     m_MultilineAllowed = false;
-    m_part = dummy()->SharedPtr();
     m_transform = TRANSFORM();
+    SetPartName( text );
+    m_part = dummy()->SharedPtr();
 }
 
 
@@ -616,3 +617,46 @@ wxString SCH_POWER::GetSelectMenuText() const
     return msg;
 }
 
+void SCH_POWER::SetPartName( const wxString& aName, PART_LIBS* aLibs )
+{
+    if( m_part_name != aName )
+    {
+        m_part_name = aName;
+        SetModified();
+
+        if( aLibs )
+            Resolve( aLibs );
+        else
+            m_part.reset();
+    }
+}
+
+bool SCH_POWER::Resolve( PART_LIBS* aLibs )
+{
+    if( LIB_PART* part = aLibs->FindLibPart( m_part_name ) )
+    {
+        m_part = part->SharedPtr();
+    }
+    else
+    {
+        m_part = dummy()->SharedPtr();
+    }
+    return true;
+}
+
+void SCH_POWER::ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs )
+{
+    for( int i = 0; i < aPowers.GetCount(); ++i )
+    {
+        SCH_POWER* cmp = dynamic_cast<SCH_POWER*>( aPowers[i] );
+        wxASSERT( cmp );
+        if( cmp )
+            cmp->Resolve( aLibs );
+    }
+}
+
+void SCH_POWER::SetText( const wxString& aText )
+{
+    EDA_TEXT::SetText( aText );
+    SetPartName( aText );
+}
