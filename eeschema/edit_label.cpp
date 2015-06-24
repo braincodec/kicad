@@ -38,6 +38,7 @@
 
 #include <general.h>
 #include <sch_text.h>
+#include <sch_power.h>
 #include <eeschema_id.h>
 
 
@@ -93,8 +94,8 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
         textItem->SetShape( lastGlobalLabelShape );
         break;
 
-    case LAYER_POWERLABEL:
-        textItem = new SCH_POWERLABEL( GetCrossHairPosition() );
+    case LAYER_POWER:
+        textItem = new SCH_POWER( GetCrossHairPosition() );
         textItem->SetShape( lastGlobalLabelShape );
         break;
 
@@ -122,7 +123,7 @@ SCH_TEXT* SCH_EDIT_FRAME::CreateNewText( wxDC* aDC, int aType )
     lastTextOrientation = textItem->GetOrientation();
 
     if( ( textItem->Type() == SCH_GLOBAL_LABEL_T ) ||
-        ( textItem->Type() == SCH_POWER_LABEL_T ) ||
+        ( textItem->Type() == SCH_POWER_T) ||
         ( textItem->Type() == SCH_HIERARCHICAL_LABEL_T ) )
     {
         lastGlobalLabelShape = textItem->GetShape();

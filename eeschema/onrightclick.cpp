@@ -40,6 +40,7 @@
 #include <sch_bus_entry.h>
 #include <sch_marker.h>
 #include <sch_text.h>
+#include <sch_power.h>
 #include <sch_junction.h>
 #include <sch_component.h>
 #include <sch_line.h>
@@ -58,7 +59,7 @@ static void AddMenusForSheetPin( wxMenu* PopMenu, SCH_SHEET_PIN* PinSheet );
 static void AddMenusForText( wxMenu* PopMenu, SCH_TEXT* Text );
 static void AddMenusForLabel( wxMenu* PopMenu, SCH_LABEL* Label );
 static void AddMenusForGLabel( wxMenu* PopMenu, SCH_GLOBALLABEL* GLabel );
-static void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWERLABEL* PLabel );
+static void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWER* PLabel );
 static void AddMenusForHLabel( wxMenu* PopMenu, SCH_HIERLABEL* GLabel );
 static void AddMenusForEditComponent( wxMenu* PopMenu, SCH_COMPONENT* Component, PART_LIBS* aLibs );
 static void AddMenusForComponent( wxMenu* PopMenu, SCH_COMPONENT* Component, PART_LIBS* aLibs );
@@ -112,7 +113,7 @@ bool SCH_EDIT_FRAME::OnRightClick( const wxPoint& aPosition, wxMenu* PopMenu )
                 PopMenu->AppendSeparator();
                 break;
 
-            case SCH_POWER_LABEL_T:
+            case SCH_POWER_T:
                 msg = AddHotkeyName( _( "Edit Power Label" ), g_Schematic_Hokeys_Descr,
                                     HK_EDIT );
                 AddMenuItem( PopMenu, ID_SCH_EDIT_ITEM, msg, KiBitmap( edit_text_xpm ) );
@@ -243,8 +244,8 @@ bool SCH_EDIT_FRAME::OnRightClick( const wxPoint& aPosition, wxMenu* PopMenu )
         AddMenusForGLabel( PopMenu, (SCH_GLOBALLABEL*) item );
         break;
 
-    case SCH_POWER_LABEL_T:
-        AddMenusForPLabel( PopMenu, (SCH_POWERLABEL*) item );
+    case SCH_POWER_T:
+        AddMenusForPLabel( PopMenu, (SCH_POWER*) item );
         break;
 
     case SCH_HIERARCHICAL_LABEL_T:
@@ -527,7 +528,7 @@ void AddMenusForGLabel( wxMenu* PopMenu, SCH_GLOBALLABEL* GLabel )
 }
 
 
-void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWERLABEL* PLabel )
+void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWER* PLabel )
 {
     wxString msg;
 

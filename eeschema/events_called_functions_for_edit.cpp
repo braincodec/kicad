@@ -64,7 +64,7 @@ void SCH_EDIT_FRAME::OnCopySchematicItemRequest( wxCommandEvent& event )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
     {
         SCH_TEXT* newitem = (SCH_TEXT*) curr_item->Clone();
         newitem->SetFlags( IS_NEW );

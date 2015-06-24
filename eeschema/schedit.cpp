@@ -443,7 +443,7 @@ void SCH_EDIT_FRAME::OnMoveItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
     case SCH_TEXT_T:
     case SCH_COMPONENT_T:
     case SCH_SHEET_PIN_T:
@@ -831,7 +831,7 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
         m_canvas->MoveCursorToCrossHair();
         ChangeTextOrient( (SCH_TEXT*) item, &dc );
         break;
@@ -968,7 +968,7 @@ void SCH_EDIT_FRAME::OnEditItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
         EditSchematicText( (SCH_TEXT*) item );
         break;
 
@@ -1043,7 +1043,7 @@ void SCH_EDIT_FRAME::OnDragItem( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
     case SCH_SHEET_T:
         m_canvas->MoveCursorToCrossHair();
 
@@ -1122,6 +1122,7 @@ void SCH_EDIT_FRAME::OnOrient( wxCommandEvent& aEvent )
     switch( item->Type() )
     {
     case SCH_COMPONENT_T:
+    case SCH_POWER_T:
         if( aEvent.GetId() == ID_SCH_MIRROR_X )
             OrientComponent( CMP_MIRROR_X );
         else if( aEvent.GetId() == ID_SCH_MIRROR_Y )

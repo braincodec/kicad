@@ -253,7 +253,9 @@ void SCH_EDIT_FRAME::OrientComponent( COMPONENT_ORIENTATION_T aOrientation )
     SCH_SCREEN* screen = GetScreen();
     SCH_ITEM* item = screen->GetCurItem();
 
-    wxCHECK_RET( item != NULL && item->Type() == SCH_COMPONENT_T,
+    wxCHECK_RET( item != NULL
+            && ( item->Type() == SCH_COMPONENT_T
+              || item->Type() == SCH_POWER_T ),
                  wxT( "Cannot change orientation of invalid schematic item." ) );
 
     SCH_COMPONENT* component = (SCH_COMPONENT*) item;

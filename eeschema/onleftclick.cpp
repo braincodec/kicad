@@ -73,7 +73,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
             case SCH_LABEL_T:
             case SCH_GLOBAL_LABEL_T:
             case SCH_HIERARCHICAL_LABEL_T:
-            case SCH_POWER_LABEL_T:
+            case SCH_POWER_T:
             case SCH_TEXT_T:
             case SCH_SHEET_PIN_T:
             case SCH_SHEET_T:
@@ -251,7 +251,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
                 GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_HIERLABEL ) );
 
             if( GetToolId() == ID_PLABEL_BUTT )
-                GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_POWERLABEL ) );
+                GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_POWER ) );
 
             m_canvas->SetAutoPanRequest( true );
         }

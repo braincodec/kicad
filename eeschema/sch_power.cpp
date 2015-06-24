@@ -1,0 +1,618 @@
+/*
+ * This program source code file is part of KiCad, a free EDA CAD application.
+ *
+ * Copyright (C) 2015 Chris Pavlina <pavlina.chris@gmail.com>
+ * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you may find one here:
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * or you may search the http://www.gnu.org website for the version 2 license,
+ * or you may write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ */
+
+/**
+ * @file sch_power.cpp
+ * @brief Code for handling power symbols.
+ */
+
+#include <fctsys.h>
+#include <gr_basic.h>
+#include <macros.h>
+#include <trigo.h>
+#include <eeschema_id.h>
+#include <class_drawpanel.h>
+#include <drawtxt.h>
+#include <schframe.h>
+#include <plot_common.h>
+#include <base_units.h>
+#include <msgpanel.h>
+
+#include <general.h>
+#include <protos.h>
+#include <sch_power.h>
+#include <class_netlist_object.h>
+
+#include <lib_rectangle.h>
+#include <lib_text.h>
+
+/**
+ * Used when a LIB_PART is not found in library
+ * to draw a dummy shape
+ * This component is a 400 mils square with the text ??
+ * DEF DUMMY U 0 40 Y Y 1 0 N
+ * F0 "U" 0 -350 60 H V
+ * F1 "DUMMY" 0 350 60 H V
+ * DRAW
+ * T 0 0 0 150 0 0 0 ??
+ * S -200 200 200 -200 0 1 0
+ * ENDDRAW
+ * ENDDEF
+ */
+static LIB_PART* dummy()
+{
+    static LIB_PART* part;
+
+    if( !part )
+    {
+        part = new LIB_PART( wxEmptyString );
+
+        LIB_RECTANGLE* square = new LIB_RECTANGLE( part );
+
+        square->Move( wxPoint( -200, 200 ) );
+        square->SetEndPosition( wxPoint( 200, -200 ) );
+
+        LIB_TEXT* text = new LIB_TEXT( part );
+
+        text->SetSize( wxSize( 150, 150 ) );
+        text->SetText( wxString( wxT( "??" ) ) );
+
+        part->AddDrawItem( square );
+        part->AddDrawItem( text );
+    }
+
+    return part;
+}
+
+
+SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
+    SCH_TEXT( pos, text, SCH_POWER_T )
+{
+    m_unit = m_convert = 1;
+    m_Layer = LAYER_POWER;
+    m_shape = NET_BIDI;
+    m_isDangling = true;
+    m_MultilineAllowed = false;
+    m_part = dummy()->SharedPtr();
+    m_transform = TRANSFORM();
+}
+
+
+EDA_ITEM* SCH_POWER::Clone() const
+{
+    return new SCH_POWER( *this );
+}
+
+
+bool SCH_POWER::Save( FILE* aFile ) const
+{
+    bool        success = true;
+    const char* shape   = "~";
+
+    if( m_Italic )
+        shape = "Italic";
+
+    if( fprintf( aFile, "Text GPLabel %-4d %-4d %-4d %-4d %s %s %d\n%s\n",
+                 m_Pos.x, m_Pos.y, m_schematicOrientation, m_Size.x,
+                 SheetLabelType[m_shape], shape, m_Thickness, TO_UTF8( m_Text ) ) == EOF )
+    {
+        success = false;
+    }
+
+    return success;
+}
+
+
+bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
+{
+    char      Name1[256];
+    char      Name2[256];
+    char      Name3[256];
+    int       thickness = 0, size = 0, orient = 0;
+
+    Name1[0] = 0; Name2[0] = 0; Name3[0] = 0;
+
+    char*     sline = (char*) aLine;
+
+    while( (*sline != ' ' ) && *sline )
+        sline++;
+
+    // sline points the start of parameters
+    int ii = sscanf( sline, "%s %d %d %d %d %s %s %d", Name1, &m_Pos.x, &m_Pos.y,
+                     &orient, &size, Name2, Name3, &thickness );
+
+    if( ii < 4 )
+    {
+        aErrorMsg.Printf( wxT( "Eeschema file global label load error at line %d" ),
+                          aLine.LineNumber() );
+        return false;
+    }
+
+    if( !aLine.ReadLine() )
+    {
+        aErrorMsg.Printf( wxT( "Eeschema file global label load  error at line %d" ),
+                          aLine.LineNumber() );
+        return false;
+    }
+
+    if( size == 0 )
+        size = GetDefaultTextSize();
+
+    char* text = strtok( (char*) aLine, "\n\r" );
+
+    if( text == NULL )
+    {
+        aErrorMsg.Printf( wxT( "Eeschema file global label load error at line %d" ),
+                          aLine.LineNumber() );
+        return false;
+    }
+
+    m_Text = FROM_UTF8( text );
+    m_Size.x = m_Size.y = size;
+    SetOrientation( orient );
+    m_shape  = NET_INPUT;
+    m_Bold = ( thickness != 0 );
+    m_Thickness = m_Bold ? GetPenSizeForBold( size ) : 0;
+
+    if( stricmp( Name2, SheetLabelType[NET_OUTPUT] ) == 0 )
+        m_shape = NET_OUTPUT;
+
+    if( stricmp( Name2, SheetLabelType[NET_BIDI] ) == 0 )
+        m_shape = NET_BIDI;
+
+    if( stricmp( Name2, SheetLabelType[NET_TRISTATE] ) == 0 )
+        m_shape = NET_TRISTATE;
+
+    if( stricmp( Name2, SheetLabelType[NET_UNSPECIFIED] ) == 0 )
+        m_shape = NET_UNSPECIFIED;
+
+    if( stricmp( Name3, "Italic" ) == 0 )
+        m_Italic = 1;
+
+    return true;
+}
+
+
+void SCH_POWER::MirrorY( int aYaxis_position )
+{
+    /* The global label is NOT really mirrored.
+     *  for an horizontal label, the schematic orientation is changed.
+     *  for a vertical label, the schematic orientation is not changed.
+     *  and the label is moved to a suitable position
+     */
+    switch( GetOrientation() )
+    {
+    case 0:             /* horizontal text */
+        SetOrientation( 2 );
+        break;
+
+    case 2:        /* invert horizontal text*/
+        SetOrientation( 0 );
+        break;
+    }
+
+    m_Pos.x -= aYaxis_position;
+    NEGATE( m_Pos.x );
+    m_Pos.x += aYaxis_position;
+}
+
+
+void SCH_POWER::MirrorX( int aXaxis_position )
+{
+    switch( GetOrientation() )
+    {
+    case 1:             /* vertical text */
+        SetOrientation( 3 );
+        break;
+
+    case 3:        /* invert vertical text*/
+        SetOrientation( 1 );
+        break;
+    }
+
+    m_Pos.y -= aXaxis_position;
+    NEGATE( m_Pos.y );
+    m_Pos.y += aXaxis_position;
+}
+
+
+void SCH_POWER::Rotate( wxPoint aPosition )
+{
+    RotatePoint( &m_Pos, aPosition, 900 );
+    SetOrientation( (GetOrientation() + 3) % 4 );
+}
+
+
+wxPoint SCH_POWER::GetSchematicTextOffset() const
+{
+    wxPoint text_offset;
+    int     width = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
+
+    width = Clamp_Text_PenSize( width, m_Size, m_Bold );
+    int     HalfSize = m_Size.x / 2;
+    int     offset   = width;
+
+    switch( m_shape )
+    {
+    case NET_INPUT:
+    case NET_BIDI:
+    case NET_TRISTATE:
+        offset += HalfSize;
+        break;
+
+    case NET_OUTPUT:
+    case NET_UNSPECIFIED:
+        offset += TXTMARGE;
+        break;
+
+    default:
+        break;
+    }
+
+    switch( m_schematicOrientation )
+    {
+    case 0:             /* Orientation horiz normal */
+        text_offset.x -= offset;
+        break;
+
+    case 1:             /* Orientation vert UP */
+        text_offset.y -= offset;
+        break;
+
+    case 2:             /* Orientation horiz inverse */
+        text_offset.x += offset;
+        break;
+
+    case 3:             /* Orientation vert BOTTOM */
+        text_offset.y += offset;
+        break;
+    }
+
+    return text_offset;
+}
+
+
+void SCH_POWER::SetOrientation( int aOrientation )
+{
+    TRANSFORM temp = TRANSFORM();
+    bool transform = false;
+
+    switch( aOrientation )
+    {
+    case CMP_ORIENT_0:
+    case CMP_NORMAL:                    // default transform matrix
+        m_transform.x1 = 1;
+        m_transform.y2 = -1;
+        m_transform.x2 = m_transform.y1 = 0;
+        break;
+
+    case CMP_ROTATE_COUNTERCLOCKWISE:  // Rotate + (incremental rotation)
+        temp.x1   = temp.y2 = 0;
+        temp.y1   = 1;
+        temp.x2   = -1;
+        transform = true;
+        break;
+
+    case CMP_ROTATE_CLOCKWISE:          // Rotate - (incremental rotation)
+        temp.x1   = temp.y2 = 0;
+        temp.y1   = -1;
+        temp.x2   = 1;
+        transform = true;
+        break;
+
+    case CMP_MIRROR_Y:                  // Mirror Y (incremental rotation)
+        temp.x1   = -1;
+        temp.y2   = 1;
+        temp.y1   = temp.x2 = 0;
+        transform = true;
+        break;
+
+    case CMP_MIRROR_X:                  // Mirror X (incremental rotation)
+        temp.x1   = 1;
+        temp.y2   = -1;
+        temp.y1   = temp.x2 = 0;
+        transform = true;
+        break;
+
+    case CMP_ORIENT_90:
+        SetOrientation( CMP_ORIENT_0 );
+        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
+        break;
+
+    case CMP_ORIENT_180:
+        SetOrientation( CMP_ORIENT_0 );
+        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
+        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
+        break;
+
+    case CMP_ORIENT_270:
+        SetOrientation( CMP_ORIENT_0 );
+        SetOrientation( CMP_ROTATE_CLOCKWISE );
+        break;
+
+    case ( CMP_ORIENT_0 + CMP_MIRROR_X ):
+        SetOrientation( CMP_ORIENT_0 );
+        SetOrientation( CMP_MIRROR_X );
+        break;
+
+    case ( CMP_ORIENT_0 + CMP_MIRROR_Y ):
+        SetOrientation( CMP_ORIENT_0 );
+        SetOrientation( CMP_MIRROR_Y );
+        break;
+
+    case ( CMP_ORIENT_90 + CMP_MIRROR_X ):
+        SetOrientation( CMP_ORIENT_90 );
+        SetOrientation( CMP_MIRROR_X );
+        break;
+
+    case ( CMP_ORIENT_90 + CMP_MIRROR_Y ):
+        SetOrientation( CMP_ORIENT_90 );
+        SetOrientation( CMP_MIRROR_Y );
+        break;
+
+    case ( CMP_ORIENT_180 + CMP_MIRROR_X ):
+        SetOrientation( CMP_ORIENT_180 );
+        SetOrientation( CMP_MIRROR_X );
+        break;
+
+    case ( CMP_ORIENT_180 + CMP_MIRROR_Y ):
+        SetOrientation( CMP_ORIENT_180 );
+        SetOrientation( CMP_MIRROR_Y );
+        break;
+
+    case ( CMP_ORIENT_270 + CMP_MIRROR_X ):
+        SetOrientation( CMP_ORIENT_270 );
+        SetOrientation( CMP_MIRROR_X );
+        break;
+
+    case ( CMP_ORIENT_270 + CMP_MIRROR_Y ):
+        SetOrientation( CMP_ORIENT_270 );
+        SetOrientation( CMP_MIRROR_Y );
+        break;
+
+    default:
+        transform = false;
+        wxMessageBox( wxT( "SetRotateMiroir() error: ill value" ) );
+        break;
+    }
+
+    if( transform )
+    {
+        /* The new matrix transform is the old matrix transform modified by the
+         *  requested transformation, which is the temp transform (rot,
+         *  mirror ..) in order to have (in term of matrix transform):
+         *     transform coord = new_m_transform * coord
+         *  where transform coord is the coord modified by new_m_transform from
+         *  the initial value coord.
+         *  new_m_transform is computed (from old_m_transform and temp) to
+         *  have:
+         *     transform coord = old_m_transform * temp
+         */
+        TRANSFORM newTransform;
+
+        newTransform.x1 = m_transform.x1 * temp.x1 + m_transform.x2 * temp.y1;
+        newTransform.y1 = m_transform.y1 * temp.x1 + m_transform.y2 * temp.y1;
+        newTransform.x2 = m_transform.x1 * temp.x2 + m_transform.x2 * temp.y2;
+        newTransform.y2 = m_transform.y1 * temp.x2 + m_transform.y2 * temp.y2;
+        m_transform = newTransform;
+    }
+}
+
+
+void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
+                            wxDC*           aDC,
+                            const wxPoint&  aOffset,
+                            GR_DRAWMODE     aDrawMode,
+                            EDA_COLOR_T     aColor )
+{
+    if( PART_SPTR part = m_part.lock() )
+    {
+        part->Draw( aPanel, aDC, m_Pos + aOffset, m_unit, m_convert, aDrawMode, aColor,
+                m_transform, true, false, false, NULL );
+    }
+    return;
+
+    static std::vector <wxPoint> Poly;
+    EDA_COLOR_T color;
+    wxPoint     text_offset = aOffset + GetSchematicTextOffset();
+
+    if( aColor >= 0 )
+        color = aColor;
+    else
+        color = GetLayerColor( m_Layer );
+
+    GRSetDrawMode( aDC, aDrawMode );
+
+    int linewidth = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
+    linewidth = Clamp_Text_PenSize( linewidth, m_Size, m_Bold );
+    EXCHG( linewidth, m_Thickness );            // Set the minimum width
+    EDA_RECT* clipbox = aPanel ? aPanel->GetClipBox() : NULL;
+    EDA_TEXT::Draw( clipbox, aDC, text_offset, color, aDrawMode, FILLED, UNSPECIFIED_COLOR );
+    EXCHG( linewidth, m_Thickness );            // set initial value
+
+    CreateGraphicShape( Poly, m_Pos + aOffset );
+    GRPoly( clipbox, aDC, Poly.size(), &Poly[0], 0, linewidth, color, color );
+
+    if( m_isDangling && aPanel )
+        DrawDanglingSymbol( aPanel, aDC, m_Pos + aOffset, color );
+
+    // Enable these line to draw the bounding box (debug tests purposes only)
+#if 0
+    {
+        EDA_RECT BoundaryBox = GetBoundingBox();
+        GRRect( clipbox, DC, BoundaryBox, 0, BROWN );
+    }
+#endif
+}
+
+
+void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& Pos )
+{
+    int HalfSize  = m_Size.y / 2;
+    int linewidth = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
+
+    linewidth = Clamp_Text_PenSize( linewidth, m_Size, m_Bold );
+
+    aPoints.clear();
+
+    int symb_len = LenSize( GetShownText() ) + ( TXTMARGE * 2 );
+
+    // Create outline shape : 6 points
+    int x = symb_len + linewidth + 3;
+
+    // Use negation bar Y position to calculate full vertical size
+    #define Y_CORRECTION 1.3
+    // Note: this factor is due to the fact the negation bar Y position
+    // does not give exactly the full Y size of text
+    // and is experimentally set  to this value
+    int y = KiROUND( OverbarPositionY( HalfSize ) * Y_CORRECTION );
+    // add room for line thickness and space between top of text and graphic shape
+    y += linewidth;
+
+    // Starting point(anchor)
+    aPoints.push_back( wxPoint( 0, 0 ) );
+    aPoints.push_back( wxPoint( 0, -y ) );     // Up
+    aPoints.push_back( wxPoint( -x, -y ) );    // left
+    aPoints.push_back( wxPoint( -x, 0 ) );     // Up left
+    aPoints.push_back( wxPoint( -x, y ) );     // left down
+    aPoints.push_back( wxPoint( 0, y ) );      // down
+
+    int x_offset = 0;
+
+    switch( m_shape )
+    {
+    case NET_INPUT:
+        x_offset = -HalfSize;
+        aPoints[0].x += HalfSize;
+        break;
+
+    case NET_OUTPUT:
+        aPoints[3].x -= HalfSize;
+        break;
+
+    case NET_BIDI:
+    case NET_TRISTATE:
+        x_offset = -HalfSize;
+        aPoints[0].x += HalfSize;
+        aPoints[3].x -= HalfSize;
+        break;
+
+    case NET_UNSPECIFIED:
+    default:
+        break;
+    }
+
+    int angle = 0;
+
+    switch( m_schematicOrientation )
+    {
+    case 0:             /* Orientation horiz normal */
+        break;
+
+    case 1:             /* Orientation vert UP */
+        angle = -900;
+        break;
+
+    case 2:             /* Orientation horiz inverse */
+        angle = 1800;
+        break;
+
+    case 3:             /* Orientation vert BOTTOM */
+        angle = 900;
+        break;
+    }
+
+    // Rotate outlines and move corners in real position
+    for( unsigned ii = 0; ii < aPoints.size(); ii++ )
+    {
+        aPoints[ii].x += x_offset;
+
+        if( angle )
+            RotatePoint( &aPoints[ii], angle );
+
+        aPoints[ii] += Pos;
+    }
+
+    aPoints.push_back( aPoints[0] ); // closing
+}
+
+
+const EDA_RECT SCH_POWER::GetBoundingBox() const
+{
+    return GetBodyBoundingBox();
+}
+
+
+const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
+{
+    EDA_RECT    bBox;
+
+    if( PART_SPTR part = m_part.lock() )
+    {
+        bBox = part->GetBodyBoundingBox( m_unit, m_convert );
+    }
+    else
+    {
+        bBox = dummy()->GetBodyBoundingBox( m_unit, m_convert );
+    }
+
+    int x0 = bBox.GetX();
+    int xm = bBox.GetRight();
+
+    // We must reverse Y values, because matrix orientation
+    // suppose Y axis normal for the library items coordinates,
+    // m_transform reverse Y values, but bBox is already reversed!
+    int y0 = -bBox.GetY();
+    int ym = -bBox.GetBottom();
+
+    // Compute the real Boundary box (rotated, mirrored ...)
+    int x1 = m_transform.x1 * x0 + m_transform.y1 * y0;
+    int y1 = m_transform.x2 * x0 + m_transform.y2 * y0;
+    int x2 = m_transform.x1 * xm + m_transform.y1 * ym;
+    int y2 = m_transform.x2 * xm + m_transform.y2 * ym;
+
+    // H and W must be > 0:
+    if( x2 < x1 )
+        EXCHG( x2, x1 );
+
+    if( y2 < y1 )
+        EXCHG( y2, y1 );
+
+    bBox.SetX( x1 );
+    bBox.SetY( y1 );
+    bBox.SetWidth( x2 - x1 );
+    bBox.SetHeight( y2 - y1 );
+
+    bBox.Offset( m_Pos );
+    return bBox;
+}
+
+
+wxString SCH_POWER::GetSelectMenuText() const
+{
+    wxString msg;
+    msg.Printf( _( "Global Label %s" ), GetChars( ShortenedShownText() ) );
+    return msg;
+}
+

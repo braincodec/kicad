@@ -62,7 +62,7 @@ public:
         switch( m_CurrentText->Type() )
         {
         case SCH_GLOBAL_LABEL_T:
-        case SCH_POWER_LABEL_T:
+        case SCH_POWER_T:
         case SCH_HIERARCHICAL_LABEL_T:
         case SCH_LABEL_T:
             // labels can share retained settings probably.
@@ -148,7 +148,7 @@ void DIALOG_LABEL_EDITOR::InitDialog()
 
     switch( m_CurrentText->Type() )
     {
-    case SCH_POWER_LABEL_T:
+    case SCH_POWER_T:
         SetTitle( _( "Power Label Properties" ) );
         break;
 
@@ -237,7 +237,7 @@ void DIALOG_LABEL_EDITOR::InitDialog()
     m_TextSize->SetValue( msg );
 
     if( m_CurrentText->Type() != SCH_GLOBAL_LABEL_T
-     && m_CurrentText->Type() != SCH_POWER_LABEL_T
+     && m_CurrentText->Type() != SCH_POWER_T
      && m_CurrentText->Type() != SCH_HIERARCHICAL_LABEL_T )
     {
         m_TextShape->Show( false );
