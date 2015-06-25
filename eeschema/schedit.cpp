@@ -819,6 +819,7 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
     switch( item->Type() )
     {
     case SCH_COMPONENT_T:
+    case SCH_POWER_T:
         if( aEvent.GetId() == ID_SCH_ROTATE_CLOCKWISE )
             OrientComponent( CMP_ROTATE_CLOCKWISE );
         else if( aEvent.GetId() == ID_SCH_ROTATE_COUNTERCLOCKWISE )
@@ -832,7 +833,6 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
     case SCH_LABEL_T:
     case SCH_GLOBAL_LABEL_T:
     case SCH_HIERARCHICAL_LABEL_T:
-    case SCH_POWER_T:
         m_canvas->MoveCursorToCrossHair();
         ChangeTextOrient( (SCH_TEXT*) item, &dc );
         break;

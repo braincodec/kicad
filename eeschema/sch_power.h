@@ -64,6 +64,8 @@ public:
 
     void SetOrientation( int aSchematicOrientation );
 
+    void SwapData( SCH_ITEM* aItem );
+
     wxPoint GetSchematicTextOffset() const;
 
     bool Save( FILE* aFile ) const;

@@ -205,6 +205,7 @@ const KICAD_T SCH_COLLECTOR::SheetsAndSheetLabels[] = {
 
 
 const KICAD_T SCH_COLLECTOR::OrientableItems[] = {
+    SCH_POWER_T,
     SCH_COMPONENT_T,
     SCH_BITMAP_T,
     SCH_SHEET_T,

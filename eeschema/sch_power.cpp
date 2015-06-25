@@ -550,6 +550,21 @@ void SCH_POWER::SetOrientation( int aOrientation )
 }
 
 
+void SCH_POWER::SwapData( SCH_ITEM* aItem )
+{
+    SCH_POWER& other = dynamic_cast<SCH_POWER&>( *aItem );
+    SCH_TEXT::SwapData( aItem );
+
+    std::swap( m_part, other.m_part );
+    std::swap( m_transform, other.m_transform );
+    std::swap( m_unit, other.m_unit );
+    std::swap( m_convert, other.m_convert );
+    std::swap( m_part_name, other.m_part_name );
+    std::swap( m_visible_text, other.m_visible_text );
+    std::swap( m_label_hidden, other.m_label_hidden );
+}
+
+
 void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
                             wxDC*           aDC,
                             const wxPoint&  aOffset,

@@ -432,6 +432,9 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER& aPoweritem )
 bool DIALOG_EDIT_POWER::TransferDataFromWindow()
 {
     m_parent->OnModify();
+    if( m_poweritem->GetFlags() == 0 )
+        m_parent->SaveCopyInUndoList( m_poweritem, UR_CHANGED );
+
     return TransferDataFromWindow( *m_poweritem );
 }
 
