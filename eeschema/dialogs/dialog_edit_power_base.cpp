@@ -64,8 +64,8 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_stLib->Wrap( -1 );
 	bSizer8->Add( m_stLib, 0, wxALL, 5 );
 	
-	m_dvlLib = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer8->Add( m_dvlLib, 1, wxALL|wxEXPAND, 5 );
+	m_dvtLib = new wxDataViewTreeCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_VARIABLE_LINE_HEIGHT );
+	bSizer8->Add( m_dvtLib, 1, wxALL|wxEXPAND, 5 );
 	
 	
 	bSizer7->Add( bSizer8, 1, wxEXPAND, 5 );
@@ -136,8 +136,9 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_btnAdvanced->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnToggleAdvanced ), NULL, this );
 	m_textLabelText->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_cbHideLabel->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_textNet->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnChangeStyle ) );
+	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_pPreview->Connect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_EDIT_POWER_BASE::OnPreviewRepaint ), NULL, this );
 	m_stdButtonsCancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCancelClick ), NULL, this );
 	m_stdButtonsOK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnOkClick ), NULL, this );
@@ -149,8 +150,9 @@ DIALOG_EDIT_POWER_BASE::~DIALOG_EDIT_POWER_BASE()
 	m_btnAdvanced->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnToggleAdvanced ), NULL, this );
 	m_textLabelText->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_cbHideLabel->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_textNet->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnChangeStyle ) );
+	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_pPreview->Disconnect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_EDIT_POWER_BASE::OnPreviewRepaint ), NULL, this );
 	m_stdButtonsCancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCancelClick ), NULL, this );
 	m_stdButtonsOK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnOkClick ), NULL, this );

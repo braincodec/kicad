@@ -742,11 +742,11 @@
                                                 <event name="OnUpdateUI"></event>
                                             </object>
                                         </object>
-                                        <object class="sizeritem" expanded="0">
+                                        <object class="sizeritem" expanded="1">
                                             <property name="border">5</property>
                                             <property name="flag">wxALL|wxEXPAND</property>
                                             <property name="proportion">1</property>
-                                            <object class="wxDataViewListCtrl" expanded="0">
+                                            <object class="wxDataViewTreeCtrl" expanded="1">
                                                 <property name="bg"></property>
                                                 <property name="context_help"></property>
                                                 <property name="context_menu">1</property>
@@ -757,35 +757,35 @@
                                                 <property name="id">wxID_ANY</property>
                                                 <property name="maximum_size"></property>
                                                 <property name="minimum_size"></property>
-                                                <property name="name">m_dvlLib</property>
+                                                <property name="name">m_dvtLib</property>
                                                 <property name="permission">protected</property>
                                                 <property name="pos"></property>
                                                 <property name="size"></property>
-                                                <property name="style"></property>
+                                                <property name="style">wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_VARIABLE_LINE_HEIGHT</property>
                                                 <property name="subclass"></property>
                                                 <property name="tooltip"></property>
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
                                                 <property name="window_style"></property>
                                                 <event name="OnChar"></event>
-                                                <event name="OnDataViewListCtrlColumnHeaderClick"></event>
-                                                <event name="OnDataViewListCtrlColumnHeaderRightClick"></event>
-                                                <event name="OnDataViewListCtrlColumnReordered"></event>
-                                                <event name="OnDataViewListCtrlColumnSorted"></event>
-                                                <event name="OnDataViewListCtrlItemActivated"></event>
-                                                <event name="OnDataViewListCtrlItemBeginDrag"></event>
-                                                <event name="OnDataViewListCtrlItemCollapsed"></event>
-                                                <event name="OnDataViewListCtrlItemCollapsing"></event>
-                                                <event name="OnDataViewListCtrlItemContextMenu"></event>
-                                                <event name="OnDataViewListCtrlItemDrop"></event>
-                                                <event name="OnDataViewListCtrlItemDropPossible"></event>
-                                                <event name="OnDataViewListCtrlItemEditingDone"></event>
-                                                <event name="OnDataViewListCtrlItemEditingStarted"></event>
-                                                <event name="OnDataViewListCtrlItemExpanded"></event>
-                                                <event name="OnDataViewListCtrlItemExpanding"></event>
-                                                <event name="OnDataViewListCtrlItemStartEditing"></event>
-                                                <event name="OnDataViewListCtrlItemValueChanged"></event>
-                                                <event name="OnDataViewListCtrlSelectionChanged"></event>
+                                                <event name="OnDataViewTreeCtrlColumnHeaderClick"></event>
+                                                <event name="OnDataViewTreeCtrlColumnHeaderRightClick"></event>
+                                                <event name="OnDataViewTreeCtrlColumnReordered"></event>
+                                                <event name="OnDataViewTreeCtrlColumnSorted"></event>
+                                                <event name="OnDataViewTreeCtrlItemActivated"></event>
+                                                <event name="OnDataViewTreeCtrlItemBeginDrag"></event>
+                                                <event name="OnDataViewTreeCtrlItemCollapsed"></event>
+                                                <event name="OnDataViewTreeCtrlItemCollapsing"></event>
+                                                <event name="OnDataViewTreeCtrlItemContextMenu"></event>
+                                                <event name="OnDataViewTreeCtrlItemDrop"></event>
+                                                <event name="OnDataViewTreeCtrlItemDropPossible"></event>
+                                                <event name="OnDataViewTreeCtrlItemEditingDone"></event>
+                                                <event name="OnDataViewTreeCtrlItemEditingStarted"></event>
+                                                <event name="OnDataViewTreeCtrlItemExpanded"></event>
+                                                <event name="OnDataViewTreeCtrlItemExpanding"></event>
+                                                <event name="OnDataViewTreeCtrlItemStartEditing"></event>
+                                                <event name="OnDataViewTreeCtrlItemValueChanged"></event>
+                                                <event name="OnDataViewTreeCtrlSelectionChanged">OnTreeChange</event>
                                                 <event name="OnEnterWindow"></event>
                                                 <event name="OnEraseBackground"></event>
                                                 <event name="OnKeyDown"></event>
@@ -1142,7 +1142,7 @@
                                                 <event name="OnDataViewTreeCtrlItemExpanding"></event>
                                                 <event name="OnDataViewTreeCtrlItemStartEditing"></event>
                                                 <event name="OnDataViewTreeCtrlItemValueChanged"></event>
-                                                <event name="OnDataViewTreeCtrlSelectionChanged">OnChangeStyle</event>
+                                                <event name="OnDataViewTreeCtrlSelectionChanged">OnTreeChange</event>
                                                 <event name="OnEnterWindow"></event>
                                                 <event name="OnEraseBackground"></event>
                                                 <event name="OnKeyDown"></event>
