@@ -192,6 +192,7 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
 
 bool DIALOG_EDIT_POWER::TransferDataFromWindow()
 {
+    m_parent->OnModify();
     return TransferDataFromWindow( m_poweritem );
 }
 
