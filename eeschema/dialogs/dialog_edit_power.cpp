@@ -44,39 +44,59 @@
 
 #include <iostream>
 
+class SCH_EDIT_FRAME;
 
 static const wxString gsStyleName( _( "FLAT" ) );
 static const wxString gsNameAutomatic( _( "::AUTOMATIC" ) );
 
+
+/**
+ * Subclass of wxClientData that holds an unsigned int.
+ */
 class wxUintClientData: public wxClientData
 {
 public:
     unsigned data;
+
+    /**
+     * Define a wxUintClientData from a given data item.
+     */
     wxUintClientData( unsigned aData ) : data( aData ) {}
+
+    /**
+     * Return the stored data
+     */
     unsigned GetData() const { return data; }
+
+    /**
+     * Change the stored data.
+     */
     void SetData( unsigned aData ) { data = aData; }
 };
 
 
-class wxEditPowerModel: public wxDataViewTreeStore
+/**
+ * A wxDataViewModel that allows items to be fit to a custom sort order.
+ */
+class CustomSortModel: public wxDataViewTreeStore
 {
-public:
-    void* automaticID;
-    std::map<void*, unsigned> id_to_sortidx;
+    std::map<void*, size_t> m_map;
 
-    wxEditPowerModel(): wxDataViewTreeStore() {}
+public:
+    CustomSortModel(): wxDataViewTreeStore() {}
+
     bool HasDefaultCompare() const { return true; }
     int Compare( const wxDataViewItem& item1, const wxDataViewItem& item2,
             unsigned column, bool ascending ) const
     {
-        unsigned sortidx1 = UINT_MAX, sortidx2 = UINT_MAX;
+        size_t sortidx1 = SIZE_MAX, sortidx2 = SIZE_MAX;
 
-        std::map<void*, unsigned>::const_iterator it1 = id_to_sortidx.find( item1.GetID() );
-        std::map<void*, unsigned>::const_iterator it2 = id_to_sortidx.find( item2.GetID() );
+        std::map<void*, size_t>::const_iterator it1 = m_map.find( item1.GetID() );
+        std::map<void*, size_t>::const_iterator it2 = m_map.find( item2.GetID() );
 
-        if( it1 != id_to_sortidx.end() )
+        if( it1 != m_map.end() )
             sortidx1 = it1->second;
-        if( it2 != id_to_sortidx.end() )
+        if( it2 != m_map.end() )
             sortidx2 = it2->second;
 
         if( sortidx1 == sortidx2 )
@@ -86,9 +106,23 @@ public:
         else
             return sortidx1 - sortidx2;
     }
+
+    /**
+     * Register a wxDataViewItem in the sort order.
+     *
+     * Items will be sorted in the order registered, with unregistered items sorted last in
+     * the order provided by the parent class.
+     */
+    void RegisterItem( const wxDataViewItem& aItem )
+    {
+        m_map[aItem.GetID()] = m_map.size();
+    }
 };
 
 
+/**
+ * Automatically choose a symbol style based on the provided net.
+ */
 static wxString heur_choose_style( wxString aNet )
 {
     if( aNet == _( "CGND" ) )
@@ -111,26 +145,16 @@ static wxString heur_choose_style( wxString aNet )
 
 
 /**
- * Function create_renderer
- * Creates a wxDataViewRenderer for use in the trees
- */
-static std::auto_ptr<wxDataViewRenderer> create_renderer()
-{
-    std::auto_ptr<wxDataViewRenderer> treerenderer( new wxDataViewIconTextRenderer(
-                _( "wxDataViewIconText" ), wxDATAVIEW_CELL_INERT,
-                wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL ) );
-    return treerenderer;
-}
-
-
-/**
- * Function fix_column
+ * Make a wxDataViewTreeCtrl non-editable.
+ *
  * Delete the editable column that is created by default in the wxDataViewTreeCtrl and
- * replace it with a non-editable column.
+ * replace it with a non-editable one.
  */
 static void fix_column( wxDataViewTreeCtrl* aCtrl )
 {
-    std::auto_ptr<wxDataViewRenderer> renderer = create_renderer();
+    std::auto_ptr<wxDataViewRenderer> renderer( new wxDataViewIconTextRenderer(
+                _( "wxDataViewIconText" ), wxDATAVIEW_CELL_INERT,
+                wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL ) );
 
     wxDataViewColumn* col = aCtrl->GetColumn( 0 );
     aCtrl->DeleteColumn( col );
@@ -139,7 +163,37 @@ static void fix_column( wxDataViewTreeCtrl* aCtrl )
 }
 
 
-class SCH_EDIT_FRAME;
+/**
+ * Return data from a wxStringClientData.
+ *
+ * Returns wxEmptyString if the given item is not a wxStringClientData.
+ */
+static wxString get_string_data( wxClientData* aClientData )
+{
+    if( !aClientData )
+        return wxEmptyString;
+    wxStringClientData* scd = dynamic_cast<wxStringClientData*>( aClientData );
+    if( !scd )
+        return wxEmptyString;
+    return scd->GetData();
+}
+
+
+/**
+ * Return the selected item's wxClientData.
+ *
+ * Returns NULL if there is no selection.
+ */
+static wxClientData* get_selected_data( wxDataViewTreeCtrl* aDataView )
+{
+    if( !aDataView )
+        return NULL;
+    wxDataViewItem sel = aDataView->GetSelection();
+    if( !sel.IsOk() )
+        return NULL;
+    return aDataView->GetItemData( sel );
+}
+
 
 class DIALOG_EDIT_POWER: public DIALOG_EDIT_POWER_BASE
 {
@@ -149,15 +203,24 @@ public:
 private:
     SCH_EDIT_FRAME* m_parent;
     SCH_POWER* m_poweritem;
+
+    // Map of "All Styles" item names to actual items
     std::map<wxString, wxDataViewItem> m_dvitems;
+
+    // List of library parts
     boost::ptr_vector<SCH_POWER> m_library;
 
+    /**
+     * Configure and fill the Styles tree.
+     */
     void PopulateStyles();
+
+    /**
+     * Configure and fill the Library tree.
+     */
     void PopulateLib();
 
-    bool TransferDataToWindow( SCH_POWER* aPoweritem );
     bool TransferDataToWindow();
-    bool TransferDataFromWindow( SCH_POWER* aPoweritem );
     bool TransferDataFromWindow();
     void OnCancelClick( wxCommandEvent& event );
     void OnEnterKey( wxCommandEvent& event );
@@ -168,9 +231,44 @@ private:
 
     void OnStyleChange( wxDataViewEvent& event );
     void OnLibChange( wxDataViewEvent& event );
+
+    /**
+     * Transfer data to the window from a given SCH_POWER
+     */
+    bool TransferDataToWindow( SCH_POWER& aPoweritem );
+
+    /**
+     * Transfer data from the window to a given SCH_POWER
+     */
+    bool TransferDataFromWindow( SCH_POWER& aPoweritem );
 };
 
 
+/**
+ * Rendering core function.
+ * This prepares the drawing canvas and returns an offset at which the object should be
+ * drawn.
+ */
+wxPoint render_core( wxDC* aDC, EDA_RECT aBBox, EDA_COLOR_T aBGcolor )
+{
+    aDC->SetBackground( aBGcolor == BLACK ? *wxBLACK_BRUSH : *wxWHITE_BRUSH );
+    aDC->Clear();
+
+    const wxSize dc_size = aDC->GetSize();
+    aDC->SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
+
+    const double xscale = (double) dc_size.x / aBBox.GetWidth();
+    const double yscale = (double) dc_size.y / aBBox.GetHeight();
+    const double scale = std::min( xscale, yscale ) * 0.85;
+
+    aDC->SetUserScale( scale, scale );
+    return -aBBox.Centre();
+}
+
+
+/**
+ * Render a LIB_PART into a wxIcon.
+ */
 wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
 {
     wxIcon icon;
@@ -181,26 +279,8 @@ wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
     wxBitmap bmp( aWidth, aHeight );
 
     wxMemoryDC dc( bmp );
-    EDA_COLOR_T bgcolor = WHITE;
 
-    dc.SetBackground( bgcolor == BLACK ? *wxBLACK_BRUSH : *wxWHITE_BRUSH );
-    dc.Clear();
-
-    const wxSize dc_size = dc.GetSize();
-    dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
-
-    EDA_RECT bbox = aPart->GetBodyBoundingBox(1, 1);
-    const double xscale = (double) dc_size.x / bbox.GetWidth();
-    const double yscale = (double) dc_size.y / bbox.GetHeight();
-    const double scale = std::min( xscale, yscale ) * 0.85;
-
-    dc.SetUserScale( scale, scale );
-    wxPoint offset = -bbox.Centre();
-
-    int width, height;
-    dc.GetSize( &width, &height );
-    if( !width || !height )
-        return icon;
+    wxPoint offset = render_core( &dc, aPart->GetBodyBoundingBox(1, 1), WHITE );
 
     aPart->Draw( NULL, &dc, offset, 1, 1, GR_COPY, UNSPECIFIED_COLOR,
             DefaultTransform, false, false, false, NULL );
@@ -210,6 +290,9 @@ wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
 }
 
 
+/**
+ * Render an SCH_POWER into a wxIcon.
+ */
 wxIcon render_power_as_icon( SCH_POWER* aPart, int aWidth=48, int aHeight=48 )
 {
     wxIcon icon;
@@ -220,26 +303,8 @@ wxIcon render_power_as_icon( SCH_POWER* aPart, int aWidth=48, int aHeight=48 )
     wxBitmap bmp( aWidth, aHeight );
 
     wxMemoryDC dc( bmp );
-    EDA_COLOR_T bgcolor = WHITE;
 
-    dc.SetBackground( bgcolor == BLACK ? *wxBLACK_BRUSH : *wxWHITE_BRUSH );
-    dc.Clear();
-
-    const wxSize dc_size = dc.GetSize();
-    dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
-
-    EDA_RECT bbox = aPart->GetBoundingBox();
-    const double xscale = (double) dc_size.x / bbox.GetWidth();
-    const double yscale = (double) dc_size.y / bbox.GetHeight();
-    const double scale = std::min( xscale, yscale ) * 0.85;
-
-    dc.SetUserScale( scale, scale );
-    wxPoint offset = -bbox.Centre();
-
-    int width, height;
-    dc.GetSize( &width, &height );
-    if( !width || !height )
-        return icon;
+    wxPoint offset = render_core( &dc, aPart->GetBoundingBox(), WHITE );
 
     aPart->Draw( NULL, &dc, offset, GR_COPY, UNSPECIFIED_COLOR );
 
@@ -253,9 +318,6 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
       m_parent( aParent ),
       m_poweritem( aPowerItem )
 {
-    // Get a renderer for each tree
-    std::auto_ptr<wxDataViewRenderer> style_renderer = create_renderer();
-
     m_stdButtonsOK->SetDefault();
     m_panAdvanced->Hide();
     m_textNet->SetFocus();
@@ -272,13 +334,14 @@ void DIALOG_EDIT_POWER::PopulateStyles()
     wxArrayString lib_names;
     lib->GetEntryNames( lib_names );
     fix_column( m_dvtStyles );
-    wxEditPowerModel* model = new wxEditPowerModel();
+
+    CustomSortModel* model = new CustomSortModel();
     m_dvtStyles->AssociateModel( model );
 
     wxDataViewItem dviAutomatic = m_dvtStyles->AppendItem(
             wxDataViewItem( 0 ), wxT( "Automatic" ), 1,
             new wxStringClientData( gsNameAutomatic ) );
-    model->id_to_sortidx[dviAutomatic.GetID()] = 1;
+    model->RegisterItem( dviAutomatic );
 
     wxDataViewItem dviAllStyles = m_dvtStyles->InsertContainer(
             wxDataViewItem( 0 ), dviAutomatic, wxT( "All Styles" ), 1 );
@@ -340,7 +403,7 @@ void DIALOG_EDIT_POWER::PopulateLib()
 
 bool DIALOG_EDIT_POWER::TransferDataToWindow()
 {
-    if( !TransferDataToWindow( m_poweritem ) )
+    if( !TransferDataToWindow( *m_poweritem ) )
         return false;
 
     GetSizer()->Layout();
@@ -348,18 +411,18 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
     return true;
 }
 
-bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER* aPoweritem )
+bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER& aPoweritem )
 {
     if( !wxDialog::TransferDataToWindow() )
         return false;
 
-    m_textNet->SetValue( aPoweritem->GetText() );
-    m_textLabelText->SetValue( aPoweritem->GetVisibleText() );
-    m_cbHideLabel->SetValue( aPoweritem->GetLabelHidden() );
-    if( m_dvitems.count( aPoweritem->GetPartName() ) )
+    m_textNet->SetValue( aPoweritem.GetText() );
+    m_textLabelText->SetValue( aPoweritem.GetVisibleText() );
+    m_cbHideLabel->SetValue( aPoweritem.GetLabelHidden() );
+    if( m_dvitems.count( aPoweritem.GetPartName() ) )
     {
-        m_dvtStyles->Select( m_dvitems[aPoweritem->GetPartName()] );
-        m_dvtStyles->EnsureVisible( m_dvitems[aPoweritem->GetPartName()] );
+        m_dvtStyles->Select( m_dvitems[aPoweritem.GetPartName()] );
+        m_dvtStyles->EnsureVisible( m_dvitems[aPoweritem.GetPartName()] );
     }
 
     return true;
@@ -369,38 +432,25 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER* aPoweritem )
 bool DIALOG_EDIT_POWER::TransferDataFromWindow()
 {
     m_parent->OnModify();
-    return TransferDataFromWindow( m_poweritem );
+    return TransferDataFromWindow( *m_poweritem );
 }
 
 
-bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER* aPoweritem )
+bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER& aPoweritem )
 {
     if( !wxDialog::TransferDataFromWindow() )
         return false;
 
-    aPoweritem->SetText( m_textNet->GetValue() );
-    aPoweritem->SetVisibleText( m_textLabelText->GetValue() );
-    aPoweritem->SetLabelHidden( m_cbHideLabel->GetValue() );
+    aPoweritem.SetText( m_textNet->GetValue() );
+    aPoweritem.SetVisibleText( m_textLabelText->GetValue() );
+    aPoweritem.SetLabelHidden( m_cbHideLabel->GetValue() );
 
-    wxDataViewItem sel = m_dvtStyles->GetSelection();
-    wxClientData* data = NULL;
-    if( sel.IsOk() )
-        data = m_dvtStyles->GetItemData( sel );
-
-    if( data )
-    {
-        wxString name = dynamic_cast<wxStringClientData&>( *data ).GetData();
-
-        if( name == gsNameAutomatic )
-            aPoweritem->SetPartName( heur_choose_style( m_textNet->GetValue() ) );
-        else
-            aPoweritem->SetPartName( name );
-    }
+    wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
+    if( name == gsNameAutomatic || name == wxEmptyString )
+        aPoweritem.SetPartName( heur_choose_style( m_textNet->GetValue() ) );
     else
-    {
-        aPoweritem->SetPartName( heur_choose_style( m_textNet->GetValue() ) );
-    }
-    aPoweritem->Resolve( Prj().SchLibs() );
+        aPoweritem.SetPartName( name );
+    aPoweritem.Resolve( Prj().SchLibs() );
     return true;
 }
 
@@ -449,8 +499,7 @@ void DIALOG_EDIT_POWER::OnTreeChange( wxDataViewEvent& event )
 void DIALOG_EDIT_POWER::OnStyleChange( wxDataViewEvent& event )
 {
     // If a library part was selected, clear out the advanced settings from it
-    wxDataViewItem sel = m_dvtLib->GetSelection();
-    if( sel.IsOk() )
+    if( m_dvtLib->GetSelection().IsOk() )
     {
         m_textLabelText->SetValue( wxEmptyString );
         m_cbHideLabel->SetValue( false );
@@ -462,16 +511,13 @@ void DIALOG_EDIT_POWER::OnStyleChange( wxDataViewEvent& event )
 
 void DIALOG_EDIT_POWER::OnLibChange( wxDataViewEvent& event )
 {
-    wxDataViewItem sel = m_dvtLib->GetSelection();
-    wxClientData* data = NULL;
-    if( sel.IsOk() )
-        data = m_dvtLib->GetItemData( sel );
+    wxClientData* data = get_selected_data( m_dvtLib );
     if( !data )
         return;
 
     unsigned lib_item_index = dynamic_cast<wxUintClientData&>( *data ).GetData();
 
-    TransferDataToWindow( &m_library[lib_item_index] );
+    TransferDataToWindow( m_library[lib_item_index] );
 
     m_pPreview->Refresh();
 }
@@ -480,27 +526,14 @@ void DIALOG_EDIT_POWER::OnLibChange( wxDataViewEvent& event )
 void DIALOG_EDIT_POWER::OnPreviewRepaint( wxPaintEvent& aRepaintEvent )
 {
     SCH_POWER temp_item( *m_poweritem );
-    TransferDataFromWindow( &temp_item );
+    TransferDataFromWindow( temp_item );
     wxPaintDC dc( m_pPreview );
     EDA_COLOR_T bgcolor = m_parent->GetDrawBgColor();
 
-    dc.SetBackground( bgcolor == BLACK ? *wxBLACK_BRUSH : *wxWHITE_BRUSH );
-    dc.Clear();
+    wxPoint offset = render_core( &dc, temp_item.GetBoundingBox(), bgcolor );
 
-    const wxSize dc_size = dc.GetSize();
-    dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
-
-    EDA_RECT bbox = temp_item.GetBoundingBox();
-    const double xscale = (double) dc_size.x / bbox.GetWidth();
-    const double yscale = (double) dc_size.y / bbox.GetHeight();
-    const double scale = std::min( xscale, yscale ) * 0.85;
-
-    dc.SetUserScale( scale, scale );
-    wxPoint offset = -bbox.Centre();
-
-    int width, height;
-    dc.GetSize( &width, &height );
-    if( !width || !height )
+    wxSize sz = dc.GetSize();
+    if( !sz.GetWidth() || !sz.GetHeight() )
         return;
 
     temp_item.Draw( NULL, &dc, offset, GR_COPY, UNSPECIFIED_COLOR );
