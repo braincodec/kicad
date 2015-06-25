@@ -49,7 +49,7 @@
 #include <boost/foreach.hpp>
 
 #include <richio.h>
-#include <iostream>
+#include <kicad_string.h>
 
 /**
  * Used when a LIB_PART is not found in library
@@ -220,9 +220,23 @@ bool SCH_POWER::Save( FILE* aFile ) const
     if( m_Italic )
         shape = "Italic";
 
-    if( fprintf( aFile, "Text GPLabel %-4d %-4d %-4d %-4d %s %s %d\n%s\n",
+    wxString visible_nospace = m_visible_text;
+    visible_nospace.Replace( _( " " ), _( "~" ) );
+
+    if( m_part_name.Find( _( " " ) ) != wxNOT_FOUND )
+    {
+        wxFAIL_MSG( "Power port's part name must not contain a space" );
+        return false;
+    }
+
+    std::string visible_text_escaped = EscapedUTF8( m_visible_text );
+    std::string part_name_escaped = EscapedUTF8( m_part_name );
+
+    if( fprintf( aFile, "Text GPLabel %-4d %-4d %-4d %-4d %s %s %d %d %s %s\n%s\n",
                  m_Pos.x, m_Pos.y, m_schematicOrientation, m_Size.x,
-                 SheetLabelType[m_shape], shape, m_Thickness, TO_UTF8( m_Text ) ) == EOF )
+                 SheetLabelType[m_shape], shape, m_Thickness,
+                 m_label_hidden ? 1 : 0, visible_text_escaped.c_str(), part_name_escaped.c_str(),
+                 TO_UTF8( m_Text ) ) == EOF )
     {
         success = false;
     }
@@ -236,7 +250,9 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
     char      Name1[256];
     char      Name2[256];
     char      Name3[256];
-    int       thickness = 0, size = 0, orient = 0;
+    char      VisibleText[256];
+    char      PartName[256];
+    int       thickness = 0, size = 0, orient = 0, label_hidden = 0;
 
     Name1[0] = 0; Name2[0] = 0; Name3[0] = 0;
 
@@ -246,10 +262,11 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
         sline++;
 
     // sline points the start of parameters
-    int ii = sscanf( sline, "%s %d %d %d %d %s %s %d", Name1, &m_Pos.x, &m_Pos.y,
-                     &orient, &size, Name2, Name3, &thickness );
+    int ii = sscanf( sline, "%255s %d %d %d %d %255s %255s %d %d %255s %255s", Name1, &m_Pos.x,
+            &m_Pos.y, &orient, &size, Name2, Name3, &thickness, &label_hidden, VisibleText,
+            PartName);
 
-    if( ii < 4 )
+    if( ii < 11 )
     {
         aErrorMsg.Printf( wxT( "Eeschema file power port load error at line %d" ),
                           aLine.LineNumber() );
@@ -296,6 +313,11 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
 
     if( stricmp( Name3, "Italic" ) == 0 )
         m_Italic = 1;
+
+    ReadDelimitedText( &m_visible_text, VisibleText );
+    m_visible_text.Replace( _( "~" ), _( " " ) );
+    ReadDelimitedText( &m_part_name, PartName );
+    m_label_hidden = label_hidden;
 
     return true;
 }
