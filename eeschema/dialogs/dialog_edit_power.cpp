@@ -37,6 +37,7 @@
 #include <confirm.h>
 #include <sch_text.h>
 #include <sch_power.h>
+#include <sch_component.h>
 #include <typeinfo>
 #include <boost/foreach.hpp>
 
@@ -122,25 +123,37 @@ public:
 
 /**
  * Automatically choose a symbol style based on the provided net.
+ *
+ * Populates the provided SCH_POWER with the settings.
  */
-static wxString heur_choose_style( wxString aNet )
+static void heur_choose_style( wxString aNet, SCH_POWER* aItem )
 {
+    aItem->SetText( aNet );
+    aItem->SetVisibleText( wxEmptyString );
+    aItem->SetLabelHidden( false );
+
     if( aNet == _( "CGND" ) )
-        return _( "CHASSIS" );
+        aItem->SetPartName( _( "CHASSIS" ) );
 
-    if( aNet == _( "EGND" ) || aNet == _( "EARTH" ) )
-        return _( "EARTH" );
+    else if( aNet == _( "EGND" ) || aNet == _( "EARTH" ) )
+        aItem->SetPartName( _( "EARTH" ) );
 
-    if( aNet.Find( _( "GND" ) ) != wxNOT_FOUND )
-        return _( "GND" );
+    else if( aNet == _( "GND" ) )
+    {
+        aItem->SetPartName( _( "GND" ) );
+        aItem->SetLabelHidden( true );
+    }
+    else if( aNet.Find( _( "GND" ) ) != wxNOT_FOUND )
+        aItem->SetPartName( _( "GND" ) );
 
-    if( aNet == _( "VSS" ) || aNet == _( "VEE" ) )
-        return gsStyleName + _( "_DOWN" );
+    else if( aNet == _( "VSS" ) || aNet == _( "VEE" ) )
+        aItem->SetPartName( gsStyleName + _( "_DOWN" ) );
 
-    if( aNet.StartsWith( _( "-" ) ) || aNet.EndsWith( _( "-" ) ) )
-        return gsStyleName + _( "_DOWN" );
+    else if( aNet.StartsWith( _( "-" ) ) || aNet.EndsWith( _( "-" ) ) )
+        aItem->SetPartName( gsStyleName + _( "_DOWN" ) );
 
-    return gsStyleName + _( "_UP" );
+    else
+        aItem->SetPartName( gsStyleName + _( "_UP" ) );
 }
 
 
@@ -195,6 +208,25 @@ static wxClientData* get_selected_data( wxDataViewTreeCtrl* aDataView )
 }
 
 
+/**
+ * Function get_components
+ * Fills a vector with all of the project's components.
+ */
+static void get_components( std::vector<SCH_COMPONENT*>& aComponents )
+{
+    SCH_SCREENS screens;
+    for( SCH_SCREEN* screen = screens.GetFirst(); screen; screen = screens.GetNext() )
+    {
+        for( SCH_ITEM* item = screen->GetDrawItems(); item; item = item->Next() )
+        {
+            SCH_COMPONENT* component = dynamic_cast<SCH_COMPONENT*>( item );
+            if( component )
+                aComponents.push_back( component );
+        }
+    }
+}
+
+
 class DIALOG_EDIT_POWER: public DIALOG_EDIT_POWER_BASE
 {
 public:
@@ -203,6 +235,7 @@ public:
 private:
     SCH_EDIT_FRAME* m_parent;
     SCH_POWER* m_poweritem;
+    SCH_POWER m_dummy;
 
     // Map of "All Styles" item names to actual items
     std::map<wxString, wxDataViewItem> m_dvitems;
@@ -220,6 +253,10 @@ private:
      */
     void PopulateLib();
 
+    // Configure and fill sections of the Library tree.
+    void PopulateCommonPorts();
+    void PopulateHiddenPins();
+
     bool TransferDataToWindow();
     bool TransferDataFromWindow();
     void OnCancelClick( wxCommandEvent& event );
@@ -231,6 +268,16 @@ private:
 
     void OnStyleChange( wxDataViewEvent& event );
     void OnLibChange( wxDataViewEvent& event );
+
+    /**
+     * Add a template port to the library using heuristics
+     */
+    void AddLibPort( wxDataViewItem* aParent, const wxString& aNet );
+
+    /**
+     * Add a template port from a SCH_POWER item. Takes ownership of the pointer.
+     */
+    void AddLibPort( wxDataViewItem* aParent, SCH_POWER* aPort );
 
     /**
      * Transfer data to the window from a given SCH_POWER
@@ -316,7 +363,8 @@ wxIcon render_power_as_icon( SCH_POWER* aPart, int aWidth=48, int aHeight=48 )
 DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPowerItem )
     : DIALOG_EDIT_POWER_BASE( aParent ),
       m_parent( aParent ),
-      m_poweritem( aPowerItem )
+      m_poweritem( aPowerItem ),
+      m_dummy( wxPoint( 0, 0 ), wxEmptyString )
 {
     m_stdButtonsOK->SetDefault();
     m_panAdvanced->Hide();
@@ -369,13 +417,8 @@ struct libspec {
 };
 
 
-void DIALOG_EDIT_POWER::PopulateLib()
+void DIALOG_EDIT_POWER::PopulateCommonPorts()
 {
-    // Draw the styles
-    fix_column( m_dvtLib );
-
-    wxDataViewItem gnd;
-
     wxDataViewItem dviCommon = m_dvtLib->AppendContainer(
             wxDataViewItem( 0 ), _( "Common Ports" ), 1 );
 
@@ -389,15 +432,48 @@ void DIALOG_EDIT_POWER::PopulateLib()
         power_item->SetVisibleText( port.visiblename );
         power_item->SetPartName( port.partname );
         power_item->SetLabelHidden( !port.namevisible );
-        power_item->Resolve( Prj().SchLibs() );
 
-        wxDataViewItem dvitem = m_dvtLib->AppendItem(
-                dviCommon, port.netname, -1, new wxUintClientData( m_library.size() ) );
-        wxIcon icon = render_power_as_icon( power_item.get() );
-        m_dvtLib->SetItemIcon( dvitem, icon );
-        m_library.push_back( power_item.release() );
+        AddLibPort( &dviCommon, power_item.release() );
     }
     m_dvtLib->Expand( dviCommon );
+}
+
+
+void DIALOG_EDIT_POWER::PopulateHiddenPins()
+{
+    wxDataViewItem dviHP = m_dvtLib->AppendContainer(
+            wxDataViewItem( 0 ), _( "Hidden Pins" ), 1 );
+
+    std::vector<SCH_COMPONENT*> components;
+    std::set<wxString> ports;
+    get_components( components );
+
+    // Gather all the hidden pins from components
+    BOOST_FOREACH( SCH_COMPONENT* component, components )
+    {
+        std::vector<wxString> pinlist;
+        component->GetPowerPortNames( pinlist );
+        BOOST_FOREACH( const wxString& pinname, pinlist )
+        {
+            ports.insert( pinname );
+        }
+    }
+
+    // Make template power ports for all of them
+    BOOST_FOREACH( const wxString& port, ports )
+    {
+        AddLibPort( &dviHP, port );
+    }
+}
+
+
+void DIALOG_EDIT_POWER::PopulateLib()
+{
+    // Draw the styles
+    fix_column( m_dvtLib );
+
+    PopulateCommonPorts();
+    PopulateHiddenPins();
 }
 
 
@@ -450,7 +526,10 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER& aPoweritem )
 
     wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
     if( name == gsNameAutomatic || name == wxEmptyString )
-        aPoweritem.SetPartName( heur_choose_style( m_textNet->GetValue() ) );
+    {
+        heur_choose_style( m_textNet->GetValue(), &m_dummy );
+        aPoweritem.SetPartName( m_dummy.GetPartName() );
+    }
     else
         aPoweritem.SetPartName( name );
     aPoweritem.Resolve( Prj().SchLibs() );
@@ -523,6 +602,27 @@ void DIALOG_EDIT_POWER::OnLibChange( wxDataViewEvent& event )
     TransferDataToWindow( m_library[lib_item_index] );
 
     m_pPreview->Refresh();
+}
+
+
+void DIALOG_EDIT_POWER::AddLibPort( wxDataViewItem* aParent, const wxString& aNet )
+{
+    std::auto_ptr<SCH_POWER> power_item( new SCH_POWER( wxPoint( 0, 0 ), aNet ) );
+    heur_choose_style( aNet, power_item.get() );
+    AddLibPort( aParent, power_item.release() );
+}
+
+
+void DIALOG_EDIT_POWER::AddLibPort( wxDataViewItem* aParent, SCH_POWER* aPort )
+{
+    std::auto_ptr<SCH_POWER> power_item( aPort );
+    power_item->Resolve( Prj().SchLibs() );
+
+    wxDataViewItem dvitem = m_dvtLib->AppendItem(
+            *aParent, aPort->GetText(), -1, new wxUintClientData( m_library.size() ) );
+    wxIcon icon = render_power_as_icon( power_item.get() );
+    m_dvtLib->SetItemIcon( dvitem, icon );
+    m_library.push_back( power_item.release() );
 }
 
 

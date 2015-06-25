@@ -1843,6 +1843,23 @@ SEARCH_RESULT SCH_COMPONENT::Visit( INSPECTOR* aInspector, const void* aTestData
 }
 
 
+void SCH_COMPONENT::GetPowerPortNames( std::vector<wxString>& aList )
+{
+    if( PART_SPTR part = m_part.lock() )
+    {
+        for( LIB_PIN* pin = part->GetNextPin(); pin; pin = part->GetNextPin( pin ) )
+        {
+            wxASSERT( pin->Type() == LIB_PIN_T );
+
+            if( pin->GetType() == PIN_POWER_IN && !pin->IsVisible() )
+            {
+                aList.push_back( pin->GetName() );
+            }
+        }
+    }
+}
+
+
 void SCH_COMPONENT::GetNetListItem( NETLIST_OBJECT_LIST& aNetListItems,
                                     SCH_SHEET_PATH*      aSheetPath )
 {

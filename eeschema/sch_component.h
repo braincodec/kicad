@@ -442,6 +442,11 @@ public:
 
     BITMAP_DEF GetMenuImage() const { return  add_component_xpm; }
 
+    /**
+     * Get names of all hidden power pins.
+     */
+    void GetPowerPortNames( std::vector<wxString>& aList );
+
     void GetNetListItem( NETLIST_OBJECT_LIST& aNetListItems,
                          SCH_SHEET_PATH*      aSheetPath );
 
