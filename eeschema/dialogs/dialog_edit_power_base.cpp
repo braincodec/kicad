@@ -96,7 +96,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	bSizer9->Add( m_stStyles, 0, wxALL, 5 );
 	
 	m_dvlStyles = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( m_dvlStyles, 2, wxALL|wxEXPAND, 5 );
+	bSizer9->Add( m_dvlStyles, 1, wxALL|wxEXPAND, 5 );
 	
 	m_stPreview = new wxStaticText( this, wxID_ANY, _("Preview:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_stPreview->Wrap( -1 );
@@ -105,7 +105,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_pPreview = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER|wxTAB_TRAVERSAL );
 	m_pPreview->SetMinSize( wxSize( 150,150 ) );
 	
-	bSizer9->Add( m_pPreview, 1, wxEXPAND | wxALL, 5 );
+	bSizer9->Add( m_pPreview, 0, wxEXPAND | wxALL, 5 );
 	
 	
 	bSizer7->Add( bSizer9, 1, wxEXPAND, 5 );

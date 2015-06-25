@@ -86,7 +86,7 @@ wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
     const wxSize dc_size = dc.GetSize();
     dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
 
-    EDA_RECT bbox = aPart->GetBoundingBox(1, 1);
+    EDA_RECT bbox = aPart->GetBodyBoundingBox(1, 1);
     const double xscale = (double) dc_size.x / bbox.GetWidth();
     const double yscale = (double) dc_size.y / bbox.GetHeight();
     const double scale = std::min( xscale, yscale ) * 0.85;
