@@ -46,6 +46,7 @@
 
 
 static const wxString gsStyleName( _( "FLAT" ) );
+static const wxString gsNameAutomatic( _( "::AUTOMATIC" ) );
 
 static wxString heur_choose_style( wxString aNet )
 {
@@ -67,6 +68,36 @@ static wxString heur_choose_style( wxString aNet )
     return gsStyleName + _( "_UP" );
 }
 
+
+/**
+ * Function create_renderer
+ * Creates a wxDataViewRenderer for use in the trees
+ */
+static std::auto_ptr<wxDataViewRenderer> create_renderer()
+{
+    std::auto_ptr<wxDataViewRenderer> treerenderer( new wxDataViewIconTextRenderer(
+                _( "wxDataViewIconText" ), wxDATAVIEW_CELL_INERT,
+                wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL ) );
+    return treerenderer;
+}
+
+
+/**
+ * Function fix_column
+ * Delete the editable column that is created by default in the wxDataViewTreeCtrl and
+ * replace it with a non-editable column.
+ */
+static void fix_column( wxDataViewTreeCtrl* aCtrl )
+{
+    std::auto_ptr<wxDataViewRenderer> renderer = create_renderer();
+
+    wxDataViewColumn* col = aCtrl->GetColumn( 0 );
+    aCtrl->DeleteColumn( col );
+    aCtrl->AppendColumn( new wxDataViewColumn( wxEmptyString, renderer.release(), 0,
+                wxDVC_DEFAULT_WIDTH, wxALIGN_CENTER, 0 ) );
+}
+
+
 class SCH_EDIT_FRAME;
 
 class DIALOG_EDIT_POWER: public DIALOG_EDIT_POWER_BASE
@@ -77,7 +108,7 @@ public:
 private:
     SCH_EDIT_FRAME* m_parent;
     SCH_POWER* m_poweritem;
-    std::vector<wxString> m_stylenames;
+    std::map<wxString, wxDataViewItem> m_dvitems;
 
     bool TransferDataToWindow();
     bool TransferDataFromWindow( SCH_POWER* aPoweritem );
@@ -135,6 +166,9 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
       m_parent( aParent ),
       m_poweritem( aPowerItem )
 {
+    // Get a renderer for each tree
+    std::auto_ptr<wxDataViewRenderer> style_renderer = create_renderer();
+
     m_stdButtonsOK->SetDefault();
     m_panAdvanced->Hide();
     m_textNet->SetFocus();
@@ -144,22 +178,25 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
     wxArrayString lib_names;
     lib->GetEntryNames( lib_names );
 
-    m_dvlStyles->AppendIconTextColumn( _( "Name" ) );
-    wxVector<wxVariant> data;
-    wxDataViewIconText auto_icontext( _( "Automatic" ) );
-    data.push_back( wxVariant( auto_icontext ) );
-    m_dvlStyles->AppendItem( data );
+    fix_column( m_dvtStyles );
 
+    wxDataViewItem automatic = m_dvtStyles->AppendItem(
+            wxDataViewItem( 0 ), _( "Automatic" ), 1,
+            new wxStringClientData( gsNameAutomatic ) );
+    m_dvtStyles->Select( automatic );
+
+    wxDataViewItem allStyles = m_dvtStyles->InsertContainer(
+            wxDataViewItem( 0 ), automatic, _( "All Styles" ), 1 );
     BOOST_FOREACH( wxString& each_name, lib_names )
     {
-        m_stylenames.push_back( each_name );
+        wxDataViewItem item = m_dvtStyles->AppendItem(
+                allStyles, each_name, -1,
+                new wxStringClientData( each_name ) );
 
-        wxVector<wxVariant> data;
         LIB_PART* part = lib->FindPart( each_name );
         wxIcon icon = render_part_as_icon( part );
-        wxDataViewIconText icontext( each_name, icon );
-        data.push_back( wxVariant( icontext ) );
-        m_dvlStyles->AppendItem( data );
+        m_dvtStyles->SetItemIcon( item, icon );
+        m_dvitems[each_name] = item;
     }
 }
 
@@ -172,14 +209,9 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
     m_textNet->SetValue( m_poweritem->GetText() );
     m_textLabelText->SetValue( m_poweritem->GetVisibleText() );
     m_cbHideLabel->SetValue( m_poweritem->GetLabelHidden() );
-
-    m_dvlStyles->SelectRow( 0 );
-    for( unsigned ii = 0; ii < m_stylenames.size(); ++ii )
+    if( m_dvitems.count( m_poweritem->GetPartName() ) )
     {
-        if( m_stylenames[ii] == m_poweritem->GetPartName() )
-        {
-            m_dvlStyles->SelectRow( ii + 1 );
-        }
+        m_dvtStyles->Select( m_dvitems[m_poweritem->GetPartName()] );
     }
 
     GetSizer()->Layout();
@@ -206,18 +238,24 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER* aPoweritem )
     aPoweritem->SetVisibleText( m_textLabelText->GetValue() );
     aPoweritem->SetLabelHidden( m_cbHideLabel->GetValue() );
 
-    int stylerow = m_dvlStyles->GetSelectedRow();
-    if( stylerow == wxNOT_FOUND )
-        stylerow = 0;
-    if( stylerow > 0 )
+    wxDataViewItem sel = m_dvtStyles->GetSelection();
+    wxClientData* data = NULL;
+    if( sel.IsOk() )
+        data = m_dvtStyles->GetItemData( sel );
+
+    if( data )
     {
-        aPoweritem->SetPartName( m_stylenames[stylerow - 1] );
+        wxString name = dynamic_cast<wxStringClientData&>( *data ).GetData();
+
+        if( name == gsNameAutomatic )
+            aPoweritem->SetPartName( heur_choose_style( m_textNet->GetValue() ) );
+        else
+            aPoweritem->SetPartName( name );
     }
     else
     {
         aPoweritem->SetPartName( heur_choose_style( m_textNet->GetValue() ) );
     }
-
     aPoweritem->Resolve( Prj().SchLibs() );
     return true;
 }

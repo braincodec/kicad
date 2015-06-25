@@ -95,10 +95,8 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_stStyles->Wrap( -1 );
 	bSizer9->Add( m_stStyles, 0, wxALL, 5 );
 	
-	m_dvlStyles = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	m_dvlStyles->SetMinSize( wxSize( -1,200 ) );
-	
-	bSizer9->Add( m_dvlStyles, 1, wxALL|wxEXPAND, 5 );
+	m_dvtStyles = new wxDataViewTreeCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_VARIABLE_LINE_HEIGHT );
+	bSizer9->Add( m_dvtStyles, 1, wxALL|wxEXPAND, 5 );
 	
 	m_stPreview = new wxStaticText( this, wxID_ANY, _("Preview:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_stPreview->Wrap( -1 );

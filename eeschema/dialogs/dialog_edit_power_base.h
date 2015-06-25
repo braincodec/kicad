@@ -57,7 +57,7 @@ class DIALOG_EDIT_POWER_BASE : public DIALOG_SHIM
 		wxStaticText* m_stNet;
 		wxTextCtrl* m_textNet;
 		wxStaticText* m_stStyles;
-		wxDataViewListCtrl* m_dvlStyles;
+		wxDataViewTreeCtrl* m_dvtStyles;
 		wxStaticText* m_stPreview;
 		wxPanel* m_pPreview;
 		wxStdDialogButtonSizer* m_stdButtons;
