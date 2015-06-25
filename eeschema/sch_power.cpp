@@ -202,6 +202,7 @@ SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
     m_MultilineAllowed = false;
     m_transform = TRANSFORM();
     SetPartName( text );
+    m_label_hidden = false;
     m_part = dummy()->SharedPtr();
 }
 
