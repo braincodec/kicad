@@ -67,6 +67,7 @@ class DIALOG_EDIT_POWER_BASE : public DIALOG_SHIM
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnToggleAdvanced( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDataChanged( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnChangeStyle( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnPreviewRepaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnCancelClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnOkClick( wxCommandEvent& event ) { event.Skip(); }

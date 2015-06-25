@@ -36,6 +36,7 @@
 #include <class_libentry.h>
 
 #include <project.h>
+#include <richio.h>
 
 class LINE_READER;
 class OUTPUTFORMATTER;
@@ -388,6 +389,14 @@ public:
      * @return True if load was successful otherwise false.
      */
     bool Load( wxString& aErrorMsg );
+
+    /**
+     * Load library from any LINE_READER.
+     *
+     * @param aErrorMsg - Error message if load fails.
+     * @return True if load was successful otherwise false.
+     */
+    bool Load( LINE_READER& aLineReader, wxString& aErrorMsg );
 
     bool LoadDocs( wxString& aErrorMsg );
 

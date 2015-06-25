@@ -38,6 +38,7 @@
 #include <sch_text.h>
 #include <sch_power.h>
 #include <typeinfo>
+#include <boost/foreach.hpp>
 
 #include <dialog_edit_power_base.h>
 
@@ -53,6 +54,7 @@ public:
 private:
     SCH_EDIT_FRAME* m_parent;
     SCH_POWER* m_poweritem;
+    std::vector<wxString> m_stylenames;
 
     bool TransferDataToWindow();
     bool TransferDataFromWindow( SCH_POWER* aPoweritem );
@@ -62,7 +64,47 @@ private:
     void OnToggleAdvanced( wxCommandEvent& event );
     void OnDataChanged( wxCommandEvent& event );
     void OnPreviewRepaint( wxPaintEvent& aRepaintEvent );
+    void OnChangeStyle( wxDataViewEvent& event );
 };
+
+
+wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
+{
+    wxIcon icon;
+
+    icon.SetWidth( aWidth );
+    icon.SetHeight( aHeight );
+
+    wxBitmap bmp( aWidth, aHeight );
+
+    wxMemoryDC dc( bmp );
+    EDA_COLOR_T bgcolor = WHITE;
+
+    dc.SetBackground( bgcolor == BLACK ? *wxBLACK_BRUSH : *wxWHITE_BRUSH );
+    dc.Clear();
+
+    const wxSize dc_size = dc.GetSize();
+    dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
+
+    EDA_RECT bbox = aPart->GetBoundingBox(1, 1);
+    const double xscale = (double) dc_size.x / bbox.GetWidth();
+    const double yscale = (double) dc_size.y / bbox.GetHeight();
+    const double scale = std::min( xscale, yscale ) * 0.85;
+
+    dc.SetUserScale( scale, scale );
+    wxPoint offset = -bbox.Centre();
+
+    int width, height;
+    dc.GetSize( &width, &height );
+    if( !width || !height )
+        return icon;
+
+    aPart->Draw( NULL, &dc, offset, 1, 1, GR_COPY, UNSPECIFIED_COLOR,
+            DefaultTransform, false, false, false, NULL );
+
+    icon.CopyFromBitmap( bmp );
+    return icon;
+}
 
 
 DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPowerItem )
@@ -73,6 +115,24 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
     m_stdButtonsOK->SetDefault();
     m_panAdvanced->Hide();
     m_textNet->SetFocus();
+
+    // Draw the styles
+    PART_LIB* lib = SCH_POWER::GetPartLib();
+    wxArrayString lib_names;
+    lib->GetEntryNames( lib_names );
+
+    m_dvlStyles->AppendIconTextColumn( _( "Name" ) );
+    BOOST_FOREACH( wxString& each_name, lib_names )
+    {
+        m_stylenames.push_back( each_name );
+
+        wxVector<wxVariant> data;
+        LIB_PART* part = lib->FindPart( each_name );
+        wxIcon icon = render_part_as_icon( part );
+        wxDataViewIconText icontext( each_name, icon );
+        data.push_back( wxVariant( icontext ) );
+        m_dvlStyles->AppendItem( data );
+    }
 }
 
 
@@ -84,6 +144,15 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
     m_textNet->SetValue( m_poweritem->GetText() );
     m_textLabelText->SetValue( m_poweritem->GetVisibleText() );
     m_cbHideLabel->SetValue( m_poweritem->GetLabelHidden() );
+
+    for( unsigned ii = 0; ii < m_stylenames.size(); ++ii )
+    {
+        if( m_stylenames[ii] == m_poweritem->GetPartName() )
+        {
+            m_dvlStyles->SelectRow( ii );
+        }
+    }
+
     GetSizer()->Layout();
     GetSizer()->Fit( this );
     GetSizer()->SetSizeHints( this );
@@ -106,6 +175,12 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER* aPoweritem )
     aPoweritem->SetText( m_textNet->GetValue() );
     aPoweritem->SetVisibleText( m_textLabelText->GetValue() );
     aPoweritem->SetLabelHidden( m_cbHideLabel->GetValue() );
+
+    int stylerow = m_dvlStyles->GetSelectedRow();
+    if( stylerow == wxNOT_FOUND )
+        stylerow = 0;
+    aPoweritem->SetPartName( m_stylenames[stylerow] );
+
     aPoweritem->Resolve( Prj().SchLibs() );
     return true;
 }
@@ -138,6 +213,12 @@ void DIALOG_EDIT_POWER::OnToggleAdvanced( wxCommandEvent& aEvent )
 
 
 void DIALOG_EDIT_POWER::OnDataChanged( wxCommandEvent& event )
+{
+    m_pPreview->Refresh();
+}
+
+
+void DIALOG_EDIT_POWER::OnChangeStyle( wxDataViewEvent& event )
 {
     m_pPreview->Refresh();
 }

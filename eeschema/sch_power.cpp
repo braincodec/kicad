@@ -48,6 +48,7 @@
 #include <lib_text.h>
 #include <boost/foreach.hpp>
 
+#include <richio.h>
 #include <iostream>
 
 /**
@@ -63,13 +64,14 @@
  * ENDDRAW
  * ENDDEF
  */
+static std::auto_ptr<LIB_PART> sgDummy;
 static LIB_PART* dummy()
 {
-    static LIB_PART* part;
-
-    if( !part )
+    if( !sgDummy.get() )
     {
-        part = new LIB_PART( wxEmptyString );
+        std::auto_ptr<LIB_PART> partaptr( new LIB_PART( wxEmptyString ) );
+
+        LIB_PART* part = partaptr.get();
 
         LIB_RECTANGLE* square = new LIB_RECTANGLE( part );
 
@@ -83,9 +85,110 @@ static LIB_PART* dummy()
 
         part->AddDrawItem( square );
         part->AddDrawItem( text );
+
+        sgDummy = partaptr;
     }
 
-    return part;
+    return sgDummy.get();
+}
+
+static const std::string symbol_lib_data =
+    "EESchema-LIBRARY Version 2.3\n"
+    "#encoding utf-8\n"
+    "#\n"
+    "# CHASSIS\n"
+    "#\n"
+    "DEF CHASSIS #PWR 0 0 Y Y 1 L P\n"
+    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
+    "F1 \"CHASSIS\" -20 -80 30 H V C CNN\n"
+    "F2 \"\" 0 0 60 H V C CNN\n"
+    "F3 \"\" 0 0 60 H V C CNN\n"
+    "DRAW\n"
+    "P 2 0 0 0  -50 0  -75 -50 N\n"
+    "P 2 0 0 0  -50 0  50 0 N\n"
+    "P 2 0 0 0  0 0  -25 -50 N\n"
+    "P 2 0 0 0  50 0  25 -50 N\n"
+    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
+    "ENDDRAW\n"
+    "ENDDEF\n"
+    "#\n"
+    "# EARTH\n"
+    "#\n"
+    "DEF EARTH #PWR 0 0 Y Y 1 L P\n"
+    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
+    "F1 \"EARTH\" 0 -80 30 H V C CNN\n"
+    "F2 \"\" 0 0 60 H V C CNN\n"
+    "F3 \"\" 0 0 60 H V C CNN\n"
+    "DRAW\n"
+    "P 2 0 0 0  -50 0  50 0 N\n"
+    "P 2 0 0 0  -5 -50  5 -50 N\n"
+    "P 2 0 0 0  25 -25  -25 -25 N\n"
+    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
+    "ENDDRAW\n"
+    "ENDDEF\n"
+    "#\n"
+    "# FLAT_DOWN\n"
+    "#\n"
+    "DEF FLAT_DOWN #PWR 0 0 Y Y 1 L P\n"
+    "F0 \"#PWR\" 0 -50 30 H I C CNN\n"
+    "F1 \"FLAT_DOWN\" 0 -100 50 H V C CNN\n"
+    "F2 \"\" 0 0 60 H V C CNN\n"
+    "F3 \"\" 0 0 60 H V C CNN\n"
+    "DRAW\n"
+    "P 2 0 1 0  0 -50  0 -30 N\n"
+    "P 2 0 1 0  0 -30  0 0 N\n"
+    "P 5 0 1 0  -50 -60  50 -60  50 -50  -50 -50  -50 -60 F\n"
+    "X NET 1 0 0 0 D 30 30 1 1 W N\n"
+    "ENDDRAW\n"
+    "ENDDEF\n"
+    "#\n"
+    "# FLAT_UP\n"
+    "#\n"
+    "DEF FLAT_UP #PWR 0 0 Y Y 1 L P\n"
+    "F0 \"#PWR\" 0 50 30 H I C CNN\n"
+    "F1 \"FLAT_UP\" 0 100 50 H V C CNN\n"
+    "F2 \"\" 0 0 60 H V C CNN\n"
+    "F3 \"\" 0 0 60 H V C CNN\n"
+    "DRAW\n"
+    "P 2 0 1 0  0 30  0 0 N\n"
+    "P 2 0 1 0  0 50  0 30 N\n"
+    "P 5 0 1 0  -50 60  50 60  50 50  -50 50  -50 60 F\n"
+    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
+    "ENDDRAW\n"
+    "ENDDEF\n"
+    "#\n"
+    "# GND\n"
+    "#\n"
+    "DEF GND #PWR 0 0 Y Y 1 L P\n"
+    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
+    "F1 \"GND\" 0 -70 30 H V C CNN\n"
+    "F2 \"\" 0 0 60 H V C CNN\n"
+    "F3 \"\" 0 0 60 H V C CNN\n"
+    "DRAW\n"
+    "P 4 0 1 0  -50 0  0 -50  50 0  -50 0 N\n"
+    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
+    "ENDDRAW\n"
+    "ENDDEF\n"
+    "#\n"
+    "#End Library\n";
+
+static std::auto_ptr<PART_LIB> sgSymbolLib;
+static PART_LIB* get_symbol_library()
+{
+    if( !sgSymbolLib.get() )
+    {
+        std::auto_ptr<PART_LIB> lib( new PART_LIB( LIBRARY_TYPE_EESCHEMA, wxEmptyString ) );
+
+        STRING_LINE_READER reader(symbol_lib_data, "hard-coded library");
+        wxString error_msg;
+
+        bool r = lib->Load( reader, error_msg );
+        wxASSERT_MSG( r, _( "Internal error reading hard-coded library: " ) + error_msg );
+
+        sgSymbolLib = lib;
+    }
+
+    return sgSymbolLib.get();
 }
 
 
@@ -397,7 +500,7 @@ void SCH_POWER::SetOrientation( int aOrientation )
 
     default:
         transform = false;
-        wxMessageBox( wxT( "SetRotateMiroir() error: ill value" ) );
+        wxMessageBox( wxT( "SetOrientation() error: invalid orientation" ) );
         break;
     }
 
@@ -461,92 +564,6 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
 
 void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& Pos )
 {
-    int HalfSize  = m_Size.y / 2;
-    int linewidth = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
-
-    linewidth = Clamp_Text_PenSize( linewidth, m_Size, m_Bold );
-
-    aPoints.clear();
-
-    int symb_len = LenSize( GetShownText() ) + ( TXTMARGE * 2 );
-
-    // Create outline shape : 6 points
-    int x = symb_len + linewidth + 3;
-
-    // Use negation bar Y position to calculate full vertical size
-    #define Y_CORRECTION 1.3
-    // Note: this factor is due to the fact the negation bar Y position
-    // does not give exactly the full Y size of text
-    // and is experimentally set  to this value
-    int y = KiROUND( OverbarPositionY( HalfSize ) * Y_CORRECTION );
-    // add room for line thickness and space between top of text and graphic shape
-    y += linewidth;
-
-    // Starting point(anchor)
-    aPoints.push_back( wxPoint( 0, 0 ) );
-    aPoints.push_back( wxPoint( 0, -y ) );     // Up
-    aPoints.push_back( wxPoint( -x, -y ) );    // left
-    aPoints.push_back( wxPoint( -x, 0 ) );     // Up left
-    aPoints.push_back( wxPoint( -x, y ) );     // left down
-    aPoints.push_back( wxPoint( 0, y ) );      // down
-
-    int x_offset = 0;
-
-    switch( m_shape )
-    {
-    case NET_INPUT:
-        x_offset = -HalfSize;
-        aPoints[0].x += HalfSize;
-        break;
-
-    case NET_OUTPUT:
-        aPoints[3].x -= HalfSize;
-        break;
-
-    case NET_BIDI:
-    case NET_TRISTATE:
-        x_offset = -HalfSize;
-        aPoints[0].x += HalfSize;
-        aPoints[3].x -= HalfSize;
-        break;
-
-    case NET_UNSPECIFIED:
-    default:
-        break;
-    }
-
-    int angle = 0;
-
-    switch( m_schematicOrientation )
-    {
-    case 0:             /* Orientation horiz normal */
-        break;
-
-    case 1:             /* Orientation vert UP */
-        angle = -900;
-        break;
-
-    case 2:             /* Orientation horiz inverse */
-        angle = 1800;
-        break;
-
-    case 3:             /* Orientation vert BOTTOM */
-        angle = 900;
-        break;
-    }
-
-    // Rotate outlines and move corners in real position
-    for( unsigned ii = 0; ii < aPoints.size(); ii++ )
-    {
-        aPoints[ii].x += x_offset;
-
-        if( angle )
-            RotatePoint( &aPoints[ii], angle );
-
-        aPoints[ii] += Pos;
-    }
-
-    aPoints.push_back( aPoints[0] ); // closing
 }
 
 
@@ -641,7 +658,7 @@ void SCH_POWER::SetPartName( const wxString& aName, PART_LIBS* aLibs )
 
 bool SCH_POWER::Resolve( PART_LIBS* aLibs )
 {
-    if( LIB_PART* part = aLibs->FindLibPart( m_part_name ) )
+    if( LIB_PART* part = get_symbol_library()->FindPart( m_part_name ) )
     {
         m_part = part->SharedPtr();
     }
@@ -667,5 +684,9 @@ void SCH_POWER::ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs )
 void SCH_POWER::SetText( const wxString& aText )
 {
     EDA_TEXT::SetText( aText );
-    SetPartName( aText );
+}
+
+PART_LIB* SCH_POWER::GetPartLib()
+{
+    return get_symbol_library();
 }

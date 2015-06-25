@@ -459,8 +459,6 @@ LIB_ALIAS* PART_LIB::GetPreviousEntry( const wxString& aName )
 bool PART_LIB::Load( wxString& aErrorMsg )
 {
     FILE*          file;
-    char*          line;
-    wxString       msg;
 
     if( fileName.GetFullPath().IsEmpty() )
     {
@@ -477,6 +475,14 @@ bool PART_LIB::Load( wxString& aErrorMsg )
     }
 
     FILE_LINE_READER reader( file, fileName.GetFullPath() );
+
+    return Load( reader, aErrorMsg );
+}
+
+bool PART_LIB::Load( LINE_READER& reader, wxString& aErrorMsg )
+{
+    char*          line;
+    wxString       msg;
 
     if( !reader.ReadLine() )
     {

@@ -102,6 +102,7 @@ public:
     }
 
     void SetPartName( const wxString& aName, PART_LIBS* aLibs = NULL );
+    wxString GetPartName() const { return m_part_name; }
 
     bool Resolve( PART_LIBS* aLibs );
 
@@ -123,6 +124,12 @@ public:
 
     void SetLabelHidden( bool aHidden ) { m_label_hidden = aHidden; }
     bool GetLabelHidden() const { return m_label_hidden; }
+
+    /**
+     * Get the internal PART_LIB containing the hard-coded power symbol
+     * styles.
+     */
+    static PART_LIB* GetPartLib();
 
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }
