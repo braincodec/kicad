@@ -43,6 +43,7 @@
 #include <sch_no_connect.h>
 #include <sch_component.h>
 #include <sch_text.h>
+#include <sch_power.h>
 #include <sch_sheet.h>
 #include <sch_bitmap.h>
 #include <wildcards_and_files_ext.h>
@@ -225,8 +226,10 @@ again." );
             }
             else if( name1[0] == 'L' )
                 item = new SCH_LABEL();
-            else if( name1[0] == 'G' && version > 1 )
+            else if( name1[0] == 'G' && name1[1] != 'P' && version > 1 )
                 item = new SCH_GLOBALLABEL();
+            else if( name1[0] == 'G' && name1[1] == 'P' && version > 2 )
+                item = new SCH_POWER();
             else if( (name1[0] == 'H') || (name1[0] == 'G' && version == 1) )
                 item = new SCH_HIERLABEL();
             else
