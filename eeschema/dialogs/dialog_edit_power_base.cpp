@@ -96,6 +96,8 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	bSizer9->Add( m_stStyles, 0, wxALL, 5 );
 	
 	m_dvlStyles = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_dvlStyles->SetMinSize( wxSize( -1,200 ) );
+	
 	bSizer9->Add( m_dvlStyles, 1, wxALL|wxEXPAND, 5 );
 	
 	m_stPreview = new wxStaticText( this, wxID_ANY, _("Preview:"), wxDefaultPosition, wxDefaultSize, 0 );

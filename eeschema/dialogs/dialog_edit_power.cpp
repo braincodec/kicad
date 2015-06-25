@@ -44,6 +44,29 @@
 
 #include <iostream>
 
+
+static const wxString gsStyleName( _( "FLAT" ) );
+
+static wxString heur_choose_style( wxString aNet )
+{
+    if( aNet == _( "CGND" ) )
+        return _( "CHASSIS" );
+
+    if( aNet == _( "EGND" ) || aNet == _( "EARTH" ) )
+        return _( "EARTH" );
+
+    if( aNet.Find( _( "GND" ) ) != wxNOT_FOUND )
+        return _( "GND" );
+
+    if( aNet == _( "VSS" ) || aNet == _( "VEE" ) )
+        return gsStyleName + _( "_DOWN" );
+
+    if( aNet.StartsWith( _( "-" ) ) || aNet.EndsWith( _( "-" ) ) )
+        return gsStyleName + _( "_DOWN" );
+
+    return gsStyleName + _( "_UP" );
+}
+
 class SCH_EDIT_FRAME;
 
 class DIALOG_EDIT_POWER: public DIALOG_EDIT_POWER_BASE
@@ -122,6 +145,11 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
     lib->GetEntryNames( lib_names );
 
     m_dvlStyles->AppendIconTextColumn( _( "Name" ) );
+    wxVector<wxVariant> data;
+    wxDataViewIconText auto_icontext( _( "Automatic" ) );
+    data.push_back( wxVariant( auto_icontext ) );
+    m_dvlStyles->AppendItem( data );
+
     BOOST_FOREACH( wxString& each_name, lib_names )
     {
         m_stylenames.push_back( each_name );
@@ -145,11 +173,12 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
     m_textLabelText->SetValue( m_poweritem->GetVisibleText() );
     m_cbHideLabel->SetValue( m_poweritem->GetLabelHidden() );
 
+    m_dvlStyles->SelectRow( 0 );
     for( unsigned ii = 0; ii < m_stylenames.size(); ++ii )
     {
         if( m_stylenames[ii] == m_poweritem->GetPartName() )
         {
-            m_dvlStyles->SelectRow( ii );
+            m_dvlStyles->SelectRow( ii + 1 );
         }
     }
 
@@ -179,7 +208,14 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER* aPoweritem )
     int stylerow = m_dvlStyles->GetSelectedRow();
     if( stylerow == wxNOT_FOUND )
         stylerow = 0;
-    aPoweritem->SetPartName( m_stylenames[stylerow] );
+    if( stylerow > 0 )
+    {
+        aPoweritem->SetPartName( m_stylenames[stylerow - 1] );
+    }
+    else
+    {
+        aPoweritem->SetPartName( heur_choose_style( m_textNet->GetValue() ) );
+    }
 
     aPoweritem->Resolve( Prj().SchLibs() );
     return true;

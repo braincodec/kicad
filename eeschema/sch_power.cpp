@@ -638,7 +638,7 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 wxString SCH_POWER::GetSelectMenuText() const
 {
     wxString msg;
-    msg.Printf( _( "Global Label %s" ), GetChars( ShortenedShownText() ) );
+    msg.Printf( _( "Power Port [%s]" ), GetChars( ShortenedShownText() ) );
     return msg;
 }
 
