@@ -767,7 +767,7 @@
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
                                                 <property name="window_style"></property>
-                                                <event name="OnChar"></event>
+                                                <event name="OnChar">OnLibKey</event>
                                                 <event name="OnDataViewTreeCtrlColumnHeaderClick"></event>
                                                 <event name="OnDataViewTreeCtrlColumnHeaderRightClick"></event>
                                                 <event name="OnDataViewTreeCtrlColumnReordered"></event>

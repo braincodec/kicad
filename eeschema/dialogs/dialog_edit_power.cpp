@@ -122,6 +122,17 @@ public:
 
 
 /**
+ * Used to hold the data of a SCH_POWER without a full instance.
+ */
+struct libspec {
+    wxString netname;
+    wxString visiblename;
+    wxString partname;
+    bool namevisible;
+};
+
+
+/**
  * Automatically choose a symbol style based on the provided net.
  *
  * Populates the provided SCH_POWER with the settings.
@@ -228,6 +239,15 @@ static void get_type( std::vector<T*>& aComponents )
 }
 
 
+/**
+ * History is kept in two ways. This keeps a per-application-instance history of power ports
+ * placed, allowing them to remain in the history after being deleted. Then, history is also
+ * compiled from the schematic itself, allowing the history to be immediately populated upon
+ * opening a schematic.
+ */
+static boost::ptr_vector<SCH_POWER> History;
+
+
 class DIALOG_EDIT_POWER: public DIALOG_EDIT_POWER_BASE
 {
 public:
@@ -267,6 +287,7 @@ private:
     void OnDataChanged( wxCommandEvent& event );
     void OnPreviewRepaint( wxPaintEvent& aRepaintEvent );
     void OnTreeChange( wxDataViewEvent& event );
+    void OnLibKey( wxKeyEvent& event );
 
     void OnStyleChange( wxDataViewEvent& event );
     void OnLibChange( wxDataViewEvent& event );
@@ -412,14 +433,6 @@ void DIALOG_EDIT_POWER::PopulateStyles()
 }
 
 
-struct libspec {
-    wxString netname;
-    wxString visiblename;
-    wxString partname;
-    bool namevisible;
-};
-
-
 void DIALOG_EDIT_POWER::PopulateCommonPorts()
 {
     wxDataViewItem dviCommon = m_dvtLib->AppendContainer(
@@ -483,16 +496,20 @@ void DIALOG_EDIT_POWER::PopulateHistory()
 
     std::vector<SCH_POWER*> sch_powers;
     boost::ptr_vector<SCH_POWER> ports;
+
+    // Get history from the schematics
     get_type( sch_powers );
+
+    // Get the local history
+    BOOST_FOREACH( SCH_POWER& history_item, History )
+        sch_powers.push_back( &history_item );
 
     BOOST_FOREACH( SCH_POWER* sch_power, sch_powers )
     {
         bool found = false;
         BOOST_FOREACH( SCH_POWER& port, ports )
-        {
             if( port == *sch_power )
                 found = true;
-        }
 
         if( !found )
             ports.push_back( new SCH_POWER( *sch_power ) );
@@ -518,7 +535,9 @@ void DIALOG_EDIT_POWER::PopulateLib()
 {
     // Draw the styles
     fix_column( m_dvtLib );
+    m_dvtLib->DeleteAllItems();
 
+    PopulateHistory();
     PopulateCommonPorts();
     PopulateHiddenPins();
 }
@@ -533,6 +552,7 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
     Centre();
     return true;
 }
+
 
 bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER& aPoweritem )
 {
@@ -558,7 +578,11 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow()
     if( m_poweritem->GetFlags() == 0 )
         m_parent->SaveCopyInUndoList( m_poweritem, UR_CHANGED );
 
-    return TransferDataFromWindow( *m_poweritem );
+    if( !TransferDataFromWindow( *m_poweritem ) )
+        return false;
+
+    History.push_back( new SCH_POWER( *m_poweritem ) );
+    return true;
 }
 
 
@@ -622,6 +646,32 @@ void DIALOG_EDIT_POWER::OnTreeChange( wxDataViewEvent& event )
         OnStyleChange( event );
     else if( event.GetEventObject() == m_dvtLib )
         OnLibChange( event );
+}
+
+void DIALOG_EDIT_POWER::OnLibKey( wxKeyEvent& event )
+{
+    if( event.GetEventObject() != m_dvtLib )
+        return;
+    if( event.GetKeyCode() == WXK_DELETE )
+    {
+        // Delete the object from the history!
+        wxClientData* data = get_selected_data( m_dvtLib );
+        if( !data )
+            return;
+        unsigned lib_item_index = dynamic_cast<wxUintClientData&>( *data ).GetData();
+        SCH_POWER& prototype = m_library[lib_item_index];
+
+        for( boost::ptr_vector<SCH_POWER>::iterator it = History.begin();
+                it < History.end(); ++it )
+        {
+            if( prototype == *it )
+            {
+                it = History.erase( it );
+            }
+        }
+
+        PopulateLib();
+    }
 }
 
 

@@ -136,6 +136,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_btnAdvanced->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnToggleAdvanced ), NULL, this );
 	m_textLabelText->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_cbHideLabel->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_dvtLib->Connect( wxEVT_CHAR, wxKeyEventHandler( DIALOG_EDIT_POWER_BASE::OnLibKey ), NULL, this );
 	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_textNet->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
@@ -150,6 +151,7 @@ DIALOG_EDIT_POWER_BASE::~DIALOG_EDIT_POWER_BASE()
 	m_btnAdvanced->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnToggleAdvanced ), NULL, this );
 	m_textLabelText->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_cbHideLabel->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_dvtLib->Disconnect( wxEVT_CHAR, wxKeyEventHandler( DIALOG_EDIT_POWER_BASE::OnLibKey ), NULL, this );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_textNet->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );

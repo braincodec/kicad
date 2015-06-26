@@ -664,5 +664,6 @@ bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
         ( m_part_name == aOther.m_part_name ) &&
         ( m_visible_text == aOther.m_visible_text ) &&
         ( m_label_hidden == aOther.m_label_hidden ) &&
+        ( GetText() == aOther.GetText() ) &&
         true;
 }
