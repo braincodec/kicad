@@ -608,6 +608,7 @@ void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoin
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
     EDA_RECT bbox = GetBodyBoundingBox();
+#if 0
     if( PART_SPTR part = m_part.lock() )
     {
         LIB_FIELDS fields;
@@ -624,6 +625,7 @@ const EDA_RECT SCH_POWER::GetBoundingBox() const
             bbox.Merge( fbbox );
         }
     }
+#endif
     return bbox;
 }
 
