@@ -133,6 +133,8 @@ public:
      */
     static PART_LIB* GetPartLib();
 
+    bool operator==( const SCH_POWER& aOther ) const;
+
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }
 };

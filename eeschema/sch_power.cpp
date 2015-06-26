@@ -728,3 +728,15 @@ PART_LIB* SCH_POWER::GetPartLib()
 {
     return get_symbol_library();
 }
+
+bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
+{
+    return
+        ( m_transform == aOther.m_transform ) &&
+        ( m_unit == aOther.m_unit ) &&
+        ( m_convert == aOther.m_convert ) &&
+        ( m_part_name == aOther.m_part_name ) &&
+        ( m_visible_text == aOther.m_visible_text ) &&
+        ( m_label_hidden == aOther.m_label_hidden ) &&
+        true;
+}

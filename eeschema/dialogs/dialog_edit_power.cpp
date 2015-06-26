@@ -209,19 +209,20 @@ static wxClientData* get_selected_data( wxDataViewTreeCtrl* aDataView )
 
 
 /**
- * Function get_components
- * Fills a vector with all of the project's components.
+ * Function get_type
+ * Fills a vector with all of the project's items of a given type
  */
-static void get_components( std::vector<SCH_COMPONENT*>& aComponents )
+template<typename T>
+static void get_type( std::vector<T*>& aComponents )
 {
     SCH_SCREENS screens;
     for( SCH_SCREEN* screen = screens.GetFirst(); screen; screen = screens.GetNext() )
     {
         for( SCH_ITEM* item = screen->GetDrawItems(); item; item = item->Next() )
         {
-            SCH_COMPONENT* component = dynamic_cast<SCH_COMPONENT*>( item );
-            if( component )
-                aComponents.push_back( component );
+            T* castitem = dynamic_cast<T*>( item );
+            if( castitem )
+                aComponents.push_back( castitem );
         }
     }
 }
@@ -256,6 +257,7 @@ private:
     // Configure and fill sections of the Library tree.
     void PopulateCommonPorts();
     void PopulateHiddenPins();
+    void PopulateHistory();
 
     bool TransferDataToWindow();
     bool TransferDataFromWindow();
@@ -370,6 +372,7 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
     m_panAdvanced->Hide();
     m_textNet->SetFocus();
 
+    PopulateHistory();
     PopulateStyles();
     PopulateLib();
 }
@@ -446,7 +449,7 @@ void DIALOG_EDIT_POWER::PopulateHiddenPins()
 
     std::vector<SCH_COMPONENT*> components;
     std::set<wxString> ports;
-    get_components( components );
+    get_type( components );
 
     // Gather all the hidden pins from components
     BOOST_FOREACH( SCH_COMPONENT* component, components )
@@ -463,6 +466,35 @@ void DIALOG_EDIT_POWER::PopulateHiddenPins()
     BOOST_FOREACH( const wxString& port, ports )
     {
         AddLibPort( &dviHP, port );
+    }
+}
+
+
+void DIALOG_EDIT_POWER::PopulateHistory()
+{
+    wxDataViewItem dviHist = m_dvtLib->AppendContainer(
+            wxDataViewItem( 0 ), _( "History" ), 1 );
+
+    std::vector<SCH_POWER*> sch_powers;
+    boost::ptr_vector<SCH_POWER> ports;
+    get_type( sch_powers );
+
+    BOOST_FOREACH( SCH_POWER* sch_power, sch_powers )
+    {
+        bool found = false;
+        BOOST_FOREACH( SCH_POWER& port, ports )
+        {
+            if( port == *sch_power )
+                found = true;
+        }
+
+        if( !found )
+            ports.push_back( new SCH_POWER( *sch_power ) );
+    }
+
+    while( ports.size() )
+    {
+        AddLibPort( &dviHist, ports.release( ports.end() - 1 ).release() );
     }
 }
 
