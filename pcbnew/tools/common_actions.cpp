@@ -391,6 +391,10 @@ TOOL_ACTION COMMON_ACTIONS::drillOrigin( "pcbnew.EditorControl.drillOrigin",
         AS_GLOBAL, 0,
         "", "" );
 
+TOOL_ACTION COMMON_ACTIONS::crossProbeSchToPcb( "pcbnew.EditorControl.crossProbSchToPcb",
+        AS_GLOBAL, 0,
+        "", "" );
+
 TOOL_ACTION COMMON_ACTIONS::highlightNet( "pcbnew.EditorControl.highlightNet",
         AS_GLOBAL, 0,
         "", "" );
@@ -643,9 +647,6 @@ boost::optional<TOOL_EVENT> COMMON_ACTIONS::TranslateLegacyId( int aId )
 
     case ID_TB_OPTIONS_SHOW_HIGH_CONTRAST_MODE:
         return COMMON_ACTIONS::highContrastMode.MakeEvent();
-
-    case ID_TB_OPTIONS_SELECT_CURSOR:
-        return COMMON_ACTIONS::switchCursor.MakeEvent();
 
     case ID_FIND_ITEMS:
         return COMMON_ACTIONS::find.MakeEvent();
