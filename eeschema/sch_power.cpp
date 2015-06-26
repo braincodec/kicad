@@ -531,7 +531,6 @@ void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoin
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
     EDA_RECT bbox = GetBodyBoundingBox();
-#if 0
     if( PART_SPTR part = m_part.lock() )
     {
         LIB_FIELDS fields;
@@ -540,15 +539,17 @@ const EDA_RECT SCH_POWER::GetBoundingBox() const
         {
             if( field.GetId() != VALUE )
                 continue;
-            if( !field.IsVisible() )
+            if( !field.IsVisible() || field.IsVoid() ||
+                    m_label_hidden || GetText() == wxEmptyString )
                 continue;
 
-            EDA_RECT fbbox = field.GetBoundingBox();
+            LIB_FIELD temp( field );
+            temp.SetText( GetText() );
+            EDA_RECT fbbox = temp.GetBoundingBox();
             fbbox.Move( m_Pos );
             bbox.Merge( fbbox );
         }
     }
-#endif
     return bbox;
 }
 
