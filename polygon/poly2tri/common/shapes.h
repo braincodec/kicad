@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 KiCad Developers, see AUTHORS.txt for contributors.
  * Poly2Tri Copyright (c) 2009-2010, Poly2Tri Contributors
  * http://code.google.com/p/poly2tri/
  *
@@ -209,7 +210,7 @@ public:
     inline bool IsInterior();
     inline void IsInterior( bool b );
 
-    Triangle&   NeighborAcross( Point& opoint );
+    Triangle*   NeighborAcross( Point& opoint );
 
     void        DebugPrint();
 
