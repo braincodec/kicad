@@ -51,6 +51,8 @@
 #include <richio.h>
 #include <kicad_string.h>
 
+#include <power_symbols_lib_data.h>
+
 /**
  * Used when a LIB_PART is not found in library
  * to draw a dummy shape
@@ -92,103 +94,24 @@ static LIB_PART* dummy()
     return sgDummy.get();
 }
 
-static const std::string symbol_lib_data =
-    "EESchema-LIBRARY Version 2.3\n"
-    "#encoding utf-8\n"
-    "#\n"
-    "# CHASSIS\n"
-    "#\n"
-    "DEF CHASSIS #PWR 0 0 Y Y 1 L P\n"
-    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
-    "F1 \"CHASSIS\" -20 -80 30 H V C CNN\n"
-    "F2 \"\" 0 0 60 H V C CNN\n"
-    "F3 \"\" 0 0 60 H V C CNN\n"
-    "DRAW\n"
-    "P 2 0 0 0  -50 0  -75 -50 N\n"
-    "P 2 0 0 0  -50 0  50 0 N\n"
-    "P 2 0 0 0  0 0  -25 -50 N\n"
-    "P 2 0 0 0  50 0  25 -50 N\n"
-    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
-    "ENDDRAW\n"
-    "ENDDEF\n"
-    "#\n"
-    "# EARTH\n"
-    "#\n"
-    "DEF EARTH #PWR 0 0 Y Y 1 L P\n"
-    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
-    "F1 \"EARTH\" 0 -80 30 H V C CNN\n"
-    "F2 \"\" 0 0 60 H V C CNN\n"
-    "F3 \"\" 0 0 60 H V C CNN\n"
-    "DRAW\n"
-    "P 2 0 0 0  -50 0  50 0 N\n"
-    "P 2 0 0 0  -5 -50  5 -50 N\n"
-    "P 2 0 0 0  25 -25  -25 -25 N\n"
-    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
-    "ENDDRAW\n"
-    "ENDDEF\n"
-    "#\n"
-    "# FLAT_DOWN\n"
-    "#\n"
-    "DEF FLAT_DOWN #PWR 0 0 Y Y 1 L P\n"
-    "F0 \"#PWR\" 0 -50 30 H I C CNN\n"
-    "F1 \"FLAT_DOWN\" 0 -100 50 H V C CNN\n"
-    "F2 \"\" 0 0 60 H V C CNN\n"
-    "F3 \"\" 0 0 60 H V C CNN\n"
-    "DRAW\n"
-    "P 2 0 1 0  0 -50  0 -30 N\n"
-    "P 2 0 1 0  0 -30  0 0 N\n"
-    "P 5 0 1 0  -50 -60  50 -60  50 -50  -50 -50  -50 -60 F\n"
-    "X NET 1 0 0 0 D 30 30 1 1 W N\n"
-    "ENDDRAW\n"
-    "ENDDEF\n"
-    "#\n"
-    "# FLAT_UP\n"
-    "#\n"
-    "DEF FLAT_UP #PWR 0 0 Y Y 1 L P\n"
-    "F0 \"#PWR\" 0 50 30 H I C CNN\n"
-    "F1 \"FLAT_UP\" 0 100 50 H V C CNN\n"
-    "F2 \"\" 0 0 60 H V C CNN\n"
-    "F3 \"\" 0 0 60 H V C CNN\n"
-    "DRAW\n"
-    "P 2 0 1 0  0 30  0 0 N\n"
-    "P 2 0 1 0  0 50  0 30 N\n"
-    "P 5 0 1 0  -50 60  50 60  50 50  -50 50  -50 60 F\n"
-    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
-    "ENDDRAW\n"
-    "ENDDEF\n"
-    "#\n"
-    "# GND\n"
-    "#\n"
-    "DEF GND #PWR 0 0 Y Y 1 L P\n"
-    "F0 \"#PWR\" 0 0 30 H I C CNN\n"
-    "F1 \"GND\" 0 -70 30 H V C CNN\n"
-    "F2 \"\" 0 0 60 H V C CNN\n"
-    "F3 \"\" 0 0 60 H V C CNN\n"
-    "DRAW\n"
-    "P 4 0 1 0  -50 0  0 -50  50 0  -50 0 N\n"
-    "X NET 1 0 0 0 U 30 30 1 1 W N\n"
-    "ENDDRAW\n"
-    "ENDDEF\n"
-    "#\n"
-    "#End Library\n";
-
-static std::auto_ptr<PART_LIB> sgSymbolLib;
 static PART_LIB* get_symbol_library()
 {
-    if( !sgSymbolLib.get() )
+    static std::string SymbolLibData( PowerSymbolLibData );
+    static std::auto_ptr<PART_LIB> SymbolLib;
+    if( !SymbolLib.get() )
     {
         std::auto_ptr<PART_LIB> lib( new PART_LIB( LIBRARY_TYPE_EESCHEMA, wxEmptyString ) );
 
-        STRING_LINE_READER reader(symbol_lib_data, "hard-coded library");
+        STRING_LINE_READER reader(SymbolLibData, "hard-coded library");
         wxString error_msg;
 
         bool r = lib->Load( reader, error_msg );
         wxASSERT_MSG( r, _( "Internal error reading hard-coded library: " ) + error_msg );
 
-        sgSymbolLib = lib;
+        SymbolLib = lib;
     }
 
-    return sgSymbolLib.get();
+    return SymbolLib.get();
 }
 
 

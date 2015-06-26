@@ -153,6 +153,7 @@ set( EESCHEMA_SRCS
     sch_marker.cpp
     sch_no_connect.cpp
     sch_power.cpp
+    power_symbols_lib_data.cpp
     sch_screen.cpp
     sch_sheet.cpp
     sch_sheet_path.cpp
