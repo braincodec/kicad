@@ -467,6 +467,12 @@ void DIALOG_EDIT_POWER::PopulateHiddenPins()
     {
         AddLibPort( &dviHP, port );
     }
+
+    // Remove the list if there's nothing in it
+    if( !ports.size() )
+    {
+        m_dvtLib->DeleteItem( dviHP );
+    }
 }
 
 
@@ -492,9 +498,18 @@ void DIALOG_EDIT_POWER::PopulateHistory()
             ports.push_back( new SCH_POWER( *sch_power ) );
     }
 
-    while( ports.size() )
+    // Remove the list if there's nothing in it
+    if( !ports.size() )
     {
-        AddLibPort( &dviHist, ports.release( ports.end() - 1 ).release() );
+        m_dvtLib->DeleteItem( dviHist );
+    }
+    else
+    {
+        while( ports.size() )
+        {
+            AddLibPort( &dviHist, ports.release( ports.end() - 1 ).release() );
+        }
+        m_dvtLib->Expand( dviHist );
     }
 }
 
