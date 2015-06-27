@@ -59,7 +59,7 @@ static void AddMenusForSheetPin( wxMenu* PopMenu, SCH_SHEET_PIN* PinSheet );
 static void AddMenusForText( wxMenu* PopMenu, SCH_TEXT* Text );
 static void AddMenusForLabel( wxMenu* PopMenu, SCH_LABEL* Label );
 static void AddMenusForGLabel( wxMenu* PopMenu, SCH_GLOBALLABEL* GLabel );
-static void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWER* PLabel );
+static void AddMenusForPower( wxMenu* PopMenu, SCH_POWER* aPower );
 static void AddMenusForHLabel( wxMenu* PopMenu, SCH_HIERLABEL* GLabel );
 static void AddMenusForEditComponent( wxMenu* PopMenu, SCH_COMPONENT* Component, PART_LIBS* aLibs );
 static void AddMenusForComponent( wxMenu* PopMenu, SCH_COMPONENT* Component, PART_LIBS* aLibs );
@@ -245,7 +245,7 @@ bool SCH_EDIT_FRAME::OnRightClick( const wxPoint& aPosition, wxMenu* PopMenu )
         break;
 
     case SCH_POWER_T:
-        AddMenusForPLabel( PopMenu, (SCH_POWER*) item );
+        AddMenusForPower( PopMenu, static_cast<SCH_POWER*>( item ) );
         break;
 
     case SCH_HIERARCHICAL_LABEL_T:
@@ -528,11 +528,11 @@ void AddMenusForGLabel( wxMenu* PopMenu, SCH_GLOBALLABEL* GLabel )
 }
 
 
-void AddMenusForPLabel( wxMenu* PopMenu, SCH_POWER* PLabel )
+void AddMenusForPower( wxMenu* PopMenu, SCH_POWER* aPower )
 {
     wxString msg;
 
-    if( !PLabel->GetFlags() )
+    if( !aPower->GetFlags() )
     {
         msg = AddHotkeyName( _( "Move Power Label" ), g_Schematic_Hokeys_Descr,
                              HK_MOVE_COMPONENT_OR_ITEM );

@@ -242,7 +242,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
 
     case ID_GLABEL_BUTT:
     case ID_HIERLABEL_BUTT:
-    case ID_PLABEL_BUTT:
+    case ID_POWER_BUTT:
         if( (item == NULL) || (item->GetFlags() == 0) )
         {
             if( GetToolId() == ID_GLABEL_BUTT )
@@ -251,7 +251,7 @@ void SCH_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
             if( GetToolId() == ID_HIERLABEL_BUTT )
                 GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_HIERLABEL ) );
 
-            if( GetToolId() == ID_PLABEL_BUTT )
+            if( GetToolId() == ID_POWER_BUTT )
                 GetScreen()->SetCurItem( CreateNewText( aDC, LAYER_POWER ) );
 
             m_canvas->SetAutoPanRequest( true );

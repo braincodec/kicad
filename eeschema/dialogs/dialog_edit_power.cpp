@@ -581,7 +581,9 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow()
     if( !TransferDataFromWindow( *m_poweritem ) )
         return false;
 
-    History.push_back( new SCH_POWER( *m_poweritem ) );
+    if( m_poweritem->GetText() != wxEmptyString )
+        History.push_back( new SCH_POWER( *m_poweritem ) );
+
     return true;
 }
 
@@ -647,6 +649,7 @@ void DIALOG_EDIT_POWER::OnTreeChange( wxDataViewEvent& event )
     else if( event.GetEventObject() == m_dvtLib )
         OnLibChange( event );
 }
+
 
 void DIALOG_EDIT_POWER::OnLibKey( wxKeyEvent& event )
 {

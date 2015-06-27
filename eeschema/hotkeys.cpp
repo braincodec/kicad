@@ -146,8 +146,8 @@ static EDA_HOTKEY HkAddHierarchicalLabel( _HKI( "Add Hierarchical Label" ), HK_A
                                           ID_HIERLABEL_BUTT );
 static EDA_HOTKEY HkAddGlobalLabel( _HKI( "Add Global Label" ), HK_ADD_GLABEL, GR_KB_CTRL + 'H',
                                     ID_GLABEL_BUTT );
-static EDA_HOTKEY HkAddPowerLabel( _HKI( "Add Power Label" ), HK_ADD_PLABEL, 'P',
-                              ID_PLABEL_BUTT );
+static EDA_HOTKEY HkAddPowerPort( _HKI( "Add Power Port" ), HK_ADD_POWER, 'P',
+                              ID_POWER_BUTT );
 static EDA_HOTKEY HkAddJunction( _HKI( "Add Junction" ), HK_ADD_JUNCTION, 'J', ID_JUNCTION_BUTT );
 static EDA_HOTKEY HkAddComponent( _HKI( "Add Component" ), HK_ADD_NEW_COMPONENT, 'A',
                                   ID_SCH_PLACE_COMPONENT );
@@ -283,7 +283,7 @@ static EDA_HOTKEY* schematic_Hotkey_List[] =
     &HkAddLabel,
     &HkAddHierarchicalLabel,
     &HkAddGlobalLabel,
-    &HkAddPowerLabel,
+    &HkAddPowerPort,
     &HkAddJunction,
     &HkAddNoConn,
     &HkAddHierSheet,
@@ -499,7 +499,7 @@ bool SCH_EDIT_FRAME::OnHotKey( wxDC* aDC, int aHotKey, const wxPoint& aPosition,
     case HK_ADD_LABEL:
     case HK_ADD_HLABEL:
     case HK_ADD_GLABEL:
-    case HK_ADD_PLABEL:
+    case HK_ADD_POWER:
     case HK_ADD_JUNCTION:
     case HK_ADD_WIRE_ENTRY:
     case HK_ADD_BUS_ENTRY:

@@ -66,7 +66,7 @@ enum hotkey_id_commnand {
     HK_ADD_LABEL,
     HK_ADD_HLABEL,
     HK_ADD_GLABEL,
-    HK_ADD_PLABEL,
+    HK_ADD_POWER,
     HK_ADD_JUNCTION,
     HK_ADD_HIER_SHEET,
     HK_ADD_GRAPHIC_TEXT,

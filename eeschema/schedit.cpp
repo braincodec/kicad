@@ -544,8 +544,8 @@ void SCH_EDIT_FRAME::OnSelectTool( wxCommandEvent& aEvent )
         SetToolID( id, wxCURSOR_PENCIL, _( "Add global label" ) );
         break;
 
-    case ID_PLABEL_BUTT:
-        SetToolID( id, wxCURSOR_PENCIL, _( "Add power label" ) );
+    case ID_POWER_BUTT:
+        SetToolID( id, wxCURSOR_PENCIL, _( "Add power port" ) );
         break;
 
     case ID_HIERLABEL_BUTT:

@@ -156,7 +156,7 @@ bool SCH_POWER::Save( FILE* aFile ) const
     std::string visible_text_escaped = EscapedUTF8( m_visible_text );
     std::string part_name_escaped = EscapedUTF8( m_part_name );
 
-    if( fprintf( aFile, "Text GPLabel %-4d %-4d %-4d %-4d %s %s %d %d %s %s\n%s\n",
+    if( fprintf( aFile, "Text GPower %-4d %-4d %-4d %-4d %s %s %d %d %s %s\n%s\n",
                  m_Pos.x, m_Pos.y, m_schematicOrientation, m_Size.x,
                  SheetLabelType[m_shape], shape, m_Thickness,
                  m_label_hidden ? 1 : 0, visible_text_escaped.c_str(), part_name_escaped.c_str(),
@@ -265,9 +265,7 @@ void SCH_POWER::MirrorY( int aYaxis_position )
         break;
     }
 
-    m_Pos.x -= aYaxis_position;
-    NEGATE( m_Pos.x );
-    m_Pos.x += aYaxis_position;
+    MIRROR( m_Pos.x, aYaxis_position );
 }
 
 
@@ -284,9 +282,7 @@ void SCH_POWER::MirrorX( int aXaxis_position )
         break;
     }
 
-    m_Pos.y -= aXaxis_position;
-    NEGATE( m_Pos.y );
-    m_Pos.y += aXaxis_position;
+    MIRROR( m_Pos.y, aXaxis_position );
 }
 
 
@@ -584,10 +580,10 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 
     // H and W must be > 0:
     if( x2 < x1 )
-        EXCHG( x2, x1 );
+        std::swap( x2, x1 );
 
     if( y2 < y1 )
-        EXCHG( y2, y1 );
+        std::swap( y2, y1 );
 
     bBox.SetX( x1 );
     bBox.SetY( y1 );

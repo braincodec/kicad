@@ -227,7 +227,7 @@ void SCH_EDIT_FRAME::ReCreateVToolbar()
     m_drawToolBar->AddTool( ID_GLABEL_BUTT, wxEmptyString, KiBitmap( add_glabel_xpm ),
                             HELP_PLACE_GLOBALLABEL, wxITEM_CHECK );
 
-    m_drawToolBar->AddTool( ID_PLABEL_BUTT, wxEmptyString, KiBitmap( add_power_xpm ),
+    m_drawToolBar->AddTool( ID_POWER_BUTT, wxEmptyString, KiBitmap( add_power_xpm ),
                             HELP_PLACE_POWERLABEL, wxITEM_CHECK );
 
     m_drawToolBar->AddTool( ID_HIERLABEL_BUTT, wxEmptyString,
