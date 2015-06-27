@@ -285,6 +285,7 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
     // event handler in there.
     // And when a schematic file is loaded, we need these libs to initialize
     // some parameters (links to PART LIB, dangling ends ...)
+    Prj().SetElem( PROJECT::ELEM_SCH_PART_LIBS, NULL );
     Prj().SchLibs();
 
     if( is_new )
