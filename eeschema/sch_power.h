@@ -41,8 +41,6 @@ class SCH_POWER : public SCH_TEXT
 {
     PART_REF    m_part;
     TRANSFORM   m_transform;
-    int         m_unit;
-    int         m_convert;
     wxString    m_part_name;
     wxString    m_visible_text;
     bool        m_label_hidden;

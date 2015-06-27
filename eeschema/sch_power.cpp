@@ -27,30 +27,28 @@
  * @brief Code for handling power symbols.
  */
 
-#include <fctsys.h>
-#include <gr_basic.h>
-#include <macros.h>
-#include <trigo.h>
-#include <eeschema_id.h>
-#include <class_drawpanel.h>
-#include <drawtxt.h>
-#include <schframe.h>
-#include <plot_common.h>
-#include <base_units.h>
-#include <msgpanel.h>
 
-#include <general.h>
-#include <protos.h>
-#include <sch_power.h>
-#include <class_netlist_object.h>
-
-#include <lib_rectangle.h>
-#include <lib_text.h>
+// Libraries
 #include <boost/foreach.hpp>
 
-#include <richio.h>
+// KiCad-wide utilities
+#include <base_units.h>
 #include <kicad_string.h>
+#include <macros.h>
+#include <msgpanel.h>
+#include <plot_common.h>
+#include <richio.h>
+#include <trigo.h>
 
+// Eeschema
+#include <class_drawpanel.h>
+#include <eeschema_id.h>
+#include <general.h>
+#include <protos.h>
+#include <schframe.h>
+#include <sch_power.h>
+
+// Resource
 #include <power_symbols_lib_data.h>
 
 
@@ -76,17 +74,13 @@ static PART_LIB* get_symbol_library()
 
 
 SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
-    SCH_TEXT( pos, text, SCH_POWER_T )
+    SCH_TEXT( pos, text, SCH_POWER_T ),
+    m_part( PART_SPTR( LIB_PART::GetDummy() ) ),
+    m_part_name( text ),
+    m_label_hidden( false )
 {
-    m_unit = m_convert = 1;
     m_Layer = LAYER_POWER;
-    m_shape = NET_BIDI;
-    m_isDangling = true;
-    m_MultilineAllowed = false;
-    m_transform = TRANSFORM();
-    SetPartName( text );
-    m_label_hidden = false;
-    m_part = PART_SPTR( LIB_PART::GetDummy() );
+    m_isDangling = false;
 }
 
 
@@ -101,24 +95,24 @@ bool SCH_POWER::Save( FILE* aFile ) const
     bool        success = true;
     const char* shape   = "~";
 
-    if( m_Italic )
-        shape = "Italic";
-
-    wxString visible_nospace = m_visible_text;
-    visible_nospace.Replace( _( " " ), _( "~" ) );
-
     if( m_part_name.Find( _( " " ) ) != wxNOT_FOUND )
     {
         wxFAIL_MSG( "Power port's part name must not contain a space" );
         return false;
     }
 
+    if( m_Italic )
+        shape = "Italic";
+
+    wxString visible_nospace = m_visible_text;
+    visible_nospace.Replace( _( " " ), _( "~" ) );
+
     std::string visible_text_escaped = EscapedUTF8( m_visible_text );
     std::string part_name_escaped = EscapedUTF8( m_part_name );
 
     if( fprintf( aFile, "Text GPower %-4d %-4d %-4d %-4d %s %s %d %d %s %s\n%s\n",
                  m_Pos.x, m_Pos.y, m_schematicOrientation, m_Size.x,
-                 SheetLabelType[m_shape], shape, m_Thickness,
+                 SheetLabelType[NET_BIDI], /* shape */ "~", /* thickness */ 0,
                  m_label_hidden ? 1 : 0, visible_text_escaped.c_str(), part_name_escaped.c_str(),
                  TO_UTF8( m_Text ) ) == EOF )
     {
@@ -177,26 +171,7 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
     }
 
     m_Text = FROM_UTF8( text );
-    m_Size.x = m_Size.y = size;
     SetOrientation( orient );
-    m_shape  = NET_INPUT;
-    m_Bold = ( thickness != 0 );
-    m_Thickness = m_Bold ? GetPenSizeForBold( size ) : 0;
-
-    if( stricmp( Name2, SheetLabelType[NET_OUTPUT] ) == 0 )
-        m_shape = NET_OUTPUT;
-
-    if( stricmp( Name2, SheetLabelType[NET_BIDI] ) == 0 )
-        m_shape = NET_BIDI;
-
-    if( stricmp( Name2, SheetLabelType[NET_TRISTATE] ) == 0 )
-        m_shape = NET_TRISTATE;
-
-    if( stricmp( Name2, SheetLabelType[NET_UNSPECIFIED] ) == 0 )
-        m_shape = NET_UNSPECIFIED;
-
-    if( stricmp( Name3, "Italic" ) == 0 )
-        m_Italic = 1;
 
     ReadDelimitedText( &m_visible_text, VisibleText );
     m_visible_text.Replace( _( "~" ), _( " " ) );
@@ -436,8 +411,6 @@ void SCH_POWER::SwapData( SCH_ITEM* aItem )
 
     std::swap( m_part, other.m_part );
     std::swap( m_transform, other.m_transform );
-    std::swap( m_unit, other.m_unit );
-    std::swap( m_convert, other.m_convert );
     std::swap( m_part_name, other.m_part_name );
     std::swap( m_visible_text, other.m_visible_text );
     std::swap( m_label_hidden, other.m_label_hidden );
@@ -455,8 +428,8 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
     if( PART_SPTR part = m_part.lock() )
     {
         part->GetFields( fields );
-        part->Draw( aPanel, aDC, m_Pos + aOffset, m_unit, m_convert, aDrawMode, aColor,
-                m_transform, true, false, false, NULL );
+        part->Draw( aPanel, aDC, m_Pos + aOffset, /* unit */ 1, /* convert */ 1, aDrawMode,
+                aColor, m_transform, true, false, false, NULL );
     }
 
     BOOST_FOREACH( LIB_FIELD& field, fields )
@@ -516,11 +489,11 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 
     if( PART_SPTR part = m_part.lock() )
     {
-        bBox = part->GetBodyBoundingBox( m_unit, m_convert );
+        bBox = part->GetBodyBoundingBox( /* unit */ 1, /* convert */ 1 );
     }
     else
     {
-        bBox = LIB_PART::GetDummy()->GetBodyBoundingBox( m_unit, m_convert );
+        bBox = LIB_PART::GetDummy()->GetBodyBoundingBox( /* unit */ 1, /* convert */ 1 );
     }
 
     int x0 = bBox.GetX();
@@ -562,6 +535,7 @@ wxString SCH_POWER::GetSelectMenuText() const
     return msg;
 }
 
+
 void SCH_POWER::SetPartName( const wxString& aName, PART_LIBS* aLibs )
 {
     if( m_part_name != aName )
@@ -575,6 +549,7 @@ void SCH_POWER::SetPartName( const wxString& aName, PART_LIBS* aLibs )
             m_part.reset();
     }
 }
+
 
 bool SCH_POWER::Resolve( PART_LIBS* aLibs )
 {
@@ -590,6 +565,7 @@ bool SCH_POWER::Resolve( PART_LIBS* aLibs )
     return true;
 }
 
+
 void SCH_POWER::ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs )
 {
     for( int i = 0; i < aPowers.GetCount(); ++i )
@@ -601,22 +577,23 @@ void SCH_POWER::ResolveAll( const SCH_COLLECTOR& aPowers, PART_LIBS* aLibs )
     }
 }
 
+
 void SCH_POWER::SetText( const wxString& aText )
 {
     EDA_TEXT::SetText( aText );
 }
+
 
 PART_LIB* SCH_POWER::GetPartLib()
 {
     return get_symbol_library();
 }
 
+
 bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
 {
     return
         ( m_transform == aOther.m_transform ) &&
-        ( m_unit == aOther.m_unit ) &&
-        ( m_convert == aOther.m_convert ) &&
         ( m_part_name == aOther.m_part_name ) &&
         ( m_visible_text == aOther.m_visible_text ) &&
         ( m_label_hidden == aOther.m_label_hidden ) &&
