@@ -261,7 +261,11 @@ private:
     // Map of "All Styles" item names to actual items
     std::map<wxString, wxDataViewItem> m_dvitems;
 
-    // List of library parts
+    /**
+     * List of library parts
+     * All the items in the Library tree hold a wxUintClientData which indicates the index in
+     * this vector at which the part will be found.
+     */
     boost::ptr_vector<SCH_POWER> m_library;
 
     /**
@@ -300,17 +304,17 @@ private:
     /**
      * Add a template port from a SCH_POWER item. Takes ownership of the pointer.
      */
-    void AddLibPort( wxDataViewItem* aParent, SCH_POWER* aPort );
+    void AddLibPort( wxDataViewItem* aParent, SCH_POWER* aItem );
 
     /**
      * Transfer data to the window from a given SCH_POWER
      */
-    bool TransferDataToWindow( SCH_POWER& aPoweritem );
+    bool TransferDataToWindow( SCH_POWER* aItem );
 
     /**
      * Transfer data from the window to a given SCH_POWER
      */
-    bool TransferDataFromWindow( SCH_POWER& aPoweritem );
+    bool TransferDataFromWindow( SCH_POWER* aItem );
 };
 
 
@@ -363,7 +367,7 @@ wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
 /**
  * Render an SCH_POWER into a wxIcon.
  */
-wxIcon render_power_as_icon( SCH_POWER* aPart, int aWidth=48, int aHeight=48 )
+wxIcon render_power_as_icon( SCH_POWER* aItem, int aWidth=48, int aHeight=48 )
 {
     wxIcon icon;
 
@@ -374,9 +378,9 @@ wxIcon render_power_as_icon( SCH_POWER* aPart, int aWidth=48, int aHeight=48 )
 
     wxMemoryDC dc( bmp );
 
-    wxPoint offset = render_core( &dc, aPart->GetBoundingBox(), WHITE );
+    wxPoint offset = render_core( &dc, aItem->GetBoundingBox(), WHITE );
 
-    aPart->Draw( NULL, &dc, offset, GR_COPY, UNSPECIFIED_COLOR );
+    aItem->Draw( NULL, &dc, offset, GR_COPY, UNSPECIFIED_COLOR );
 
     icon.CopyFromBitmap( bmp );
     return icon;
@@ -444,12 +448,12 @@ void DIALOG_EDIT_POWER::PopulateCommonPorts()
 
     BOOST_FOREACH( const struct libspec& port, common_ports )
     {
-        std::auto_ptr<SCH_POWER> power_item( new SCH_POWER( wxPoint( 0, 0 ), port.netname ) );
-        power_item->SetVisibleText( port.visiblename );
-        power_item->SetPartName( port.partname );
-        power_item->SetLabelHidden( !port.namevisible );
+        std::auto_ptr<SCH_POWER> item( new SCH_POWER( wxPoint( 0, 0 ), port.netname ) );
+        item->SetVisibleText( port.visiblename );
+        item->SetPartName( port.partname );
+        item->SetLabelHidden( !port.namevisible );
 
-        AddLibPort( &dviCommon, power_item.release() );
+        AddLibPort( &dviCommon, item.release() );
     }
     m_dvtLib->Expand( dviCommon );
 }
@@ -461,28 +465,28 @@ void DIALOG_EDIT_POWER::PopulateHiddenPins()
             wxDataViewItem( 0 ), _( "Hidden Pins" ), 1 );
 
     std::vector<SCH_COMPONENT*> components;
-    std::set<wxString> ports;
+    std::set<wxString> pin_name_set;
     get_type( components );
 
     // Gather all the hidden pins from components
-    BOOST_FOREACH( SCH_COMPONENT* component, components )
+    BOOST_FOREACH( SCH_COMPONENT* each_comp, components )
     {
-        std::vector<wxString> pinlist;
-        component->GetPowerPortNames( pinlist );
-        BOOST_FOREACH( const wxString& pinname, pinlist )
+        std::vector<wxString> pin_names;
+        each_comp->GetPowerPortNames( pin_names );
+        BOOST_FOREACH( const wxString& each_pin_name, pin_names )
         {
-            ports.insert( pinname );
+            pin_name_set.insert( each_pin_name );
         }
     }
 
     // Make template power ports for all of them
-    BOOST_FOREACH( const wxString& port, ports )
+    BOOST_FOREACH( const wxString& each_pin_name, pin_name_set )
     {
-        AddLibPort( &dviHP, port );
+        AddLibPort( &dviHP, each_pin_name );
     }
 
     // Remove the list if there's nothing in it
-    if( !ports.size() )
+    if( !pin_name_set.size() )
     {
         m_dvtLib->DeleteItem( dviHP );
     }
@@ -494,37 +498,37 @@ void DIALOG_EDIT_POWER::PopulateHistory()
     wxDataViewItem dviHist = m_dvtLib->AppendContainer(
             wxDataViewItem( 0 ), _( "History" ), 1 );
 
-    std::vector<SCH_POWER*> sch_powers;
-    boost::ptr_vector<SCH_POWER> ports;
+    std::vector<SCH_POWER*> ports_from_history;
+    boost::ptr_vector<SCH_POWER> ports_filtered;
 
     // Get history from the schematics
-    get_type( sch_powers );
+    get_type<SCH_POWER>( ports_from_history );
 
     // Get the local history
     BOOST_FOREACH( SCH_POWER& history_item, History )
-        sch_powers.push_back( &history_item );
+        ports_from_history.push_back( &history_item );
 
-    BOOST_FOREACH( SCH_POWER* sch_power, sch_powers )
+    BOOST_FOREACH( SCH_POWER* source_port, ports_from_history )
     {
         bool found = false;
-        BOOST_FOREACH( SCH_POWER& port, ports )
-            if( port == *sch_power )
+        BOOST_FOREACH( SCH_POWER& each_filtered, ports_filtered )
+            if( each_filtered == *source_port )
                 found = true;
 
         if( !found )
-            ports.push_back( new SCH_POWER( *sch_power ) );
+            ports_filtered.push_back( new SCH_POWER( *source_port ) );
     }
 
     // Remove the list if there's nothing in it
-    if( !ports.size() )
+    if( !ports_filtered.size() )
     {
         m_dvtLib->DeleteItem( dviHist );
     }
     else
     {
-        while( ports.size() )
+        while( ports_filtered.size() )
         {
-            AddLibPort( &dviHist, ports.release( ports.end() - 1 ).release() );
+            AddLibPort( &dviHist, ports_filtered.release( ports_filtered.end() - 1 ).release() );
         }
         m_dvtLib->Expand( dviHist );
     }
@@ -545,7 +549,7 @@ void DIALOG_EDIT_POWER::PopulateLib()
 
 bool DIALOG_EDIT_POWER::TransferDataToWindow()
 {
-    if( !TransferDataToWindow( *m_poweritem ) )
+    if( !TransferDataToWindow( m_poweritem ) )
         return false;
 
     GetSizer()->Layout();
@@ -554,18 +558,18 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
 }
 
 
-bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER& aPoweritem )
+bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER* aItem )
 {
     if( !wxDialog::TransferDataToWindow() )
         return false;
 
-    m_textNet->SetValue( aPoweritem.GetText() );
-    m_textLabelText->SetValue( aPoweritem.GetVisibleText() );
-    m_cbHideLabel->SetValue( aPoweritem.GetLabelHidden() );
-    if( m_dvitems.count( aPoweritem.GetPartName() ) )
+    m_textNet->SetValue( aItem->GetText() );
+    m_textLabelText->SetValue( aItem->GetVisibleText() );
+    m_cbHideLabel->SetValue( aItem->GetLabelHidden() );
+    if( m_dvitems.count( aItem->GetPartName() ) )
     {
-        m_dvtStyles->Select( m_dvitems[aPoweritem.GetPartName()] );
-        m_dvtStyles->EnsureVisible( m_dvitems[aPoweritem.GetPartName()] );
+        m_dvtStyles->Select( m_dvitems[aItem->GetPartName()] );
+        m_dvtStyles->EnsureVisible( m_dvitems[aItem->GetPartName()] );
     }
 
     return true;
@@ -578,7 +582,7 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow()
     if( m_poweritem->GetFlags() == 0 )
         m_parent->SaveCopyInUndoList( m_poweritem, UR_CHANGED );
 
-    if( !TransferDataFromWindow( *m_poweritem ) )
+    if( !TransferDataFromWindow( m_poweritem ) )
         return false;
 
     if( m_poweritem->GetText() != wxEmptyString )
@@ -588,24 +592,24 @@ bool DIALOG_EDIT_POWER::TransferDataFromWindow()
 }
 
 
-bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER& aPoweritem )
+bool DIALOG_EDIT_POWER::TransferDataFromWindow( SCH_POWER* aItem )
 {
     if( !wxDialog::TransferDataFromWindow() )
         return false;
 
-    aPoweritem.SetText( m_textNet->GetValue() );
-    aPoweritem.SetVisibleText( m_textLabelText->GetValue() );
-    aPoweritem.SetLabelHidden( m_cbHideLabel->GetValue() );
+    aItem->SetText( m_textNet->GetValue() );
+    aItem->SetVisibleText( m_textLabelText->GetValue() );
+    aItem->SetLabelHidden( m_cbHideLabel->GetValue() );
 
     wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
     if( name == gsNameAutomatic || name == wxEmptyString )
     {
         heur_choose_style( m_textNet->GetValue(), &m_dummy );
-        aPoweritem.SetPartName( m_dummy.GetPartName() );
+        aItem->SetPartName( m_dummy.GetPartName() );
     }
     else
-        aPoweritem.SetPartName( name );
-    aPoweritem.Resolve( Prj().SchLibs() );
+        aItem->SetPartName( name );
+    aItem->Resolve( Prj().SchLibs() );
     return true;
 }
 
@@ -699,7 +703,7 @@ void DIALOG_EDIT_POWER::OnLibChange( wxDataViewEvent& event )
 
     unsigned lib_item_index = dynamic_cast<wxUintClientData&>( *data ).GetData();
 
-    TransferDataToWindow( m_library[lib_item_index] );
+    TransferDataToWindow( &m_library[lib_item_index] );
 
     m_pPreview->Refresh();
 }
@@ -729,7 +733,7 @@ void DIALOG_EDIT_POWER::AddLibPort( wxDataViewItem* aParent, SCH_POWER* aPort )
 void DIALOG_EDIT_POWER::OnPreviewRepaint( wxPaintEvent& aRepaintEvent )
 {
     SCH_POWER temp_item( *m_poweritem );
-    TransferDataFromWindow( temp_item );
+    TransferDataFromWindow( &temp_item );
     wxPaintDC dc( m_pPreview );
     EDA_COLOR_T bgcolor = m_parent->GetDrawBgColor();
 
