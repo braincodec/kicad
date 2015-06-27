@@ -730,7 +730,7 @@ bool LIB_PIN::Load( LINE_READER& aLineReader, wxString& aErrorMsg )
 
     *pinAttrs = 0;
 
-    i = sscanf( line + 2, "%s %s %d %d %d %s %d %d %d %d %s %s", pinName,
+    i = sscanf( line + 2, "%255s %63s %d %d %d %63s %d %d %d %d %63s %63s", pinName,
                 pinNum, &m_position.x, &m_position.y, &m_length, pinOrient, &m_numTextSize,
                 &m_nameTextSize, &m_Unit, &m_Convert, pinType, pinAttrs );
 
@@ -2087,13 +2087,13 @@ const EDA_RECT LIB_PIN::GetBoundingBox( bool aIncludeInvisibles ) const
     case PIN_DOWN:
         RotatePoint( &begin, wxPoint( 0, 0 ), 900 );
         RotatePoint( &end, wxPoint( 0, 0 ), 900 );
-        NEGATE( begin.x );
-        NEGATE( end.x );
+        begin.x = -begin.x;
+        end.x = -end.x;
         break;
 
     case PIN_LEFT:
-        NEGATE( begin.x );
-        NEGATE( end.x );
+        begin.x = -begin.x;
+        end.x = -end.x;
         break;
 
     case PIN_RIGHT:
