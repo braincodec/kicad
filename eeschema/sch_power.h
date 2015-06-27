@@ -64,8 +64,6 @@ public:
 
     void SwapData( SCH_ITEM* aItem );
 
-    wxPoint GetSchematicTextOffset() const;
-
     bool Save( FILE* aFile ) const;
 
     bool Load( LINE_READER& aLine, wxString& aErrorMsg );

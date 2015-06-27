@@ -67,9 +67,21 @@ int ReadDelimitedText( wxString* aDest, const char* aSource );
  * of this UTF8 byte string is compatible with function ReadDelimitedText().
  *
  * @param aString is the input string to convert.
+ * @param aNoSpace - also escape spaces, as \s, so that the result is always single "word".
  * @return std::string - the escaped input text, without the wrapping double quotes.
  */
-std::string EscapedUTF8( const wxString& aString );
+std::string EscapedUTF8( const wxString& aString, bool aNoSpace = false );
+
+/**
+ * Function UnescapeUTF8
+ * Unescapes a string from EscapedUTF8.
+ * Note that this is only useful if you used aNoSpace with EscapedUTF8; otherwise, you
+ * would have no way to know where the escaped string ends.
+ *
+ * @param aString is the input string to convert.
+ * @return wxString - the unescaped input text
+ */
+wxString UnescapedUTF8( const char* aString );
 
 /**
  * Function GetLine

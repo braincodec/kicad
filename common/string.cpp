@@ -134,7 +134,7 @@ int ReadDelimitedText( char* aDest, const char* aSource, int aDestSize )
 }
 
 
-std::string EscapedUTF8( const wxString& aString )
+std::string EscapedUTF8( const wxString& aString, bool aNoSpace )
 {
     std::string utf8 = TO_UTF8( aString );
 
@@ -155,6 +155,11 @@ std::string EscapedUTF8( const wxString& aString )
             ret += '\\';    // double it up
             ret += '\\';
         }
+        else if( *it == ' ' && aNoSpace )
+        {
+            ret += '\\';
+            ret += 's';
+        }
         else
         {
             ret += *it;
@@ -164,6 +169,43 @@ std::string EscapedUTF8( const wxString& aString )
     ret += '"';
 
     return ret;
+}
+
+
+wxString UnescapedUTF8( const char* aString )
+{
+    wxString decoded = FROM_UTF8( aString );
+
+    std::vector<wchar_t> buf;
+
+    bool in_escape = false;
+
+    for( wxString::iterator it = decoded.begin(); it != decoded.end(); ++it )
+    {
+        if( *it == '"' && it == decoded.begin() )
+            continue;   // Skip starting quote
+
+        if( in_escape )
+        {
+            if( wchar_t( *it ) == 's' )
+                buf.push_back( ' ' );
+            else
+                buf.push_back( *it );
+            in_escape = false;
+        }
+        else
+        {
+            if( wchar_t( *it ) == '\\' )
+                in_escape = true;
+            else
+                buf.push_back( *it );
+        }
+    }
+
+    if( buf[buf.size() - 1] == '"' && decoded[0] == '"' )
+        buf.erase( buf.end() - 1 ); // Remove terminating quote if there was a starting quote
+
+    return wxString( &buf[0], buf.size() );
 }
 
 

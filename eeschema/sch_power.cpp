@@ -75,7 +75,6 @@ static PART_LIB* get_symbol_library()
 
 SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
     SCH_TEXT( pos, text, SCH_POWER_T ),
-    m_part( PART_SPTR( LIB_PART::GetDummy() ) ),
     m_part_name( text ),
     m_label_hidden( false )
 {
@@ -92,47 +91,52 @@ EDA_ITEM* SCH_POWER::Clone() const
 
 bool SCH_POWER::Save( FILE* aFile ) const
 {
-    bool        success = true;
-    const char* shape   = "~";
-
     if( m_part_name.Find( _( " " ) ) != wxNOT_FOUND )
     {
         wxFAIL_MSG( "Power port's part name must not contain a space" );
         return false;
     }
 
-    if( m_Italic )
-        shape = "Italic";
-
     wxString visible_nospace = m_visible_text;
     visible_nospace.Replace( _( " " ), _( "~" ) );
 
-    std::string visible_text_escaped = EscapedUTF8( m_visible_text );
-    std::string part_name_escaped = EscapedUTF8( m_part_name );
+    std::string visible_text_escaped = EscapedUTF8( m_visible_text, /* aNoSpace */ true );
+    std::string part_name_escaped = EscapedUTF8( m_part_name, /* aNoSpace */ true );
 
-    if( fprintf( aFile, "Text GPower %-4d %-4d %-4d %-4d %s %s %d %d %s %s\n%s\n",
-                 m_Pos.x, m_Pos.y, m_schematicOrientation, m_Size.x,
-                 SheetLabelType[NET_BIDI], /* shape */ "~", /* thickness */ 0,
-                 m_label_hidden ? 1 : 0, visible_text_escaped.c_str(), part_name_escaped.c_str(),
-                 TO_UTF8( m_Text ) ) == EOF )
-    {
-        success = false;
-    }
+#define check(x) do { if( x == EOF ) return false; } while( 0 )
 
-    return success;
+    // "Text GPower" fools older versions of Eeschema into reading this as a
+    // SCH_GLOBALLABEL, which is functionally equivalent if a bit ugly.
+    check( fprintf( aFile, "Text GPower %-4d %-4d ", m_Pos.x, m_Pos.y ) );
+
+    // Placeholders for some SCH_TEXT data, to ensure backward compatibility
+    check( fprintf( aFile, "%-4d ", /* m_schematicOrientation */ 0 ) );
+    check( fprintf( aFile, "%-4d ", /* m_Size.x */ 60 ) );
+    check( fprintf( aFile, "%s ~ %d ", SheetLabelType[NET_BIDI], /* thickness */ 0 ) );
+
+    // These are added data for SCH_POWER. Because older versions of Eeschema read just
+    // as many fields as they need with sscanf and then directly skip to the next line,
+    // they will be ignored.
+    check( fprintf( aFile, "%d ", m_label_hidden ? 1 : 0 ) );
+    check( fprintf( aFile, "%s %s ", visible_text_escaped.c_str(), part_name_escaped.c_str() ) );
+    check( fprintf( aFile, "%d %d %d %d\n",
+                m_transform.x1, m_transform.y1, m_transform.x2, m_transform.y2 ) );
+    check( fprintf( aFile, "%s\n", TO_UTF8( m_Text ) ) );
+
+#undef check
+
+    return true;
 }
 
 
 bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
 {
-    char      Name1[256];
-    char      Name2[256];
-    char      Name3[256];
+    char      sdummy[256];
+    int       idummy;
+
     char      VisibleText[256];
     char      PartName[256];
-    int       thickness = 0, size = 0, orient = 0, label_hidden = 0;
-
-    Name1[0] = 0; Name2[0] = 0; Name3[0] = 0;
+    int       label_hidden;
 
     char*     sline = (char*) aLine;
 
@@ -140,30 +144,18 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
         sline++;
 
     // sline points the start of parameters
-    int ii = sscanf( sline, "%255s %d %d %d %d %255s %255s %d %d %255s %255s", Name1, &m_Pos.x,
-            &m_Pos.y, &orient, &size, Name2, Name3, &thickness, &label_hidden, VisibleText,
-            PartName);
+    // Note the dummy variables - these are placeholders for SCH_TEXT parameters for
+    // backward compatibility. We don't care about them.
+    int ii = sscanf( sline, "%255s %d %d %d %d %255s %255s %d %d %255s %255s %d %d %d %d",
+            sdummy, &m_Pos.x, &m_Pos.y, &idummy, &idummy, sdummy, sdummy, &idummy,
+            &label_hidden, VisibleText, PartName,
+            &m_transform.x1, &m_transform.y1, &m_transform.x2, &m_transform.y2 );
 
-    if( ii < 11 )
-    {
-        aErrorMsg.Printf( wxT( "Eeschema file power port load error at line %d" ),
-                          aLine.LineNumber() );
-        return false;
-    }
+    char* text;
 
-    if( !aLine.ReadLine() )
-    {
-        aErrorMsg.Printf( wxT( "Eeschema file power port load  error at line %d" ),
-                          aLine.LineNumber() );
-        return false;
-    }
-
-    if( size == 0 )
-        size = GetDefaultTextSize();
-
-    char* text = strtok( (char*) aLine, "\n\r" );
-
-    if( text == NULL )
+    if( ( ii < 15 )
+        || !aLine.ReadLine()
+        || ( text = strtok( (char*) aLine, "\n\r" ) ) )
     {
         aErrorMsg.Printf( wxT( "Eeschema file power port load error at line %d" ),
                           aLine.LineNumber() );
@@ -171,11 +163,9 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
     }
 
     m_Text = FROM_UTF8( text );
-    SetOrientation( orient );
 
-    ReadDelimitedText( &m_visible_text, VisibleText );
-    m_visible_text.Replace( _( "~" ), _( " " ) );
-    ReadDelimitedText( &m_part_name, PartName );
+    m_visible_text = UnescapedUTF8( VisibleText );
+    m_part_name = UnescapedUTF8( PartName );
     m_label_hidden = label_hidden;
 
     return true;
@@ -225,55 +215,6 @@ void SCH_POWER::Rotate( wxPoint aPosition )
 {
     RotatePoint( &m_Pos, aPosition, 900 );
     SetOrientation( (GetOrientation() + 3) % 4 );
-}
-
-
-wxPoint SCH_POWER::GetSchematicTextOffset() const
-{
-    wxPoint text_offset;
-    int     width = (m_Thickness == 0) ? GetDefaultLineThickness() : m_Thickness;
-
-    width = Clamp_Text_PenSize( width, m_Size, m_Bold );
-    int     HalfSize = m_Size.x / 2;
-    int     offset   = width;
-
-    switch( m_shape )
-    {
-    case NET_INPUT:
-    case NET_BIDI:
-    case NET_TRISTATE:
-        offset += HalfSize;
-        break;
-
-    case NET_OUTPUT:
-    case NET_UNSPECIFIED:
-        offset += TXTMARGE;
-        break;
-
-    default:
-        break;
-    }
-
-    switch( m_schematicOrientation )
-    {
-    case 0:             /* Orientation horiz normal */
-        text_offset.x -= offset;
-        break;
-
-    case 1:             /* Orientation vert UP */
-        text_offset.y -= offset;
-        break;
-
-    case 2:             /* Orientation horiz inverse */
-        text_offset.x += offset;
-        break;
-
-    case 3:             /* Orientation vert BOTTOM */
-        text_offset.y += offset;
-        break;
-    }
-
-    return text_offset;
 }
 
 
@@ -425,12 +366,13 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
 {
     LIB_FIELDS fields;
 
-    if( PART_SPTR part = m_part.lock() )
-    {
-        part->GetFields( fields );
-        part->Draw( aPanel, aDC, m_Pos + aOffset, /* unit */ 1, /* convert */ 1, aDrawMode,
-                aColor, m_transform, true, false, false, NULL );
-    }
+    PART_SPTR part = m_part.lock();
+    if( !part )
+        part = PART_SPTR( LIB_PART::GetDummy() );
+
+    part->GetFields( fields );
+    part->Draw( aPanel, aDC, m_Pos + aOffset, /* unit */ 1, /* convert */ 1, aDrawMode,
+            aColor, m_transform, true, false, false, NULL );
 
     BOOST_FOREACH( LIB_FIELD& field, fields )
     {
@@ -460,24 +402,25 @@ void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoin
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
     EDA_RECT bbox = GetBodyBoundingBox();
-    if( PART_SPTR part = m_part.lock() )
-    {
-        LIB_FIELDS fields;
-        part->GetFields( fields );
-        BOOST_FOREACH( LIB_FIELD& field, fields )
-        {
-            if( field.GetId() != VALUE )
-                continue;
-            if( !field.IsVisible() || field.IsVoid() ||
-                    m_label_hidden || GetText() == wxEmptyString )
-                continue;
+    PART_SPTR part = m_part.lock();
+    if( !part )
+        part = PART_SPTR( LIB_PART::GetDummy() );
 
-            LIB_FIELD temp( field );
-            temp.SetText( GetText() );
-            EDA_RECT fbbox = temp.GetBoundingBox();
-            fbbox.Move( m_Pos );
-            bbox.Merge( fbbox );
-        }
+    LIB_FIELDS fields;
+    part->GetFields( fields );
+    BOOST_FOREACH( LIB_FIELD& field, fields )
+    {
+        if( field.GetId() != VALUE )
+            continue;
+        if( !field.IsVisible() || field.IsVoid() ||
+                m_label_hidden || GetText() == wxEmptyString )
+            continue;
+
+        LIB_FIELD temp( field );
+        temp.SetText( GetText() );
+        EDA_RECT fbbox = temp.GetBoundingBox();
+        fbbox.Move( m_Pos );
+        bbox.Merge( fbbox );
     }
     return bbox;
 }
