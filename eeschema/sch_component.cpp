@@ -40,9 +40,7 @@
 
 #include <general.h>
 #include <class_library.h>
-#include <lib_rectangle.h>
 #include <lib_pin.h>
-#include <lib_text.h>
 #include <sch_component.h>
 #include <sch_sheet.h>
 #include <sch_sheet_path.h>
@@ -72,45 +70,6 @@ static std::string toUTFTildaText( const wxString& txt )
             *it = '~';
     }
     return ret;
-}
-
-
-/**
- * Used when a LIB_PART is not found in library
- * to draw a dummy shape
- * This component is a 400 mils square with the text ??
- * DEF DUMMY U 0 40 Y Y 1 0 N
- * F0 "U" 0 -350 60 H V
- * F1 "DUMMY" 0 350 60 H V
- * DRAW
- * T 0 0 0 150 0 0 0 ??
- * S -200 200 200 -200 0 1 0
- * ENDDRAW
- * ENDDEF
- */
-static LIB_PART* dummy()
-{
-    static LIB_PART* part;
-
-    if( !part )
-    {
-        part = new LIB_PART( wxEmptyString );
-
-        LIB_RECTANGLE* square = new LIB_RECTANGLE( part );
-
-        square->Move( wxPoint( -200, 200 ) );
-        square->SetEndPosition( wxPoint( 200, -200 ) );
-
-        LIB_TEXT* text = new LIB_TEXT( part );
-
-        text->SetSize( wxSize( 150, 150 ) );
-        text->SetText( wxString( wxT( "??" ) ) );
-
-        part->AddDrawItem( square );
-        part->AddDrawItem( text );
-    }
-
-    return part;
 }
 
 
@@ -356,9 +315,9 @@ void SCH_COMPONENT::Draw( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aOff
         part->Draw( aPanel, aDC, m_Pos + aOffset, m_unit, m_convert, aDrawMode, aColor,
                     m_transform, aDrawPinText, false, false, dragging ? NULL : &m_isDangling );
     }
-    else    // Use dummy() part if the actual cannot be found.
+    else
     {
-        dummy()->Draw( aPanel, aDC, m_Pos + aOffset, 0, 0, aDrawMode, aColor,
+        LIB_PART::GetDummy()->Draw( aPanel, aDC, m_Pos + aOffset, 0, 0, aDrawMode, aColor,
                        m_transform, aDrawPinText, false );
     }
 
@@ -1452,7 +1411,7 @@ EDA_RECT SCH_COMPONENT::GetBodyBoundingBox() const
     }
     else
     {
-        bBox = dummy()->GetBodyBoundingBox( m_unit, m_convert );
+        bBox = LIB_PART::GetDummy()->GetBodyBoundingBox( m_unit, m_convert );
     }
 
     int x0 = bBox.GetX();

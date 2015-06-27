@@ -53,46 +53,6 @@
 
 #include <power_symbols_lib_data.h>
 
-/**
- * Used when a LIB_PART is not found in library
- * to draw a dummy shape
- * This component is a 400 mils square with the text ??
- * DEF DUMMY U 0 40 Y Y 1 0 N
- * F0 "U" 0 -350 60 H V
- * F1 "DUMMY" 0 350 60 H V
- * DRAW
- * T 0 0 0 150 0 0 0 ??
- * S -200 200 200 -200 0 1 0
- * ENDDRAW
- * ENDDEF
- */
-static std::auto_ptr<LIB_PART> sgDummy;
-static LIB_PART* dummy()
-{
-    if( !sgDummy.get() )
-    {
-        std::auto_ptr<LIB_PART> partaptr( new LIB_PART( wxEmptyString ) );
-
-        LIB_PART* part = partaptr.get();
-
-        LIB_RECTANGLE* square = new LIB_RECTANGLE( part );
-
-        square->Move( wxPoint( -200, 200 ) );
-        square->SetEndPosition( wxPoint( 200, -200 ) );
-
-        LIB_TEXT* text = new LIB_TEXT( part );
-
-        text->SetSize( wxSize( 150, 150 ) );
-        text->SetText( wxString( wxT( "??" ) ) );
-
-        part->AddDrawItem( square );
-        part->AddDrawItem( text );
-
-        sgDummy = partaptr;
-    }
-
-    return sgDummy.get();
-}
 
 static PART_LIB* get_symbol_library()
 {
@@ -126,7 +86,7 @@ SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
     m_transform = TRANSFORM();
     SetPartName( text );
     m_label_hidden = false;
-    m_part = dummy()->SharedPtr();
+    m_part = PART_SPTR( LIB_PART::GetDummy() );
 }
 
 
@@ -560,7 +520,7 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
     }
     else
     {
-        bBox = dummy()->GetBodyBoundingBox( m_unit, m_convert );
+        bBox = LIB_PART::GetDummy()->GetBodyBoundingBox( m_unit, m_convert );
     }
 
     int x0 = bBox.GetX();
@@ -624,7 +584,7 @@ bool SCH_POWER::Resolve( PART_LIBS* aLibs )
     }
     else
     {
-        m_part = dummy()->SharedPtr();
+        m_part = LIB_PART::GetDummy()->SharedPtr();
     }
 
     return true;

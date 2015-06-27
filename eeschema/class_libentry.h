@@ -223,6 +223,9 @@ class LIB_PART : public EDA_ITEM
     static int  m_subpartFirstId;           ///< the ascii char value to calculate the subpart symbol id
                                             ///< from the part number: only 'A', 'a' or '1' can be used,
                                             ///< other values have no sense.
+
+    static LIB_PART m_dummy;                ///< holds a dummy part for when a part cannot be loaded
+
 private:
     void deleteAllFields();
 
@@ -768,6 +771,20 @@ public:
 #if defined(DEBUG)
     void Show( int nestLevel, std::ostream& os ) const { ShowDummy( os ); } // override
 #endif
+
+    /**
+     * Get a pointer to a dummy LIB_PART.
+     *
+     * This is a placeholder for when a part from a library cannot be found. It is a square
+     * with the text ?? inside.
+     *
+     * This is not a unique part; do not modify it.
+     *
+     * @todo (c4757p) constify this. Unfortunately this requires a cascading constification
+     * of many methods in LIB_PART and related classes, and currently is not a good time to
+     * do that.
+     */
+    static LIB_PART* GetDummy();
 };
 
 #endif  //  CLASS_LIBENTRY_H

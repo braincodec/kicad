@@ -62,6 +62,7 @@ int LIB_PART::m_subpartFirstId = 'A';
 
 LIB_PART LIB_PART::m_dummy( wxEmptyString );
 
+
 const wxChar traceSchLibMem[] = wxT( "KISCHLIBMEM" );     // public
 
 
@@ -1243,7 +1244,7 @@ void LIB_PART::SetFields( const std::vector <LIB_FIELD>& aFields )
 }
 
 
-void LIB_PART::GetFields( LIB_FIELDS& aList )
+void LIB_PART::GetFields( LIB_FIELDS& aList ) const
 {
     LIB_FIELD*  field;
 
@@ -1879,7 +1880,8 @@ void LIB_PART::SetSubpartIdNotation( int aSep, int aFirstId )
         m_subpartFirstId = aFirstId;
 }
 
-/* static */ LIB_PART* LIB_PART::GetDummy()
+
+/* static */ const LIB_PART* LIB_PART::GetDummy()
 {
     if( !m_dummy.drawings.size() )
     {
