@@ -155,7 +155,7 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
 
     if( ( ii < 15 )
         || !aLine.ReadLine()
-        || ( text = strtok( (char*) aLine, "\n\r" ) ) )
+        || !( text = strtok( (char*) aLine, "\n\r" ) ) )
     {
         aErrorMsg.Printf( wxT( "Eeschema file power port load error at line %d" ),
                           aLine.LineNumber() );
@@ -220,128 +220,13 @@ void SCH_POWER::Rotate( wxPoint aPosition )
 
 void SCH_POWER::SetOrientation( int aOrientation )
 {
-    TRANSFORM temp = TRANSFORM();
-    bool transform = false;
+    m_transform.ReOrient( (enum ORIENTATION_T) aOrientation );
+}
 
-    switch( aOrientation )
-    {
-    case CMP_ORIENT_0:
-    case CMP_NORMAL:                    // default transform matrix
-        m_transform.x1 = 1;
-        m_transform.y2 = -1;
-        m_transform.x2 = m_transform.y1 = 0;
-        break;
 
-    case CMP_ROTATE_COUNTERCLOCKWISE:  // Rotate + (incremental rotation)
-        temp.x1   = temp.y2 = 0;
-        temp.y1   = 1;
-        temp.x2   = -1;
-        transform = true;
-        break;
-
-    case CMP_ROTATE_CLOCKWISE:          // Rotate - (incremental rotation)
-        temp.x1   = temp.y2 = 0;
-        temp.y1   = -1;
-        temp.x2   = 1;
-        transform = true;
-        break;
-
-    case CMP_MIRROR_Y:                  // Mirror Y (incremental rotation)
-        temp.x1   = -1;
-        temp.y2   = 1;
-        temp.y1   = temp.x2 = 0;
-        transform = true;
-        break;
-
-    case CMP_MIRROR_X:                  // Mirror X (incremental rotation)
-        temp.x1   = 1;
-        temp.y2   = -1;
-        temp.y1   = temp.x2 = 0;
-        transform = true;
-        break;
-
-    case CMP_ORIENT_90:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        break;
-
-    case CMP_ORIENT_180:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        break;
-
-    case CMP_ORIENT_270:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_CLOCKWISE );
-        break;
-
-    case ( CMP_ORIENT_0 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_0 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_90 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_90 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_90 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_90 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_180 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_180 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_180 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_180 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_270 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_270 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_270 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_270 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    default:
-        transform = false;
-        wxMessageBox( wxT( "SetOrientation() error: invalid orientation" ) );
-        break;
-    }
-
-    if( transform )
-    {
-        /* The new matrix transform is the old matrix transform modified by the
-         *  requested transformation, which is the temp transform (rot,
-         *  mirror ..) in order to have (in term of matrix transform):
-         *     transform coord = new_m_transform * coord
-         *  where transform coord is the coord modified by new_m_transform from
-         *  the initial value coord.
-         *  new_m_transform is computed (from old_m_transform and temp) to
-         *  have:
-         *     transform coord = old_m_transform * temp
-         */
-        TRANSFORM newTransform;
-
-        newTransform.x1 = m_transform.x1 * temp.x1 + m_transform.x2 * temp.y1;
-        newTransform.y1 = m_transform.y1 * temp.x1 + m_transform.y2 * temp.y1;
-        newTransform.x2 = m_transform.x1 * temp.x2 + m_transform.x2 * temp.y2;
-        newTransform.y2 = m_transform.y1 * temp.x2 + m_transform.y2 * temp.y2;
-        m_transform = newTransform;
-    }
+int SCH_POWER::GetOrientation() const
+{
+    return (int) m_transform.GetOrientation();
 }
 
 

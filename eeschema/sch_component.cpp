@@ -764,167 +764,13 @@ void SCH_COMPONENT::ClearAnnotation( SCH_SHEET_PATH* aSheetPath )
 
 void SCH_COMPONENT::SetOrientation( int aOrientation )
 {
-    TRANSFORM temp = TRANSFORM();
-    bool transform = false;
-
-    switch( aOrientation )
-    {
-    case CMP_ORIENT_0:
-    case CMP_NORMAL:                    // default transform matrix
-        m_transform.x1 = 1;
-        m_transform.y2 = -1;
-        m_transform.x2 = m_transform.y1 = 0;
-        break;
-
-    case CMP_ROTATE_COUNTERCLOCKWISE:  // Rotate + (incremental rotation)
-        temp.x1   = temp.y2 = 0;
-        temp.y1   = 1;
-        temp.x2   = -1;
-        transform = true;
-        break;
-
-    case CMP_ROTATE_CLOCKWISE:          // Rotate - (incremental rotation)
-        temp.x1   = temp.y2 = 0;
-        temp.y1   = -1;
-        temp.x2   = 1;
-        transform = true;
-        break;
-
-    case CMP_MIRROR_Y:                  // Mirror Y (incremental rotation)
-        temp.x1   = -1;
-        temp.y2   = 1;
-        temp.y1   = temp.x2 = 0;
-        transform = true;
-        break;
-
-    case CMP_MIRROR_X:                  // Mirror X (incremental rotation)
-        temp.x1   = 1;
-        temp.y2   = -1;
-        temp.y1   = temp.x2 = 0;
-        transform = true;
-        break;
-
-    case CMP_ORIENT_90:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        break;
-
-    case CMP_ORIENT_180:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
-        break;
-
-    case CMP_ORIENT_270:
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_ROTATE_CLOCKWISE );
-        break;
-
-    case ( CMP_ORIENT_0 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_0 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_0 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_90 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_90 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_90 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_90 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_180 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_180 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_180 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_180 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    case ( CMP_ORIENT_270 + CMP_MIRROR_X ):
-        SetOrientation( CMP_ORIENT_270 );
-        SetOrientation( CMP_MIRROR_X );
-        break;
-
-    case ( CMP_ORIENT_270 + CMP_MIRROR_Y ):
-        SetOrientation( CMP_ORIENT_270 );
-        SetOrientation( CMP_MIRROR_Y );
-        break;
-
-    default:
-        transform = false;
-        wxMessageBox( wxT( "SetRotateMiroir() error: ill value" ) );
-        break;
-    }
-
-    if( transform )
-    {
-        /* The new matrix transform is the old matrix transform modified by the
-         *  requested transformation, which is the temp transform (rot,
-         *  mirror ..) in order to have (in term of matrix transform):
-         *     transform coord = new_m_transform * coord
-         *  where transform coord is the coord modified by new_m_transform from
-         *  the initial value coord.
-         *  new_m_transform is computed (from old_m_transform and temp) to
-         *  have:
-         *     transform coord = old_m_transform * temp
-         */
-        TRANSFORM newTransform;
-
-        newTransform.x1 = m_transform.x1 * temp.x1 + m_transform.x2 * temp.y1;
-        newTransform.y1 = m_transform.y1 * temp.x1 + m_transform.y2 * temp.y1;
-        newTransform.x2 = m_transform.x1 * temp.x2 + m_transform.x2 * temp.y2;
-        newTransform.y2 = m_transform.y1 * temp.x2 + m_transform.y2 * temp.y2;
-        m_transform = newTransform;
-    }
+    m_transform.ReOrient( (enum ORIENTATION_T) aOrientation );
 }
 
 
 int SCH_COMPONENT::GetOrientation()
 {
-    int type_rotate = CMP_ORIENT_0;
-    TRANSFORM transform;
-    int ii;
-
-    #define ROTATE_VALUES_COUNT 12
-
-    // list of all possibilities, but only the first 8 are actually used
-    int rotate_value[ROTATE_VALUES_COUNT] =
-    {
-        CMP_ORIENT_0,                  CMP_ORIENT_90,                  CMP_ORIENT_180,
-        CMP_ORIENT_270,
-        CMP_MIRROR_X + CMP_ORIENT_0,   CMP_MIRROR_X + CMP_ORIENT_90,
-        CMP_MIRROR_X + CMP_ORIENT_180, CMP_MIRROR_X + CMP_ORIENT_270,
-        CMP_MIRROR_Y + CMP_ORIENT_0,   CMP_MIRROR_Y + CMP_ORIENT_90,
-        CMP_MIRROR_Y + CMP_ORIENT_180, CMP_MIRROR_Y + CMP_ORIENT_270
-    };
-
-    // Try to find the current transform option:
-    transform = m_transform;
-
-    for( ii = 0; ii < ROTATE_VALUES_COUNT; ii++ )
-    {
-        type_rotate = rotate_value[ii];
-        SetOrientation( type_rotate );
-
-        if( transform == m_transform )
-            return type_rotate;
-    }
-
-    // Error: orientation not found in list (should not happen)
-    wxMessageBox( wxT( "Component orientation matrix internal error" ) );
-    m_transform = transform;
-
-    return CMP_NORMAL;
+    return (int) m_transform.GetOrientation();
 }
 
 
@@ -1505,7 +1351,7 @@ void SCH_COMPONENT::MirrorY( int aYaxis_position )
 {
     int dx = m_Pos.x;
 
-    SetOrientation( CMP_MIRROR_Y );
+    SetOrientation( ORIENT_MIRROR_Y );
     MIRROR( m_Pos.x, aYaxis_position );
     dx -= m_Pos.x;     // dx,0 is the move vector for this transform
 
@@ -1523,7 +1369,7 @@ void SCH_COMPONENT::MirrorX( int aXaxis_position )
 {
     int dy = m_Pos.y;
 
-    SetOrientation( CMP_MIRROR_X );
+    SetOrientation( ORIENT_MIRROR_X );
     MIRROR( m_Pos.y, aXaxis_position );
     dy -= m_Pos.y;     // dy,0 is the move vector for this transform
 
@@ -1543,7 +1389,7 @@ void SCH_COMPONENT::Rotate( wxPoint aPosition )
 
     RotatePoint( &m_Pos, aPosition, 900 );
 
-    SetOrientation( CMP_ROTATE_COUNTERCLOCKWISE );
+    SetOrientation( ORIENT_ROTATE_COUNTERCLOCKWISE );
 
     for( int ii = 0; ii < GetFieldCount(); ii++ )
     {

@@ -343,19 +343,19 @@ void DIALOG_EDIT_COMPONENT_IN_SCHEMATIC::copyPanelToOptions()
     switch( orientationRadioBox->GetSelection() )
     {
     case 0:
-        m_cmp->SetOrientation( CMP_ORIENT_0 );
+        m_cmp->SetOrientation( ORIENT_0 );
         break;
 
     case 1:
-        m_cmp->SetOrientation( CMP_ORIENT_90 );
+        m_cmp->SetOrientation( ORIENT_90 );
         break;
 
     case 2:
-        m_cmp->SetOrientation( CMP_ORIENT_180 );
+        m_cmp->SetOrientation( ORIENT_180 );
         break;
 
     case 3:
-        m_cmp->SetOrientation( CMP_ORIENT_270 );
+        m_cmp->SetOrientation( ORIENT_270 );
         break;
     }
 
@@ -367,11 +367,11 @@ void DIALOG_EDIT_COMPONENT_IN_SCHEMATIC::copyPanelToOptions()
         break;
 
     case 1:
-        m_cmp->SetOrientation( CMP_MIRROR_X );
+        m_cmp->SetOrientation( ORIENT_MIRROR_X );
         break;
 
     case 2:
-        m_cmp->SetOrientation( CMP_MIRROR_Y );
+        m_cmp->SetOrientation( ORIENT_MIRROR_Y );
         break;
     }
 
@@ -985,25 +985,25 @@ void DIALOG_EDIT_COMPONENT_IN_SCHEMATIC::copyOptionsToPanel()
             unitsInterchageableLabel->SetLabel( _( "No" ) );
     }
 
-    int orientation = m_cmp->GetOrientation() & ~( CMP_MIRROR_X | CMP_MIRROR_Y );
+    int orientation = m_cmp->GetOrientation() & ~( ORIENT_MIRROR_X | ORIENT_MIRROR_Y );
 
-    if( orientation == CMP_ORIENT_90 )
+    if( orientation == ORIENT_90 )
         orientationRadioBox->SetSelection( 1 );
-    else if( orientation == CMP_ORIENT_180 )
+    else if( orientation == ORIENT_180 )
         orientationRadioBox->SetSelection( 2 );
-    else if( orientation == CMP_ORIENT_270 )
+    else if( orientation == ORIENT_270 )
         orientationRadioBox->SetSelection( 3 );
     else
         orientationRadioBox->SetSelection( 0 );
 
-    int mirror = m_cmp->GetOrientation() & ( CMP_MIRROR_X | CMP_MIRROR_Y );
+    int mirror = m_cmp->GetOrientation() & ( ORIENT_MIRROR_X | ORIENT_MIRROR_Y );
 
-    if( mirror == CMP_MIRROR_X )
+    if( mirror == ORIENT_MIRROR_X )
     {
         mirrorRadioBox->SetSelection( 1 );
         DBG( printf( "mirror=X,1\n" ); )
     }
-    else if( mirror == CMP_MIRROR_Y )
+    else if( mirror == ORIENT_MIRROR_Y )
     {
         mirrorRadioBox->SetSelection( 2 );
         DBG( printf( "mirror=Y,2\n" ); )
@@ -1075,7 +1075,7 @@ void DIALOG_EDIT_COMPONENT_IN_SCHEMATIC::SetInitCmp( wxCommandEvent& event )
             m_cmp->GetField( DATASHEET )->ImportValues( *field );
         }
 
-        m_cmp->SetOrientation( CMP_NORMAL );
+        m_cmp->SetOrientation( ORIENT_NORMAL );
 
         m_parent->OnModify();
 

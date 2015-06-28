@@ -146,3 +146,164 @@ bool TRANSFORM::MapAngles( int* aAngle1, int* aAngle2 ) const
 
     return swap;
 }
+
+
+void TRANSFORM::ReOrient( enum ORIENTATION_T aOrientation )
+{
+    TRANSFORM temp = TRANSFORM();
+    bool transform = false;
+
+    // int cast suppresses warnings for combined flags
+    switch( (int) aOrientation )
+    {
+    case ORIENT_0:
+    case ORIENT_NORMAL:                    // default transform matrix
+        x1 = 1;
+        y2 = -1;
+        x2 = y1 = 0;
+        break;
+
+    case ORIENT_ROTATE_COUNTERCLOCKWISE:  // Rotate + (incremental rotation)
+        temp.x1   = temp.y2 = 0;
+        temp.y1   = 1;
+        temp.x2   = -1;
+        transform = true;
+        break;
+
+    case ORIENT_ROTATE_CLOCKWISE:          // Rotate - (incremental rotation)
+        temp.x1   = temp.y2 = 0;
+        temp.y1   = -1;
+        temp.x2   = 1;
+        transform = true;
+        break;
+
+    case ORIENT_MIRROR_Y:                  // Mirror Y (incremental rotation)
+        temp.x1   = -1;
+        temp.y2   = 1;
+        temp.y1   = temp.x2 = 0;
+        transform = true;
+        break;
+
+    case ORIENT_MIRROR_X:                  // Mirror X (incremental rotation)
+        temp.x1   = 1;
+        temp.y2   = -1;
+        temp.y1   = temp.x2 = 0;
+        transform = true;
+        break;
+
+    case ORIENT_90:
+        ReOrient( ORIENT_0 );
+        ReOrient( ORIENT_ROTATE_COUNTERCLOCKWISE );
+        break;
+
+    case ORIENT_180:
+        ReOrient( ORIENT_0 );
+        ReOrient( ORIENT_ROTATE_COUNTERCLOCKWISE );
+        ReOrient( ORIENT_ROTATE_COUNTERCLOCKWISE );
+        break;
+
+    case ORIENT_270:
+        ReOrient( ORIENT_0 );
+        ReOrient( ORIENT_ROTATE_CLOCKWISE );
+        break;
+
+    case ( ORIENT_0 + ORIENT_MIRROR_X ):
+        ReOrient( ORIENT_0 );
+        ReOrient( ORIENT_MIRROR_X );
+        break;
+
+    case ( ORIENT_0 + ORIENT_MIRROR_Y ):
+        ReOrient( ORIENT_0 );
+        ReOrient( ORIENT_MIRROR_Y );
+        break;
+
+    case ( ORIENT_90 + ORIENT_MIRROR_X ):
+        ReOrient( ORIENT_90 );
+        ReOrient( ORIENT_MIRROR_X );
+        break;
+
+    case ( ORIENT_90 + ORIENT_MIRROR_Y ):
+        ReOrient( ORIENT_90 );
+        ReOrient( ORIENT_MIRROR_Y );
+        break;
+
+    case ( ORIENT_180 + ORIENT_MIRROR_X ):
+        ReOrient( ORIENT_180 );
+        ReOrient( ORIENT_MIRROR_X );
+        break;
+
+    case ( ORIENT_180 + ORIENT_MIRROR_Y ):
+        ReOrient( ORIENT_180 );
+        ReOrient( ORIENT_MIRROR_Y );
+        break;
+
+    case ( ORIENT_270 + ORIENT_MIRROR_X ):
+        ReOrient( ORIENT_270 );
+        ReOrient( ORIENT_MIRROR_X );
+        break;
+
+    case ( ORIENT_270 + ORIENT_MIRROR_Y ):
+        ReOrient( ORIENT_270 );
+        ReOrient( ORIENT_MIRROR_Y );
+        break;
+
+    default:
+        transform = false;
+        wxMessageBox( wxT( "ReOrient() error: invalid orientation" ) );
+        break;
+    }
+
+    if( transform )
+    {
+        /* The new matrix transform is the old matrix transform modified by the
+         *  requested transformation, which is the temp transform (rot,
+         *  mirror ..) in order to have (in term of matrix transform):
+         *     transform coord = new_m_transform * coord
+         *  where transform coord is the coord modified by new_m_transform from
+         *  the initial value coord.
+         *  new_m_transform is computed (from old_m_transform and temp) to
+         *  have:
+         *     transform coord = old_m_transform * temp
+         */
+        TRANSFORM newTransform;
+
+        newTransform.x1 = x1 * temp.x1 + x2 * temp.y1;
+        newTransform.y1 = y1 * temp.x1 + y2 * temp.y1;
+        newTransform.x2 = x1 * temp.x2 + x2 * temp.y2;
+        newTransform.y2 = y1 * temp.x2 + y2 * temp.y2;
+        *this = newTransform;
+    }
+}
+
+enum ORIENTATION_T TRANSFORM::GetOrientation() const
+{
+    int type_rotate = ORIENT_0;
+    TRANSFORM temp;
+
+#define ROTATE_VALUES_COUNT 12
+
+    // list of all possibilities, but only the first ROTATE_VALUES_COUNT are actually used
+    static const int rotate_value[ROTATE_VALUES_COUNT] =
+    {
+        ORIENT_0,                       ORIENT_90,
+        ORIENT_180,                     ORIENT_270,
+        ORIENT_MIRROR_X + ORIENT_0,     ORIENT_MIRROR_X + ORIENT_90,
+        ORIENT_MIRROR_X + ORIENT_180,   ORIENT_MIRROR_X + ORIENT_270,
+        ORIENT_MIRROR_Y + ORIENT_0,     ORIENT_MIRROR_Y + ORIENT_90,
+        ORIENT_MIRROR_Y + ORIENT_180,   ORIENT_MIRROR_Y + ORIENT_270
+    };
+
+    temp = *this;
+
+    for( int ii = 0; ii < ROTATE_VALUES_COUNT; ++ii )
+    {
+        type_rotate = rotate_value[ii];
+        temp.ReOrient( (enum ORIENTATION_T) type_rotate );
+        if( temp == *this )
+            return (enum ORIENTATION_T) type_rotate;
+    }
+
+    // Error: orientation not found in list (should not happen)
+    wxFAIL_MSG( _( "Component orientation matrix internal error" ) );
+    return ORIENT_NORMAL;
+};

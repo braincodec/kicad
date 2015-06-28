@@ -62,6 +62,8 @@ public:
 
     void SetOrientation( int aSchematicOrientation );
 
+    int GetOrientation() const;
+
     void SwapData( SCH_ITEM* aItem );
 
     bool Save( FILE* aFile ) const;

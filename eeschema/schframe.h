@@ -37,6 +37,7 @@
 #include <block_commande.h>
 #include <class_sch_screen.h>
 #include <sch_collectors.h>
+#include <transform.h>
 
 
 class LIB_EDIT_FRAME;
@@ -63,20 +64,6 @@ class DIALOG_SCH_FIND;
 class wxFindDialogEvent;
 class wxFindReplaceData;
 class SCHLIB_FILTER;
-
-
-/// enum used in RotationMiroir()
-enum COMPONENT_ORIENTATION_T {
-    CMP_NORMAL,                     // Normal orientation, no rotation or mirror
-    CMP_ROTATE_CLOCKWISE,           // Rotate -90
-    CMP_ROTATE_COUNTERCLOCKWISE,    // Rotate +90
-    CMP_ORIENT_0,                   // No rotation and no mirror id CMP_NORMAL
-    CMP_ORIENT_90,                  // Rotate 90, no mirror
-    CMP_ORIENT_180,                 // Rotate 180, no mirror
-    CMP_ORIENT_270,                 // Rotate -90, no mirror
-    CMP_MIRROR_X = 0x100,           // Mirror around X axis
-    CMP_MIRROR_Y = 0x200            // Mirror around Y axis
-};
 
 
 /** Schematic annotation order options. */
@@ -1087,7 +1074,7 @@ public:
      * Function OrientComponent
      * rotates and mirrors a component.
      */
-    void OrientComponent( COMPONENT_ORIENTATION_T aOrientation = CMP_NORMAL );
+    void OrientComponent( enum ORIENTATION_T aOrientation = ORIENT_NORMAL );
 
 private:
     void OnSelectUnit( wxCommandEvent& aEvent );

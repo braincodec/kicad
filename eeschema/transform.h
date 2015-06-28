@@ -34,6 +34,18 @@
 
 class EDA_RECT;
 
+enum ORIENTATION_T {
+    ORIENT_NORMAL,                  // Normal, no rotation or mirror
+    ORIENT_ROTATE_CLOCKWISE,        // Rotate -90
+    ORIENT_ROTATE_COUNTERCLOCKWISE, // Rotate +90
+    ORIENT_0,                       // No rotation or mirror
+    ORIENT_90,                      // Rotate 90, no mirror
+    ORIENT_180,                     // Rotate 180, no mirror
+    ORIENT_270,                     // Rotate -90, no mirror
+    ORIENT_MIRROR_X = 0x100,        // Mirror around X axis
+    ORIENT_MIRROR_Y = 0x200         // Mirror around Y axis
+};
+
 /**
  * Class for tranforming drawing coordinates for a wxDC device context.
  *
@@ -100,6 +112,16 @@ public:
     * @return True if the angles were swapped during the transform.
     */
     bool MapAngles( int* aAngle1, int* aAngle2 ) const;
+
+    /**
+     * Apply the orientation transformation to this transform.
+     */
+    void ReOrient( enum ORIENTATION_T aOrientation );
+
+    /**
+     * Find the orientation equivalent to this transform.
+     */
+    enum ORIENTATION_T GetOrientation() const;
 };
 
 

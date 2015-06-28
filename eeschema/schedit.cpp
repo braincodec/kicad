@@ -821,9 +821,9 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
     case SCH_COMPONENT_T:
     case SCH_POWER_T:
         if( aEvent.GetId() == ID_SCH_ROTATE_CLOCKWISE )
-            OrientComponent( CMP_ROTATE_CLOCKWISE );
+            OrientComponent( ORIENT_ROTATE_CLOCKWISE );
         else if( aEvent.GetId() == ID_SCH_ROTATE_COUNTERCLOCKWISE )
-            OrientComponent( CMP_ROTATE_COUNTERCLOCKWISE );
+            OrientComponent( ORIENT_ROTATE_COUNTERCLOCKWISE );
         else
             wxFAIL_MSG( wxT( "Unknown rotate item command ID." ) );
 
@@ -1128,11 +1128,11 @@ void SCH_EDIT_FRAME::OnOrient( wxCommandEvent& aEvent )
     case SCH_COMPONENT_T:
     case SCH_POWER_T:
         if( aEvent.GetId() == ID_SCH_MIRROR_X )
-            OrientComponent( CMP_MIRROR_X );
+            OrientComponent( ORIENT_MIRROR_X );
         else if( aEvent.GetId() == ID_SCH_MIRROR_Y )
-            OrientComponent( CMP_MIRROR_Y );
+            OrientComponent( ORIENT_MIRROR_Y );
         else if( aEvent.GetId() == ID_SCH_ORIENT_NORMAL )
-            OrientComponent( CMP_NORMAL );
+            OrientComponent( ORIENT_NORMAL );
         else
             wxFAIL_MSG( wxT( "Invalid orient schematic component command ID." ) );
 

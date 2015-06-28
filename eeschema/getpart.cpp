@@ -249,7 +249,7 @@ SCH_COMPONENT* SCH_EDIT_FRAME::Load_Component( wxDC*           aDC,
 }
 
 
-void SCH_EDIT_FRAME::OrientComponent( COMPONENT_ORIENTATION_T aOrientation )
+void SCH_EDIT_FRAME::OrientComponent( enum ORIENTATION_T aOrientation )
 {
     SCH_SCREEN* screen = GetScreen();
     SCH_ITEM* item = screen->GetCurItem();
