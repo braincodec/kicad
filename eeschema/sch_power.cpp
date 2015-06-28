@@ -268,11 +268,6 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
 }
 
 
-void SCH_POWER::CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& Pos )
-{
-}
-
-
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
     EDA_RECT bbox = GetBodyBoundingBox();

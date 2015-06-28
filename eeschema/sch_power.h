@@ -77,7 +77,7 @@ public:
 
     const EDA_RECT GetBodyBoundingBox() const;
 
-    void CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& aPos );
+    void CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& aPos ) {}
 
     void MirrorY( int aYaxis_position );
 
