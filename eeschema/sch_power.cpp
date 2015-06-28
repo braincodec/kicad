@@ -438,3 +438,34 @@ bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
         ( GetText() == aOther.GetText() ) &&
         true;
 }
+
+void SCH_POWER::Plot( PLOTTER* aPlotter )
+{
+    LIB_FIELDS fields;
+    TRANSFORM temp = m_transform;
+
+    if( PART_SPTR part = m_part.lock() )
+    {
+        part->Plot( aPlotter, /* unit */ 1, /* convert */ 1, m_Pos, temp );
+        part->GetFields( fields );
+    }
+
+    BOOST_FOREACH( LIB_FIELD& field, fields )
+    {
+        if( field.GetId() != VALUE )
+            continue;
+
+        if( field.IsVisible() && !m_label_hidden )
+        {
+            LIB_FIELD temp( field );
+
+            //if( m_transform.y1 )
+                //temp.Rotate();
+
+            if( m_visible_text != wxEmptyString )
+                temp.SetText( m_visible_text );
+
+            temp.Plot( aPlotter, m_Pos, false, m_transform );
+        }
+    }
+}

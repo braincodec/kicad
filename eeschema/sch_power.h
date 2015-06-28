@@ -136,6 +136,8 @@ public:
 
     bool operator==( const SCH_POWER& aOther ) const;
 
+    void Plot( PLOTTER* aPlotter );
+
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }
 };
