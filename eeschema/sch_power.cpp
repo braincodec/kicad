@@ -51,27 +51,6 @@
 #include <power_symbols_lib_data.h>
 
 
-static PART_LIB* get_symbol_library()
-{
-    static std::string SymbolLibData( PowerSymbolLibData );
-    static std::auto_ptr<PART_LIB> SymbolLib;
-    if( !SymbolLib.get() )
-    {
-        std::auto_ptr<PART_LIB> lib( new PART_LIB( LIBRARY_TYPE_EESCHEMA, wxEmptyString ) );
-
-        STRING_LINE_READER reader(SymbolLibData, "hard-coded library");
-        wxString error_msg;
-
-        bool r = lib->Load( reader, error_msg );
-        wxASSERT_MSG( r, _( "Internal error reading hard-coded library: " ) + error_msg );
-
-        SymbolLib = lib;
-    }
-
-    return SymbolLib.get();
-}
-
-
 SCH_POWER::SCH_POWER( const wxPoint& pos, const wxString& text ) :
     SCH_TEXT( pos, text, SCH_POWER_T ),
     m_part_name( text ),
@@ -391,7 +370,7 @@ void SCH_POWER::SetPartName( const wxString& aName, PART_LIBS* aLibs )
 
 bool SCH_POWER::Resolve( PART_LIBS* aLibs )
 {
-    if( LIB_PART* part = get_symbol_library()->FindPart( m_part_name ) )
+    if( LIB_PART* part = GetPartLib()->FindPart( m_part_name ) )
     {
         m_part = part->SharedPtr();
     }
@@ -422,9 +401,23 @@ void SCH_POWER::SetText( const wxString& aText )
 }
 
 
-PART_LIB* SCH_POWER::GetPartLib()
+/* static */ PART_LIB* SCH_POWER::GetPartLib()
 {
-    return get_symbol_library();
+    static std::auto_ptr<PART_LIB> SymbolLib;
+    if( !SymbolLib.get() )
+    {
+        std::auto_ptr<PART_LIB> lib( new PART_LIB( LIBRARY_TYPE_EESCHEMA, wxEmptyString ) );
+
+        STRING_LINE_READER reader( PowerSymbolLibData, "hard-coded library" );
+        wxString error_msg;
+
+        bool r = lib->Load( reader, error_msg );
+        wxASSERT_MSG( r, _( "Internal error reading hard-coded library: " ) + error_msg );
+
+        SymbolLib = lib;
+    }
+
+    return SymbolLib.get();
 }
 
 

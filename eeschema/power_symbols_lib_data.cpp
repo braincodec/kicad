@@ -46,7 +46,7 @@ lines = []
 with open( this_filename ) as f:
     for line in f:
         lines.append( line )
-        if line == "#endif\n":
+        if line.startswith( "#define DUMMY_END_OF_PYTHON" ):
             break
 
 with open( "power_symbols.lib", 'rb' ) as f:
@@ -64,7 +64,7 @@ with open( this_filename, 'w' ) as f:
     for line in lines:
         f.write( line )
     f.write( "\n" )
-    f.write( "const char PowerSymbolLibData[] = {\n" )
+    f.write( "const char RawPowerSymbolLibData[] = {\n" )
     for group in split_seq( data, 16 ):
         f.write( " ".join( "0x%02x," % ord( i ) for i in group ) )
         f.write( "\n" )
@@ -76,7 +76,11 @@ with open( this_filename, 'w' ) as f:
 """
 #endif
 
-const char PowerSymbolLibData[] = {
+const std::string PowerSymbolLibData( RawPowerSymbolLibData );
+
+#define DUMMY_END_OF_PYTHON
+
+const char RawPowerSymbolLibData[] = {
 0x45, 0x45, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2d, 0x4c, 0x49, 0x42, 0x52, 0x41, 0x52, 0x59,
 0x20, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x20, 0x32, 0x2e, 0x33, 0x0a, 0x23, 0x65, 0x6e,
 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x20, 0x75, 0x74, 0x66, 0x2d, 0x38, 0x0a, 0x23, 0x0a, 0x23,

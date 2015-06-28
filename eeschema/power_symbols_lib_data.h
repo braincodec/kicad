@@ -30,11 +30,18 @@
 #ifndef POWER_SYMBOLS_LIB_DATA_H
 #define POWER_SYMBOLS_LIB_DATA_H
 
+#include <string>
+
 /**
  * A library of power symbol styles, embedded into the object.
  *
  * The data is in power_symbols_lib_data.cpp; see that file for instructions on updating it.
  */
-extern const char PowerSymbolLibData[];
+extern const std::string PowerSymbolLibData;
+
+/**
+ * The same library as a character array.
+ */
+extern const char RawPowerSymbolLibData[];
 
 #endif // POWER_SYMBOLS_LIB_DATA_H
