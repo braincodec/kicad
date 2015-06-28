@@ -35,7 +35,6 @@
 #include <base_units.h>
 #include <kicad_string.h>
 #include <macros.h>
-#include <msgpanel.h>
 #include <plot_common.h>
 #include <richio.h>
 #include <trigo.h>
@@ -169,6 +168,12 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
     m_label_hidden = label_hidden;
 
     return true;
+}
+
+
+void SCH_POWER::GetMsgPanelInfo( MSG_PANEL_ITEMS& aList )
+{
+    aList.push_back( MSG_PANEL_ITEM( _( "Net" ), GetText(), DARKCYAN ) );
 }
 
 

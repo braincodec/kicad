@@ -33,6 +33,7 @@
 #include <sch_text.h>
 #include <class_libentry.h>
 #include <class_library.h>
+#include <msgpanel.h>
 
 
 typedef std::vector<SCH_FIELD>      SCH_FIELDS;
@@ -69,6 +70,8 @@ public:
     bool Save( FILE* aFile ) const;
 
     bool Load( LINE_READER& aLine, wxString& aErrorMsg );
+
+    void GetMsgPanelInfo( MSG_PANEL_ITEMS& aList );
 
     const EDA_RECT GetBoundingBox() const;  // Virtual
 
