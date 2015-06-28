@@ -43,6 +43,7 @@
 #include <class_drawpanel.h>
 #include <eeschema_id.h>
 #include <general.h>
+#include <lib_pin.h>
 #include <protos.h>
 #include <schframe.h>
 #include <sch_power.h>
@@ -235,13 +236,19 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
 {
     LIB_FIELDS fields;
 
+    // The LIB_PART is recentered to place the pin at (0,0)
+    wxPoint pin_position( 0, 0 );
+    const LIB_PIN* pin = GetPin();
+    if( pin )
+        pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
+
     PART_SPTR part = m_part.lock();
     if( !part )
         part = PART_SPTR( LIB_PART::GetDummy() );
 
     part->GetFields( fields );
-    part->Draw( aPanel, aDC, m_Pos + aOffset, /* unit */ 1, /* convert */ 1, aDrawMode,
-            aColor, m_transform, true, false, false, NULL );
+    part->Draw( aPanel, aDC, m_Pos + aOffset - pin_position, /* unit */ 1, /* convert */ 1,
+            aDrawMode, aColor, m_transform, true, false, false, NULL );
 
     BOOST_FOREACH( LIB_FIELD& field, fields )
     {
@@ -261,15 +268,25 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
             else
                 text = m_visible_text;
 
-            temp.drawGraphic( aPanel, aDC, m_Pos + aOffset, aColor, aDrawMode,
+            temp.drawGraphic( aPanel, aDC, m_Pos + aOffset - pin_position, aColor, aDrawMode,
                     (void*) &text, m_transform );
         }
+
+        if( m_isDangling )
+            GRCircle( aPanel? aPanel->GetClipBox() : NULL, aDC, m_Pos.x, m_Pos.y,
+                    TARGET_PIN_RADIUS, 0, GetLayerColor( LAYER_PIN ) );
     }
 }
 
 
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
+    // The LIB_PART is recentered to place the pin at (0,0)
+    wxPoint pin_position( 0, 0 );
+    const LIB_PIN* pin = GetPin();
+    if( pin )
+        pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
+
     EDA_RECT bbox = GetBodyBoundingBox();
     PART_SPTR part = m_part.lock();
     if( !part )
@@ -289,6 +306,7 @@ const EDA_RECT SCH_POWER::GetBoundingBox() const
         temp.SetText( GetText() );
         EDA_RECT fbbox = temp.GetBoundingBox();
         fbbox.Move( m_Pos );
+        fbbox.Move( -pin_position );
         bbox.Merge( fbbox );
     }
     return bbox;
@@ -297,6 +315,12 @@ const EDA_RECT SCH_POWER::GetBoundingBox() const
 
 const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 {
+    // The LIB_PART is recentered to place the pin at (0,0)
+    wxPoint pin_position( 0, 0 );
+    const LIB_PIN* pin = GetPin();
+    if( pin )
+        pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
+
     EDA_RECT    bBox;
 
     if( PART_SPTR part = m_part.lock() )
@@ -330,8 +354,8 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
     if( y2 < y1 )
         std::swap( y2, y1 );
 
-    bBox.SetX( x1 );
-    bBox.SetY( y1 );
+    bBox.SetX( x1 - pin_position.x );
+    bBox.SetY( y1 - pin_position.y );
     bBox.SetWidth( x2 - x1 );
     bBox.SetHeight( y2 - y1 );
 
@@ -427,14 +451,21 @@ bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
         true;
 }
 
+
 void SCH_POWER::Plot( PLOTTER* aPlotter )
 {
+    // The LIB_PART is recentered to place the pin at (0,0)
+    wxPoint pin_position( 0, 0 );
+    const LIB_PIN* pin = GetPin();
+    if( pin )
+        pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
+
     LIB_FIELDS fields;
     TRANSFORM temp = m_transform;
 
     if( PART_SPTR part = m_part.lock() )
     {
-        part->Plot( aPlotter, /* unit */ 1, /* convert */ 1, m_Pos, temp );
+        part->Plot( aPlotter, /* unit */ 1, /* convert */ 1, m_Pos - pin_position, temp );
         part->GetFields( fields );
     }
 
@@ -453,7 +484,20 @@ void SCH_POWER::Plot( PLOTTER* aPlotter )
             if( m_visible_text != wxEmptyString )
                 temp.SetText( m_visible_text );
 
-            temp.Plot( aPlotter, m_Pos, false, m_transform );
+            temp.Plot( aPlotter, m_Pos - pin_position, false, m_transform );
         }
     }
+}
+
+
+const LIB_PIN* SCH_POWER::GetPin() const
+{
+    if( PART_SPTR part = m_part.lock() )
+    {
+        LIB_PINS list;
+        part->GetPins( list, /* unit */ 1, /* convert */ 1 );
+        return ( list.size() == 1 ) ? list[0] : NULL;
+    }
+    else
+        return NULL;
 }

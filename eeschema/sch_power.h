@@ -138,6 +138,13 @@ public:
 
     void Plot( PLOTTER* aPlotter );
 
+    /**
+     * Get the pin from the internal LIB_PART.
+     *
+     * Returns NULL if invalid: if the part has no pin, or if the part has multiple pins.
+     */
+    const LIB_PIN* GetPin() const;
+
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }
 };
