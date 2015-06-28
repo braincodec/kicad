@@ -397,6 +397,11 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
     m_panAdvanced->Hide();
     m_textNet->SetFocus();
 
+    wxTextValidator* validator = static_cast<wxTextValidator*>( m_textNet->GetValidator() );
+    wxArrayString excludes;
+    excludes.Add( wxT( " " ) );
+    validator->SetExcludes( excludes );
+
     PopulateHistory();
     PopulateStyles();
     PopulateLib();
