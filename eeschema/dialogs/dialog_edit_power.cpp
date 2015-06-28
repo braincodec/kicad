@@ -308,8 +308,10 @@ private:
 
     /**
      * Transfer data to the window from a given SCH_POWER
+     * @param aUpdateNet - if false, the Net field will not be updated. This prevents
+     *  infinite recursion when running this _from_ the Net field's change event.
      */
-    bool TransferDataToWindow( SCH_POWER* aItem );
+    bool TransferDataToWindow( SCH_POWER* aItem, bool aUpdateNet = true );
 
     /**
      * Transfer data from the window to a given SCH_POWER
@@ -563,15 +565,18 @@ bool DIALOG_EDIT_POWER::TransferDataToWindow()
 }
 
 
-bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER* aItem )
+bool DIALOG_EDIT_POWER::TransferDataToWindow( SCH_POWER* aItem, bool aUpdateNet )
 {
-    if( !wxDialog::TransferDataToWindow() )
+    if( aUpdateNet && !wxDialog::TransferDataToWindow() )
         return false;
 
-    m_textNet->SetValue( aItem->GetText() );
+    if( aUpdateNet )
+        m_textNet->SetValue( aItem->GetText() );
+
     m_textLabelText->SetValue( aItem->GetVisibleText() );
     m_cbHideLabel->SetValue( aItem->GetLabelHidden() );
-    if( m_dvitems.count( aItem->GetPartName() ) )
+
+    if( aUpdateNet && m_dvitems.count( aItem->GetPartName() ) )
     {
         m_dvtStyles->Select( m_dvitems[aItem->GetPartName()] );
         m_dvtStyles->EnsureVisible( m_dvitems[aItem->GetPartName()] );
@@ -647,6 +652,16 @@ void DIALOG_EDIT_POWER::OnToggleAdvanced( wxCommandEvent& aEvent )
 
 void DIALOG_EDIT_POWER::OnDataChanged( wxCommandEvent& event )
 {
+    if( event.GetEventObject() != m_textNet )
+        return;
+
+    wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
+    if( name == gsNameAutomatic || name == wxEmptyString )
+    {
+        heur_choose_style( m_textNet->GetValue(), &m_dummy );
+        TransferDataToWindow( &m_dummy, false );
+    }
+
     m_pPreview->Refresh();
 }
 
