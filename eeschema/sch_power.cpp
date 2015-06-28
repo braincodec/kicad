@@ -271,13 +271,18 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
 
         if( field.IsVisible() && !m_label_hidden )
         {
+            LIB_FIELD temp( field );
+
+            if( m_transform.y1 )
+                temp.Rotate();
+
             wxString text;
             if( m_visible_text == wxEmptyString )
                 text = GetText();
             else
                 text = m_visible_text;
 
-            field.drawGraphic( aPanel, aDC, m_Pos + aOffset, aColor, aDrawMode,
+            temp.drawGraphic( aPanel, aDC, m_Pos + aOffset, aColor, aDrawMode,
                     (void*) &text, m_transform );
         }
     }
