@@ -10,4 +10,7 @@
 // a key to read write in user config the visibility of the rescue library dialog
 #define RESCUE_NEVER_SHOW_KEY wxT("RescueNeverShow")
 
+// this key holds the selected default power symbol style.
+#define DEFAULT_POWER_STYLE_KEY wxT("DefaultPowerStyle")
+
 #endif      // EESCHEMA_CONFIG_H

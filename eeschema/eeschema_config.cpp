@@ -44,6 +44,7 @@
 #include <class_libentry.h>
 #include <worksheet_shape_builder.h>
 #include <class_library.h>
+#include <sch_power.h>
 
 #include <dialog_hotkeys_editor.h>
 
@@ -308,6 +309,12 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
 {
     wxArrayString units;
     GRIDS grid_list = GetScreen()->GetGrids();
+    std::vector<wxString> powerstyles;
+    SCH_POWER::GetStyleNames( powerstyles );
+
+    wxString powerstyle;
+    Kiface().KifaceSettings()->Read( DEFAULT_POWER_STYLE_KEY, &powerstyle, DEFAULTPOWERSTYLE );
+
     bool saveProjectConfig = false;
 
     DIALOG_EESCHEMA_OPTIONS dlg( this );
@@ -326,6 +333,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     dlg.SetAutoSaveInterval( GetAutoSaveInterval() / 60 );
     dlg.SetRefIdSeparator( LIB_PART::GetSubpartIdSeparator(),
                            LIB_PART::GetSubpartFirstId() );
+    dlg.SetPowerStyles( powerstyles, powerstyle );
 
     dlg.SetShowGrid( IsGridVisible() );
     dlg.SetShowHiddenPins( m_showAllPins );
@@ -382,6 +390,9 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     m_canvas->SetEnableAutoPan( dlg.GetEnableAutoPan() );
     SetForceHVLines( dlg.GetEnableHVBusOrientation() );
     m_showPageLimits = dlg.GetShowPageLimits();
+
+    powerstyle = dlg.GetPowerStyle();
+    Kiface().KifaceSettings()->Write( DEFAULT_POWER_STYLE_KEY, powerstyle );
 
     // Delete all template fieldnames and then restore them using the template field data from
     // the options dialog

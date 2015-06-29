@@ -65,6 +65,9 @@ class SCH_SHEET;
 ///< The default pin len value when creating pins(can be changed in preference menu)
 #define DEFAULTPINNAMESIZE 50
 
+///< The default power symbol style
+#define DEFAULTPOWERSTYLE (wxT( "FLAT" ) )
+
 #define GR_DEFAULT_DRAWMODE GR_COPY
 
 // this enum is for color management

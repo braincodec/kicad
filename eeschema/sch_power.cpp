@@ -463,6 +463,52 @@ void SCH_POWER::SetText( const wxString& aText )
 }
 
 
+/* static */ void SCH_POWER::GetStyleNames( std::vector<wxString>& aVec )
+{
+    PART_LIB* lib = GetPartLib();
+    wxArrayString names;
+
+    lib->GetEntryNames( names );
+    BOOST_FOREACH( wxString& name, names )
+    {
+        if( name.EndsWith( wxT( "_UP" ) ) )
+            aVec.push_back( name.SubString( 0, name.size() - 4 ) );
+    }
+}
+
+
+/* static */ wxBitmap SCH_POWER::RenderStylePreview(
+        const wxString& aName, int aWidth, int aHeight )
+{
+    LIB_PART* part = GetPartLib()->FindPart( aName );
+    wxBitmap bmp( aWidth, aHeight, 32 );
+
+    if( !part )
+        return bmp;
+
+    EDA_RECT bbox = part->GetBodyBoundingBox( 1, 1, false );
+
+    wxMemoryDC dc( bmp );
+    dc.SetBackground( *wxWHITE_BRUSH );
+    dc.Clear();
+
+    wxSize dc_size = dc.GetSize();
+    dc.SetDeviceOrigin( dc_size.x / 2, dc_size.y / 2 );
+
+    double xscale = (double) dc_size.x / bbox.GetWidth();
+    double yscale = (double) dc_size.y / bbox.GetHeight();
+    double scale = std::min( xscale, yscale ) * 0.85;
+
+    dc.SetUserScale( scale, scale );
+    wxPoint offset = -bbox.Centre();
+
+    part->Draw( NULL, &dc, offset, 1, 1, GR_COPY, UNSPECIFIED_COLOR,
+            DefaultTransform, false, false, false, NULL );
+
+    return bmp;
+}
+
+
 bool SCH_POWER::operator==( const SCH_POWER& aOther ) const
 {
     return

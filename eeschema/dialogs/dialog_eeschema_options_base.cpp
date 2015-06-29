@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Mar  9 2015)
+// C++ code generated with wxFormBuilder (version Mar 13 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -47,7 +47,7 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	fgSizer1->AddGrowableCol( 0 );
 	fgSizer1->AddGrowableCol( 1 );
 	fgSizer1->AddGrowableCol( 2 );
-	fgSizer1->SetFlexibleDirection( wxHORIZONTAL );
+	fgSizer1->SetFlexibleDirection( wxBOTH );
 	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
 	m_staticText2 = new wxStaticText( m_panel1, wxID_ANY, _("Measurement &units:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -153,13 +153,23 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	
 	m_staticText26 = new wxStaticText( m_panel1, wxID_ANY, _("Part id notation:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText26->Wrap( -1 );
-	fgSizer1->Add( m_staticText26, 0, wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL, 5 );
+	fgSizer1->Add( m_staticText26, 1, wxRIGHT|wxLEFT|wxALIGN_CENTER_VERTICAL, 3 );
 	
 	wxString m_choiceSeparatorRefIdChoices[] = { _("A"), _(".A"), _("-A"), _("_A"), _(".1"), _("-1"), _("_1") };
 	int m_choiceSeparatorRefIdNChoices = sizeof( m_choiceSeparatorRefIdChoices ) / sizeof( wxString );
 	m_choiceSeparatorRefId = new wxChoice( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choiceSeparatorRefIdNChoices, m_choiceSeparatorRefIdChoices, 0 );
 	m_choiceSeparatorRefId->SetSelection( 0 );
 	fgSizer1->Add( m_choiceSeparatorRefId, 0, wxALL|wxEXPAND, 5 );
+	
+	
+	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
+	
+	m_staticText20 = new wxStaticText( m_panel1, wxID_ANY, _("Default power symbol style:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText20->Wrap( -1 );
+	fgSizer1->Add( m_staticText20, 1, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 3 );
+	
+	m_bcomboPowerStyle = new wxBitmapComboBox( m_panel1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY ); 
+	fgSizer1->Add( m_bcomboPowerStyle, 0, wxALL|wxEXPAND, 5 );
 	
 	
 	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );

@@ -30,6 +30,7 @@
 #include <class_base_screen.h>
 
 #include <dialog_eeschema_options.h>
+#include <sch_power.h>
 
 #include "wx/settings.h"
 
@@ -158,6 +159,24 @@ void DIALOG_EESCHEMA_OPTIONS::SetGridSizes( const GRIDS& aGridSizes, int aGridId
     }
 
     m_choiceGridSize->SetSelection( select );
+}
+
+
+void DIALOG_EESCHEMA_OPTIONS::SetPowerStyles( const std::vector<wxString>& aStyles,
+        const wxString& aSelection )
+{
+    int select = wxNOT_FOUND;
+
+    for( int ii = 0; ii < aStyles.size(); ++ii )
+    {
+        wxBitmap bmp = SCH_POWER::RenderStylePreview( aStyles[ii] + wxT( "_UP" ), 32, 32 );
+        m_bcomboPowerStyle->Append( aStyles[ii], bmp );
+
+        if( aStyles[ii] == aSelection )
+            select = ii;
+    }
+
+    m_bcomboPowerStyle->SetSelection( select );
 }
 
 

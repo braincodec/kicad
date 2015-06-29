@@ -31,12 +31,10 @@
 #define CLASS_POWER_H
 
 #include <sch_text.h>
+#include <sch_collectors.h>
 #include <class_libentry.h>
 #include <class_library.h>
 #include <msgpanel.h>
-
-
-typedef std::vector<SCH_FIELD>      SCH_FIELDS;
 
 class SCH_POWER : public SCH_TEXT
 {
@@ -140,6 +138,16 @@ public:
      * styles.
      */
     static PART_LIB* GetPartLib();
+
+    /**
+     * Get the list of power symbol style names into a vector.
+     */
+    static void GetStyleNames( std::vector<wxString>& aVec );
+
+    /**
+     * Render a style by name as a bitmap for previewing.
+     */
+    static wxBitmap RenderStylePreview( const wxString& aName, int aWidth, int aHeight );
 
     bool operator==( const SCH_POWER& aOther ) const;
 

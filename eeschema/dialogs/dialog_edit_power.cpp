@@ -32,8 +32,10 @@
 // KiCad-wide utilities
 #include <class_drawpanel.h>
 #include <class_eda_rect.h>
+#include <kiface_i.h>
 
 // Eeschema
+#include <eeschema_config.h>
 #include <sch_component.h>
 #include <sch_field.h>
 #include <sch_power.h>
@@ -169,6 +171,9 @@ struct libspec {
  */
 static void heur_choose_style( wxString aNet, SCH_POWER* aItem )
 {
+    wxString powerstyle;
+    Kiface().KifaceSettings()->Read( DEFAULT_POWER_STYLE_KEY, &powerstyle, DEFAULTPOWERSTYLE );
+
     aItem->SetText( aNet );
     aItem->SetVisibleText( wxEmptyString );
     aItem->SetLabelHidden( false );
@@ -188,13 +193,13 @@ static void heur_choose_style( wxString aNet, SCH_POWER* aItem )
         aItem->SetPartName( _( "GND" ) );
 
     else if( aNet == _( "VSS" ) || aNet == _( "VEE" ) )
-        aItem->SetPartName( gsStyleName + _( "_DOWN" ) );
+        aItem->SetPartName( powerstyle + _( "_DOWN" ) );
 
     else if( aNet.StartsWith( _( "-" ) ) || aNet.EndsWith( _( "-" ) ) )
-        aItem->SetPartName( gsStyleName + _( "_DOWN" ) );
+        aItem->SetPartName( powerstyle + _( "_DOWN" ) );
 
     else
-        aItem->SetPartName( gsStyleName + _( "_UP" ) );
+        aItem->SetPartName( powerstyle + _( "_UP" ) );
 }
 
 
@@ -359,23 +364,14 @@ wxPoint render_core( wxDC* aDC, EDA_RECT aBBox, EDA_COLOR_T aBGcolor )
 /**
  * Render a LIB_PART into a wxIcon.
  */
-wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
+wxIcon render_part_as_icon( const wxString& aName, int aWidth=48, int aHeight=48 )
 {
     wxIcon icon;
 
     icon.SetWidth( aWidth );
     icon.SetHeight( aHeight );
 
-    wxBitmap bmp( aWidth, aHeight );
-
-    wxMemoryDC dc( bmp );
-
-    wxPoint offset = render_core( &dc, aPart->GetBodyBoundingBox(1, 1, false), WHITE );
-
-    aPart->Draw( NULL, &dc, offset, 1, 1, GR_COPY, UNSPECIFIED_COLOR,
-            DefaultTransform, false, false, false, NULL );
-
-    icon.CopyFromBitmap( bmp );
+    icon.CopyFromBitmap( SCH_POWER::RenderStylePreview( aName, aWidth, aHeight) );
     return icon;
 }
 
@@ -448,8 +444,7 @@ void DIALOG_EDIT_POWER::PopulateStyles()
                 dviAllStyles, each_name, -1,
                 new wxStringClientData( each_name ) );
 
-        LIB_PART* part = lib->FindPart( each_name );
-        wxIcon icon = render_part_as_icon( part );
+        wxIcon icon = render_part_as_icon( each_name );
         m_dvtStyles->SetItemIcon( item, icon );
         m_dvitems[each_name] = item;
     }

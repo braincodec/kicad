@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Mar  9 2015)
+// C++ code generated with wxFormBuilder (version Mar 13 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -23,6 +23,7 @@ class wxListView;
 #include <wx/settings.h>
 #include <wx/choice.h>
 #include <wx/spinctrl.h>
+#include <wx/bmpcbox.h>
 #include <wx/sizer.h>
 #include <wx/statline.h>
 #include <wx/checkbox.h>
@@ -97,6 +98,8 @@ class DIALOG_EESCHEMA_OPTIONS_BASE : public DIALOG_SHIM
 		wxStaticText* m_staticText23;
 		wxStaticText* m_staticText26;
 		wxChoice* m_choiceSeparatorRefId;
+		wxStaticText* m_staticText20;
+		wxBitmapComboBox* m_bcomboPowerStyle;
 		wxStaticLine* m_staticline1;
 		wxCheckBox* m_checkShowGrid;
 		wxCheckBox* m_checkShowHiddenPins;

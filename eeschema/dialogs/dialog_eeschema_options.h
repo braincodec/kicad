@@ -302,6 +302,22 @@ public:
     void GetRefIdSeparator( int& aSep, int& aFirstId);
 
     /**
+     * Function SetPowerStyles
+     * Populates the list of power symbol styles.
+     * @param aStyles - list of style names. Any names that are actually valid will be assigned
+     *  preview icons automatically.
+     * @param aSelection - which one to select
+     */
+    void SetPowerStyles( const std::vector<wxString>& aStyles, const wxString& aSelection );
+
+    /**
+     * Function GetPowerStyle
+     * Returns the currently selected power style.
+     */
+    wxString GetPowerStyle() { return m_bcomboPowerStyle->GetString(
+            m_bcomboPowerStyle->GetSelection() ); }
+
+    /**
      * Function SetShowGrid
      * Sets the current ShowGrid value in the dialog
      * @param show The ShowGrid value to set in the dialog
