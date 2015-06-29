@@ -652,17 +652,36 @@ void DIALOG_EDIT_POWER::OnToggleAdvanced( wxCommandEvent& aEvent )
 
 void DIALOG_EDIT_POWER::OnDataChanged( wxCommandEvent& event )
 {
-    if( event.GetEventObject() != m_textNet )
-        return;
+    static bool recursion_guard = false;
+    if( recursion_guard ) return;
+    recursion_guard = true;
 
-    wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
-    if( name == gsNameAutomatic || name == wxEmptyString )
+    if( event.GetEventObject() == m_textNet )
     {
+        wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
+        if( name == gsNameAutomatic || name == wxEmptyString )
+        {
+            heur_choose_style( m_textNet->GetValue(), &m_dummy );
+            TransferDataToWindow( &m_dummy, false );
+        }
+    }
+    else if( event.GetEventObject() == m_textLabelText ||
+             event.GetEventObject() == m_cbHideLabel )
+    {
+        wxString name = get_string_data( get_selected_data( m_dvtStyles ) );
         heur_choose_style( m_textNet->GetValue(), &m_dummy );
-        TransferDataToWindow( &m_dummy, false );
+        if( name == gsNameAutomatic &&
+            ( m_dummy.GetVisibleText() != m_textLabelText->GetValue() ||
+              m_dummy.GetLabelHidden() != m_cbHideLabel->GetValue() ) )
+        {
+            m_dvtStyles->Select( m_dvitems[m_dummy.GetPartName()] );
+            m_dvtStyles->EnsureVisible( m_dvitems[m_dummy.GetPartName()] );
+        }
     }
 
     m_pPreview->Refresh();
+
+    recursion_guard = false;
 }
 
 
