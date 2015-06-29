@@ -26,24 +26,21 @@
  * @brief Implementation of the power properties dialog.
  */
 
-#include <fctsys.h>
-#include <wx/valgen.h>
-#include <schframe.h>
-#include <base_units.h>
-
-#include <class_drawpanel.h>
-#include <general.h>
-#include <drawtxt.h>
-#include <confirm.h>
-#include <sch_text.h>
-#include <sch_power.h>
-#include <sch_component.h>
-#include <typeinfo>
+// Libraries
 #include <boost/foreach.hpp>
 
-#include <dialog_edit_power_base.h>
+// KiCad-wide utilities
+#include <class_drawpanel.h>
+#include <class_eda_rect.h>
 
-#include <iostream>
+// Eeschema
+#include <sch_component.h>
+#include <sch_field.h>
+#include <sch_power.h>
+#include <schframe.h>
+
+// Base class
+#include <dialog_edit_power_base.h>
 
 class SCH_EDIT_FRAME;
 
