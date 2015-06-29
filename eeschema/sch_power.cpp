@@ -154,6 +154,11 @@ bool SCH_POWER::Load( LINE_READER& aLine, wxString& aErrorMsg )
 void SCH_POWER::GetMsgPanelInfo( MSG_PANEL_ITEMS& aList )
 {
     aList.push_back( MSG_PANEL_ITEM( _( "Net" ), GetText(), DARKCYAN ) );
+    if( GetVisibleText() != wxEmptyString && !GetLabelHidden() )
+        aList.push_back( MSG_PANEL_ITEM( _( "Text" ), GetVisibleText(), DARKRED ) );
+    else if( GetLabelHidden() )
+        aList.push_back( MSG_PANEL_ITEM( _( "Text" ), _( "[Hidden]" ), RED ) );
+    aList.push_back( MSG_PANEL_ITEM( _( "Style" ), GetPartName(), DARKBROWN ) );
 }
 
 
