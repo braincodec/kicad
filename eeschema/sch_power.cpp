@@ -325,7 +325,7 @@ const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 
     if( PART_SPTR part = m_part.lock() )
     {
-        bBox = part->GetBodyBoundingBox( /* unit */ 1, /* convert */ 1 );
+        bBox = part->GetBodyBoundingBox( /* unit */ 1, /* convert */ 1, /* hidden pins */ false );
     }
     else
     {

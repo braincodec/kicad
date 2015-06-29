@@ -315,8 +315,9 @@ public:
      *  If aUnit == 0, unit is not used
      *  if aConvert == 0 Convert is non used
      *  Fields are not taken in account
+     * @param aHiddenPins - if false, hidden pins will not factor in
      **/
-    const EDA_RECT GetBodyBoundingBox( int aUnit, int aConvert ) const;
+    const EDA_RECT GetBodyBoundingBox( int aUnit, int aConvert, bool aHiddenPins = true ) const;
 
     /**
      * Function SaveDateAndTime

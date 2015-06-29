@@ -1174,7 +1174,7 @@ const EDA_RECT LIB_PART::GetBoundingBox( int aUnit, int aConvert ) const
 }
 
 
-const EDA_RECT LIB_PART::GetBodyBoundingBox( int aUnit, int aConvert ) const
+const EDA_RECT LIB_PART::GetBodyBoundingBox( int aUnit, int aConvert, bool aHiddenPins ) const
 {
     EDA_RECT bBox;
     bool initialized = false;
@@ -1191,6 +1191,10 @@ const EDA_RECT LIB_PART::GetBodyBoundingBox( int aUnit, int aConvert ) const
             continue;
 
         if ( item.Type() == LIB_FIELD_T )
+            continue;
+
+        if( item.Type() == LIB_PIN_T && !static_cast<const LIB_PIN&>( item ).IsVisible() &&
+                !aHiddenPins )
             continue;
 
         if( initialized )

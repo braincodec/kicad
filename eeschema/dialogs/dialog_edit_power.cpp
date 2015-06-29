@@ -356,7 +356,7 @@ wxIcon render_part_as_icon( LIB_PART* aPart, int aWidth=48, int aHeight=48 )
 
     wxMemoryDC dc( bmp );
 
-    wxPoint offset = render_core( &dc, aPart->GetBodyBoundingBox(1, 1), WHITE );
+    wxPoint offset = render_core( &dc, aPart->GetBodyBoundingBox(1, 1, false), WHITE );
 
     aPart->Draw( NULL, &dc, offset, 1, 1, GR_COPY, UNSPECIFIED_COLOR,
             DefaultTransform, false, false, false, NULL );
