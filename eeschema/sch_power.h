@@ -75,7 +75,14 @@ public:
 
     const EDA_RECT GetBoundingBox() const;  // Virtual
 
-    const EDA_RECT GetBodyBoundingBox() const;
+    EDA_RECT GetBodyBoundingBox() const;
+
+    /**
+     * Return a bounding box for the field.
+     *
+     * This is BEFORE applying the horizontal shift returned by ComputeFieldShift()!
+     */
+    EDA_RECT GetFieldBoundingBox() const;
 
     void CreateGraphicShape( std::vector <wxPoint>& aPoints, const wxPoint& aPos ) {}
 
@@ -144,6 +151,19 @@ public:
      * Returns NULL if invalid: if the part has no pin, or if the part has multiple pins.
      */
     const LIB_PIN* GetPin() const;
+
+    /**
+     * Get the field from the internal LIB_PART.
+     */
+    const LIB_FIELD* GetField() const;
+
+    /**
+     * Calculate a horizontal shift for the field.
+     *
+     * This prevents the field from overlapping the symbol when the symbol is rotated 90
+     * or -90 degrees.
+     */
+    int ComputeFieldShift() const;
 
 private:
     bool doIsConnected( const wxPoint& aPosition ) const { return m_Pos == aPosition; }

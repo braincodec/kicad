@@ -234,86 +234,104 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
                             GR_DRAWMODE     aDrawMode,
                             EDA_COLOR_T     aColor )
 {
-    LIB_FIELDS fields;
-
     // The LIB_PART is recentered to place the pin at (0,0)
     wxPoint pin_position( 0, 0 );
     const LIB_PIN* pin = GetPin();
     if( pin )
         pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
 
-    PART_SPTR part = m_part.lock();
-    if( !part )
-        part = PART_SPTR( LIB_PART::GetDummy() );
-
-    part->GetFields( fields );
-    part->Draw( aPanel, aDC, m_Pos + aOffset - pin_position, /* unit */ 1, /* convert */ 1,
-            aDrawMode, aColor, m_transform, true, false, false, NULL );
-
-    BOOST_FOREACH( LIB_FIELD& field, fields )
     {
-        if( field.GetId() != VALUE )
-            continue;
+        PART_SPTR part = m_part.lock();
+        if( !part )
+            part = PART_SPTR( LIB_PART::GetDummy() );
 
-        if( field.IsVisible() && !m_label_hidden )
-        {
-            LIB_FIELD temp( field );
-
-            if( m_transform.y1 )
-                temp.Rotate();
-
-            wxString text;
-            if( m_visible_text == wxEmptyString )
-                text = GetText();
-            else
-                text = m_visible_text;
-
-            temp.drawGraphic( aPanel, aDC, m_Pos + aOffset - pin_position, aColor, aDrawMode,
-                    (void*) &text, m_transform );
-        }
-
-        if( m_isDangling )
-            GRCircle( aPanel? aPanel->GetClipBox() : NULL, aDC, m_Pos.x, m_Pos.y,
-                    TARGET_PIN_RADIUS, 0, GetLayerColor( LAYER_PIN ) );
+        part->Draw( aPanel, aDC, m_Pos + aOffset - pin_position, /* unit */ 1, /* convert */ 1,
+                aDrawMode, aColor, m_transform, true, false, false, NULL );
     }
+
+    const LIB_FIELD* field = GetField();
+
+    if( field && field->IsVisible() && !m_label_hidden )
+    {
+        LIB_FIELD temp( *field );
+
+        //if( m_transform.y1 )
+        //    temp.Rotate();
+
+        wxString text;
+        if( m_visible_text == wxEmptyString )
+            text = GetText();
+        else
+            text = m_visible_text;
+
+        wxPoint pos = m_Pos + aOffset - pin_position + wxPoint( ComputeFieldShift(), 0 );
+
+        temp.drawGraphic( aPanel, aDC, pos, aColor, aDrawMode, (void*) &text, m_transform );
+    }
+
+    if( m_isDangling )
+        GRCircle( aPanel? aPanel->GetClipBox() : NULL, aDC, m_Pos.x, m_Pos.y,
+                TARGET_PIN_RADIUS, 0, GetLayerColor( LAYER_PIN ) );
+
+#if 0
+    // For testing purposes: draw bounding boxes
+    {
+        EDA_RECT bbox = GetBodyBoundingBox();
+        EDA_RECT fbox = GetFieldBoundingBox();
+        //fbox.Move( wxPoint( ComputeFieldShift(), 0 ) );
+        GRRect( aPanel? aPanel->GetClipBox() : NULL, aDC, bbox, 0, BROWN );
+        GRRect( aPanel? aPanel->GetClipBox() : NULL, aDC, fbox, 0, BROWN );
+    }
+#endif
 }
 
 
 const EDA_RECT SCH_POWER::GetBoundingBox() const
 {
-    // The LIB_PART is recentered to place the pin at (0,0)
-    wxPoint pin_position( 0, 0 );
-    const LIB_PIN* pin = GetPin();
-    if( pin )
-        pin_position = m_transform.TransformCoordinate( pin->GetPosition() );
-
     EDA_RECT bbox = GetBodyBoundingBox();
-    PART_SPTR part = m_part.lock();
-    if( !part )
-        part = PART_SPTR( LIB_PART::GetDummy() );
+    EDA_RECT fbbox = GetFieldBoundingBox();
+    fbbox.Move( wxPoint( ComputeFieldShift(), 0 ) );
+    bbox.Merge( fbbox );
 
-    LIB_FIELDS fields;
-    part->GetFields( fields );
-    BOOST_FOREACH( LIB_FIELD& field, fields )
-    {
-        if( field.GetId() != VALUE )
-            continue;
-        if( !field.IsVisible() || field.IsVoid() ||
-                m_label_hidden || GetText() == wxEmptyString )
-            continue;
-
-        LIB_FIELD temp( field );
-        temp.SetText( GetText() );
-        EDA_RECT fbbox = temp.GetBoundingBox();
-        fbbox.Move( m_Pos );
-        fbbox.Move( -pin_position );
-        bbox.Merge( fbbox );
-    }
     return bbox;
 }
 
 
-const EDA_RECT SCH_POWER::GetBodyBoundingBox() const
+EDA_RECT SCH_POWER::GetFieldBoundingBox() const
+{
+    // The LIB_PART is recentered to place the pin at (0,0)
+    wxPoint pin_position( 0, 0 );
+    const LIB_PIN* pin = GetPin();
+    if( pin )
+        pin_position = pin->GetPosition();
+
+    const LIB_FIELD* field = GetField();
+    if( !field )
+        return EDA_RECT( m_Pos, wxSize( 0, 0 ) );
+
+    if( !field->IsVisible() || field->IsVoid() ||
+            m_label_hidden || GetText() == wxEmptyString )
+        return EDA_RECT( m_Pos, wxSize( 0, 0 ) );
+
+    LIB_FIELD temp( *field );
+    temp.SetText( GetText() );
+    if( m_transform.y1 )
+        temp.Rotate();
+    EDA_RECT bbox = temp.GetBoundingBox();
+
+    // LIB_FIELD uses vertically inverted bounding boxes
+    bbox.RevertYAxis();
+
+    // Move the box to its correct position
+    bbox.Move( -pin_position );
+    bbox = m_transform.TransformCoordinate( bbox );
+    bbox.Move( m_Pos );
+    bbox.Normalize();
+    return bbox;
+}
+
+
+EDA_RECT SCH_POWER::GetBodyBoundingBox() const
 {
     // The LIB_PART is recentered to place the pin at (0,0)
     wxPoint pin_position( 0, 0 );
@@ -469,23 +487,16 @@ void SCH_POWER::Plot( PLOTTER* aPlotter )
         part->GetFields( fields );
     }
 
-    BOOST_FOREACH( LIB_FIELD& field, fields )
+    const LIB_FIELD* field = GetField();
+
+    if( field && field->IsVisible() && !m_label_hidden )
     {
-        if( field.GetId() != VALUE )
-            continue;
+        LIB_FIELD temp( *field );
 
-        if( field.IsVisible() && !m_label_hidden )
-        {
-            LIB_FIELD temp( field );
+        if( m_visible_text != wxEmptyString )
+            temp.SetText( m_visible_text );
 
-            //if( m_transform.y1 )
-                //temp.Rotate();
-
-            if( m_visible_text != wxEmptyString )
-                temp.SetText( m_visible_text );
-
-            temp.Plot( aPlotter, m_Pos - pin_position, false, m_transform );
-        }
+        temp.Plot( aPlotter, m_Pos - pin_position, false, m_transform );
     }
 }
 
@@ -500,4 +511,47 @@ const LIB_PIN* SCH_POWER::GetPin() const
     }
     else
         return NULL;
+}
+
+
+const LIB_FIELD* SCH_POWER::GetField() const
+{
+    LIB_FIELDS fields;
+
+    if( PART_SPTR part = m_part.lock() )
+        part->GetFields( fields );
+
+    BOOST_FOREACH( LIB_FIELD& field, fields )
+    {
+        if( field.GetId() == VALUE )
+            return &field;
+    }
+    wxFAIL_MSG( "Expected LIB_PART to contain a VALUE field" );
+    return NULL;
+}
+
+
+int SCH_POWER::ComputeFieldShift() const
+{
+    EDA_RECT body_bbox = GetBodyBoundingBox();
+    EDA_RECT field_bbox = GetFieldBoundingBox();
+
+    bool intersect = field_bbox.Intersects( body_bbox );
+    wxPoint fcent = field_bbox.Centre();
+    wxPoint bcent = body_bbox.Centre();
+
+    if( fcent.y <= body_bbox.GetTop() )
+        return 0;
+
+    if( fcent.y >= body_bbox.GetBottom() )
+        return 0;
+
+    if( fcent.x < bcent.x && intersect )
+        return body_bbox.GetLeft() - field_bbox.GetRight() - 5;
+
+    else if( fcent.x > bcent.x && intersect )
+        return body_bbox.GetRight() - field_bbox.GetLeft() + 5;
+
+    else
+        return 0;
 }
