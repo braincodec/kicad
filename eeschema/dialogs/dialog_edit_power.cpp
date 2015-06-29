@@ -52,28 +52,61 @@ static const wxString gsNameAutomatic( _( "::AUTOMATIC" ) );
 
 
 /**
- * Subclass of wxClientData that holds an unsigned int.
+ * Subclass of wxClientData that holds any POD.
  */
-class wxUintClientData: public wxClientData
+template<typename T>
+class wxPODClientData: public wxClientData
 {
 public:
-    unsigned data;
+    T data;
 
-    /**
-     * Define a wxUintClientData from a given data item.
-     */
-    wxUintClientData( unsigned aData ) : data( aData ) {}
+    wxPODClientData( const T& aData ) : data( aData ) {}
 
     /**
      * Return the stored data
      */
-    unsigned GetData() const { return data; }
+    const T& GetData() const { return data; }
 
     /**
      * Change the stored data.
      */
-    void SetData( unsigned aData ) { data = aData; }
+    void SetData( const T& aData ) { data = aData; }
 };
+
+
+/**
+ * Get the data from a wxClientData.
+ *
+ * You must provide two types: the expected subclass of wxClientData, and the expected
+ * data type that T::GetData will return.
+ *
+ * If aClientData is NULL or not an instance of T, returns the default value for type
+ * BaseT. Otherwise, casts and returns the data.
+ */
+template<typename T, typename BaseT>
+static BaseT get_client_data( wxClientData* aClientData )
+{
+    static BaseT default_value;
+    if( !aClientData )
+        return default_value;
+    T* converted = dynamic_cast<T*>( aClientData );
+    if( !converted )
+        return default_value;
+    return converted->GetData();
+}
+
+
+template<typename T>
+static T get_pod( wxClientData* aClientData )
+{
+    return get_client_data<wxPODClientData<T>, T>( aClientData );
+}
+
+
+static wxString get_string_data( wxClientData* aClientData )
+{
+    return get_client_data<wxStringClientData, wxString>( aClientData );
+}
 
 
 /**
@@ -188,22 +221,6 @@ static void fix_column( wxDataViewTreeCtrl* aCtrl )
 
 
 /**
- * Return data from a wxStringClientData.
- *
- * Returns wxEmptyString if the given item is not a wxStringClientData.
- */
-static wxString get_string_data( wxClientData* aClientData )
-{
-    if( !aClientData )
-        return wxEmptyString;
-    wxStringClientData* scd = dynamic_cast<wxStringClientData*>( aClientData );
-    if( !scd )
-        return wxEmptyString;
-    return scd->GetData();
-}
-
-
-/**
  * Return the selected item's wxClientData.
  *
  * Returns NULL if there is no selection.
@@ -263,7 +280,7 @@ private:
 
     /**
      * List of library parts
-     * All the items in the Library tree hold a wxUintClientData which indicates the index in
+     * All the items in the Library tree hold a wxPODClientData which indicates the index in
      * this vector at which the part will be found.
      */
     boost::ptr_vector<SCH_POWER> m_library;
@@ -704,7 +721,7 @@ void DIALOG_EDIT_POWER::OnLibKey( wxKeyEvent& event )
         wxClientData* data = get_selected_data( m_dvtLib );
         if( !data )
             return;
-        unsigned lib_item_index = dynamic_cast<wxUintClientData&>( *data ).GetData();
+        unsigned lib_item_index = get_pod<unsigned>( data );
         SCH_POWER& prototype = m_library[lib_item_index];
 
         for( boost::ptr_vector<SCH_POWER>::iterator it = History.begin();
@@ -740,7 +757,7 @@ void DIALOG_EDIT_POWER::OnLibChange( wxDataViewEvent& event )
     if( !data )
         return;
 
-    unsigned lib_item_index = dynamic_cast<wxUintClientData&>( *data ).GetData();
+    unsigned lib_item_index = get_pod<unsigned>( data );
 
     TransferDataToWindow( &m_library[lib_item_index] );
 
@@ -761,8 +778,8 @@ void DIALOG_EDIT_POWER::AddLibPort( wxDataViewItem* aParent, SCH_POWER* aPort )
     std::auto_ptr<SCH_POWER> power_item( aPort );
     power_item->Resolve( Prj().SchLibs() );
 
-    wxDataViewItem dvitem = m_dvtLib->AppendItem(
-            *aParent, aPort->GetText(), -1, new wxUintClientData( m_library.size() ) );
+    wxDataViewItem dvitem = m_dvtLib->AppendItem( *aParent, aPort->GetText(), -1,
+            new wxPODClientData<unsigned>( m_library.size() ) );
     wxIcon icon = render_power_as_icon( power_item.get() );
     m_dvtLib->SetItemIcon( dvitem, icon );
     m_library.push_back( power_item.release() );
