@@ -224,7 +224,7 @@ static wxPoint field_box_placement( SCH_COMPONENT* aComponent, enum component_si
     {
     case SIDE_RIGHT:
         fbox_pos.x = body_box.GetRight() + HPADDING;
-        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
         break;
     case SIDE_BOTTOM:
         fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
@@ -232,7 +232,7 @@ static wxPoint field_box_placement( SCH_COMPONENT* aComponent, enum component_si
         break;
     case SIDE_LEFT:
         fbox_pos.x = body_box.GetLeft() - aBoxSize.GetWidth() - HPADDING;
-        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
         break;
     case SIDE_TOP:
         fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
@@ -241,7 +241,7 @@ static wxPoint field_box_placement( SCH_COMPONENT* aComponent, enum component_si
     default:
         wxFAIL_MSG( "Bad enum component_side value" );
         fbox_pos.x = body_box.GetRight();
-        fbox_pos.y = body_box.GetCenter().y - aBoxSize.GetHeight()/2;
+        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
     }
 
     return fbox_pos;
@@ -309,14 +309,14 @@ static int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
         field_xcoord = aFieldBox.GetLeft();
         break;
     case GR_TEXT_HJUSTIFY_CENTER:
-        field_xcoord = aFieldBox.GetCenter().x;
+        field_xcoord = aFieldBox.Centre().x;
         break;
     case GR_TEXT_HJUSTIFY_RIGHT:
         field_xcoord = aFieldBox.GetRight();
         break;
     default:
         wxFAIL_MSG( "Unexpected value for SCH_FIELD::GetHorizJustify()" );
-        field_xcoord = aFieldBox.GetCenter().x; // Most are centered
+        field_xcoord = aFieldBox.Centre().x; // Most are centered
     }
 
     return field_xcoord;
