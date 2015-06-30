@@ -406,7 +406,6 @@ DIALOG_EDIT_POWER::DIALOG_EDIT_POWER( SCH_EDIT_FRAME* aParent, SCH_POWER* aPower
       m_dummy( wxPoint( 0, 0 ), wxEmptyString )
 {
     m_stdButtonsOK->SetDefault();
-    m_panAdvanced->Hide();
     m_textNet->SetFocus();
 
     wxTextValidator* validator = static_cast<wxTextValidator*>( m_textNet->GetValidator() );
@@ -645,17 +644,6 @@ void DIALOG_EDIT_POWER::OnEnterKey( wxCommandEvent& aEvent )
 {
     DIALOG_EDIT_POWER_BASE::OnOkClick( aEvent );
     Close();
-}
-
-
-void DIALOG_EDIT_POWER::OnToggleAdvanced( wxCommandEvent& aEvent )
-{
-    bool show = m_btnAdvanced->GetValue();
-    if( show )
-        m_panAdvanced->Show();
-    else
-        m_panAdvanced->Hide();
-    GetSizer()->Layout();
 }
 
 
