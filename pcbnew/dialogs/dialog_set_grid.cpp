@@ -39,6 +39,7 @@
 #include <gal/graphics_abstraction_layer.h>
 #include <class_draw_panel_gal.h>
 #include <tool/tool_manager.h>
+#include <tools/common_actions.h>
 
 // Max values for grid size
 #define MAX_GRID_SIZE ( 50.0 * IU_PER_MM )
@@ -238,7 +239,7 @@ void DIALOG_SET_GRID::OnOkClick( wxCommandEvent& event )
 
     if( !success )
     {
-        wxMessageBox( wxString::Format( _( "Incorrect grid origin (size must be >= %.3f and <= %.f mm)" ),
+        wxMessageBox( wxString::Format( _( "Incorrect grid origin (coordinates must be >= %.3f mm and <= %.3f mm)" ),
             -MAX_GRID_OFFSET/IU_PER_MM, MAX_GRID_OFFSET/IU_PER_MM ) );
         return;
     }
@@ -282,8 +283,14 @@ bool PCB_BASE_FRAME::InvokeDialogGrid()
         TOOL_MANAGER* mgr = GetToolManager();
 
         if( mgr && IsGalCanvasActive() )
+        {
             mgr->RunAction( "common.Control.gridPreset", true,
                     screen->GetGridCmdId() - ID_POPUP_GRID_LEVEL_1000 );
+
+            TOOL_EVENT gridOriginUpdate = COMMON_ACTIONS::gridSetOrigin.MakeEvent();
+            gridOriginUpdate.SetParameter( new VECTOR2D( grid_origin ) );
+            mgr->ProcessEvent( gridOriginUpdate );
+        }
 
         m_canvas->Refresh();
 
