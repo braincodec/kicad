@@ -24,6 +24,7 @@
 #include "pns_joint.h"
 #include "pns_solid.h"
 #include "pns_router.h"
+#include "pns_utils.h"
 
 #include "pns_diff_pair.h"
 #include "pns_topology.h"
@@ -127,6 +128,7 @@ bool PNS_TOPOLOGY::LeadingRatLine( const PNS_LINE* aTrack, SHAPE_LINE_CHAIN& aRa
     aRatLine.Append( end );
     return true;
 }
+
 
 PNS_ITEM* PNS_TOPOLOGY::NearestUnconnectedItem( PNS_JOINT* aStart, int* aAnchor, int aKindMask )
 {
@@ -320,6 +322,9 @@ int PNS_TOPOLOGY::DpNetPolarity( int aNet )
 }
 
 
+bool commonParallelProjection( SEG n, SEG p, SEG &pClip, SEG& nClip );
+
+
 bool PNS_TOPOLOGY::AssembleDiffPair( PNS_ITEM* aStart, PNS_DIFF_PAIR& aPair )
 {
     int refNet = aStart->Net();
@@ -332,7 +337,7 @@ bool PNS_TOPOLOGY::AssembleDiffPair( PNS_ITEM* aStart, PNS_DIFF_PAIR& aPair )
 
     m_world->AllItemsInNet( coupledNet, coupledItems );
 
-    PNS_SEGMENT *coupledSeg = NULL, *refSeg;
+    PNS_SEGMENT* coupledSeg = NULL, *refSeg;
     int minDist = std::numeric_limits<int>::max();
 
     if( ( refSeg = dyn_cast<PNS_SEGMENT*>( aStart ) ) != NULL )
@@ -344,8 +349,12 @@ bool PNS_TOPOLOGY::AssembleDiffPair( PNS_ITEM* aStart, PNS_DIFF_PAIR& aPair )
                 if( s->Layers().Start() == refSeg->Layers().Start() && s->Width() == refSeg->Width() )
                 {
                     int dist = s->Seg().Distance( refSeg->Seg() );
+		    		bool isParallel = refSeg->Seg().ApproxParallel( s->Seg() );
+                    SEG p_clip, n_clip;
 
-                    if( dist < minDist )
+                    bool isCoupled = commonParallelProjection( refSeg->Seg(), s->Seg(), p_clip, n_clip );
+
+                    if( isParallel && isCoupled && dist < minDist )
                     {
                         minDist = dist;
                         coupledSeg = s;
@@ -359,17 +368,27 @@ bool PNS_TOPOLOGY::AssembleDiffPair( PNS_ITEM* aStart, PNS_DIFF_PAIR& aPair )
     if( !coupledSeg )
         return false;
 
-    std::auto_ptr<PNS_LINE> lp ( m_world->AssembleLine( refSeg ) );
-    std::auto_ptr<PNS_LINE> ln ( m_world->AssembleLine( coupledSeg ) );
+    std::auto_ptr<PNS_LINE> lp( m_world->AssembleLine( refSeg ) );
+    std::auto_ptr<PNS_LINE> ln( m_world->AssembleLine( coupledSeg ) );
 
     if( DpNetPolarity( refNet ) < 0 )
     {
         std::swap( lp, ln );
     }
 
+    int gap = -1 ;
+    if( refSeg->Seg().ApproxParallel( coupledSeg->Seg() ) )
+    {
+        // Segments are parallel -> compute pair gap
+        const VECTOR2I refDir       = refSeg->Anchor( 1 ) - refSeg->Anchor( 0 );
+        const VECTOR2I displacement = refSeg->Anchor( 1 ) - coupledSeg->Anchor( 1 );
+        gap = (int) abs( refDir.Cross( displacement ) / refDir.EuclideanNorm() ) - lp->Width();
+    }
+
     aPair = PNS_DIFF_PAIR( *lp, *ln );
     aPair.SetWidth( lp->Width() );
     aPair.SetLayers( lp->Layers() );
+    aPair.SetGap( gap );
 
     return true;
 }
