@@ -145,7 +145,7 @@ struct PNS_OPTIMIZER::CACHE_VISITOR
 
     bool operator()( PNS_ITEM* aOtherItem )
     {
-        if( !m_mask & aOtherItem->Kind() )
+        if( !( m_mask & aOtherItem->Kind() ) )
             return true;
 
         int clearance = m_node->GetClearance( aOtherItem, m_ourItem );
@@ -292,7 +292,7 @@ int LINE_RESTRICTIONS::allowedAngles( PNS_NODE* aWorld, const PNS_LINE* aLine, c
 
         for( int i = 0; i < n_dirs; i++ )
         {
-            if( !(refDir.Angle( dirs[i] ) & angleMask ) )
+            if( !( refDir.Angle( dirs[i] ) & angleMask ) )
                 outputMask &= ~refDir.Mask();
         }
     }

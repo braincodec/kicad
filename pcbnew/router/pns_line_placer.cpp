@@ -66,28 +66,32 @@ PNS_LINE_PLACER::~PNS_LINE_PLACER()
 }
 
 
-void PNS_LINE_PLACER::setWorld ( PNS_NODE* aWorld )
+void PNS_LINE_PLACER::setWorld( PNS_NODE* aWorld )
 {
     m_world = aWorld;
 }
 
-const PNS_VIA PNS_LINE_PLACER::makeVia ( const VECTOR2I& aP )
+
+const PNS_VIA PNS_LINE_PLACER::makeVia( const VECTOR2I& aP )
 {
     const PNS_LAYERSET layers( m_sizes.GetLayerTop(), m_sizes.GetLayerBottom() );
 
-    return PNS_VIA ( aP, layers, m_sizes.ViaDiameter(), m_sizes.ViaDrill(), -1, m_sizes.ViaType() );
+    return PNS_VIA( aP, layers, m_sizes.ViaDiameter(), m_sizes.ViaDrill(), -1, m_sizes.ViaType() );
 }
 
 
 bool PNS_LINE_PLACER::ToggleVia( bool aEnabled )
 {
     m_placingVia = aEnabled;
+
+    if( !aEnabled )
+        m_head.RemoveVia();
+
     if( !m_idle )
         Move( m_currentEnd, NULL );
 
     return true;
 }
-
 
 
 void PNS_LINE_PLACER::setInitialDirection( const DIRECTION_45& aDirection )
@@ -357,8 +361,6 @@ bool PNS_LINE_PLACER::mergeHead()
 }
 
 
-
-
 bool PNS_LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, PNS_LINE& aNewHead )
 {
     PNS_LINE initTrack( m_head );
@@ -397,7 +399,7 @@ bool PNS_LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, PNS_LINE& aNewHead )
     }
     else if( m_placingVia && viaOk )
     {
-        walkFull.AppendVia( makeVia ( walkFull.CPoint( -1 ) ) );
+        walkFull.AppendVia( makeVia( walkFull.CPoint( -1 ) ) );
     }
 
     PNS_OPTIMIZER::Optimize( &walkFull, effort, m_currentNode );
@@ -451,8 +453,8 @@ bool PNS_LINE_PLACER::rhShoveOnly ( const VECTOR2I& aP, PNS_LINE& aNewHead )
 
     if( m_placingVia && viaOk )
     {
-        PNS_VIA v1( makeVia ( l.CPoint( -1 ) ) );
-        PNS_VIA v2( makeVia ( l2.CPoint( -1 ) ) );
+        PNS_VIA v1( makeVia( l.CPoint( -1 ) ) );
+        PNS_VIA v2( makeVia( l2.CPoint( -1 ) ) );
 
         l.AppendVia( v1 );
         l2.AppendVia( v2 );
@@ -767,6 +769,8 @@ void PNS_LINE_PLACER::initPlacement( bool aSplitSeg )
     m_tail.SetLayer( m_currentLayer );
     m_head.SetWidth( m_sizes.TrackWidth() );
     m_tail.SetWidth( m_sizes.TrackWidth() );
+    m_head.RemoveVia();
+    m_tail.RemoveVia();
 
     m_p_start = m_currentStart;
     m_direction = m_initial_direction;
@@ -863,6 +867,7 @@ bool PNS_LINE_PLACER::FixRoute( const VECTOR2I& aP, PNS_ITEM* aEndItem )
             Router()->CommitRouting( m_lastNode );
             m_idle = true;
         }
+
         return true;
     }
 
@@ -911,7 +916,7 @@ bool PNS_LINE_PLACER::FixRoute( const VECTOR2I& aP, PNS_ITEM* aEndItem )
         m_placingVia = false;
         m_chainedPlacement = !pl.EndsWithVia();
         m_splitSeg = false;
-        initPlacement( );
+        initPlacement();
     }
     else
     {
