@@ -405,7 +405,10 @@ bool PNS_LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, PNS_LINE& aNewHead )
     PNS_OPTIMIZER::Optimize( &walkFull, effort, m_currentNode );
 
     if( m_currentNode->CheckColliding( &walkFull ) )
+    {
+        aNewHead = m_head;
         return false;
+    }
 
     m_head = walkFull;
     aNewHead = walkFull;
@@ -831,8 +834,7 @@ bool PNS_LINE_PLACER::Move( const VECTOR2I& aP, PNS_ITEM* aEndItem )
     PNS_NODE* latestNode = m_currentNode;
     m_lastNode = latestNode->Branch();
 
-    if( eiDepth >= 0 && aEndItem && latestNode->Depth() > eiDepth &&
-            current.SegmentCount() )
+    if( eiDepth >= 0 && aEndItem && latestNode->Depth() > eiDepth && current.SegmentCount() )
     {
         splitAdjacentSegments( m_lastNode, aEndItem, current.CPoint( -1 ) );
 
