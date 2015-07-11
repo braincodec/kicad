@@ -498,7 +498,7 @@ void ROUTER_TOOL::performRouting()
 {
     bool saveUndoBuffer = true;
 
-    if( !prepareInteractive( ) )
+    if( !prepareInteractive() )
         return;
 
     while( OPT_TOOL_EVENT evt = Wait() )
@@ -785,6 +785,9 @@ int ROUTER_TOOL::InlineDrag( const TOOL_EVENT& aEvent )
             break;
         }
     }
+
+    if( m_router->RoutingInProgress() )
+        m_router->StopRouting();
 
     if( saveUndoBuffer )
     {
