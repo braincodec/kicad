@@ -275,7 +275,7 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 
     SCH_COMPONENT& component = dynamic_cast<SCH_COMPONENT&>( *item );
 
-    component.AutoplaceFields();
+    component.AutoplaceFields( /* aManual */ true );
 
     GetCanvas()->Refresh();
     OnModify();
@@ -323,7 +323,7 @@ static int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
 }
 
 
-void SCH_COMPONENT::AutoplaceFields()
+void SCH_COMPONENT::AutoplaceFields( bool aManual )
 {
     // Do not autoplace on power symbols
     if( PART_SPTR part = m_part.lock() )

@@ -159,7 +159,7 @@ void SCH_EDIT_FRAME::EditComponent( SCH_COMPONENT* aComponent )
     int ret = dlg->ShowQuasiModal();
 
     if( m_autoplaceFields && aComponent->GetFieldsAutoplaced() )
-        aComponent->AutoplaceFields();
+        aComponent->AutoplaceFields( /* aManual */ false );
 
     m_canvas->SetIgnoreMouseEvents( false );
     m_canvas->MoveCursorToCrossHair();

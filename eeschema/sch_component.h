@@ -320,8 +320,11 @@ public:
     /**
      * Function AutoplaceFields
      * Automatically orient all the fields in the component.
+     * @param aManual - True if the autoplace was manually initiated (e.g. by a hotkey
+     *  or a menu item). Some more 'intelligent' routines will be used that would be
+     *  annoying if done automatically during moves.
      */
-    void AutoplaceFields();
+    void AutoplaceFields( bool aManual );
 
     //-----</Fields>----------------------------------------------------------
 
