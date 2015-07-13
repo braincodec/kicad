@@ -149,12 +149,15 @@ public:
 
     bool Matches( wxFindReplaceData& aSearchData, void* aAuxData, wxPoint* aFindLocation );
 
+    /* Cannot use a default parameter here as it will not be compatible with the virtual. */
+    const EDA_RECT GetBoundingBox() const { return GetBoundingBox( false ); }
+
     /**
      * Function GetBoundingBox
      * @param aIncludeInvisibles - if false, do not include labels for invisible pins
      *      in the calculation.
      */
-    const EDA_RECT GetBoundingBox( bool aIncludeInvisibles = false ) const;
+    const EDA_RECT GetBoundingBox( bool aIncludeInvisibles ) const;
 
     /**
      * Function PinEndPoint
