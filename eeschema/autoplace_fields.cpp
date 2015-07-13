@@ -38,11 +38,6 @@
 #define HPADDING 25
 #define VPADDING 50
 
-enum component_side
-{
-    SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
-};
-
 /**
  * Function round_n
  * Round up/down to the nearest multiple of n
@@ -56,196 +51,323 @@ template<typename T> T round_n( const T& value, const T& n, bool aRoundUp )
 }
 
 
-/**
- * Function get_pin_side
- * Return the side that a pin is on.
- */
-static enum component_side get_pin_side( SCH_COMPONENT* aComponent, LIB_PIN* aPin )
+class AUTOPLACER
 {
-    int pin_orient = aPin->PinDrawOrient( aComponent->GetTransform() );
-    switch( pin_orient )
+    SCH_COMPONENT* m_component;
+    std::vector<SCH_FIELD*> m_fields;
+    EDA_RECT m_comp_bbox;
+    wxSize m_fbox_size;
+    bool m_allow_rejustify, m_align_to_grid;
+
+public:
+    enum SIDE
     {
-    case PIN_RIGHT:
-        return SIDE_LEFT;
-    case PIN_LEFT:
-        return SIDE_RIGHT;
-    case PIN_UP:
-        return SIDE_BOTTOM;
-    case PIN_DOWN:
-        return SIDE_TOP;
-    default:
-        wxFAIL_MSG( "Invalid pin orientation" );
-        return SIDE_LEFT;
-    }
-}
-
-
-/**
- * Function pins_on_side
- * Count the number of pins on a side of the component
- */
-static unsigned pins_on_side( SCH_COMPONENT* aComponent, enum component_side aSide )
-{
-    unsigned pin_count = 0;
-
-    std::vector<LIB_PIN*> pins;
-    aComponent->GetPins( pins );
-
-    BOOST_FOREACH( LIB_PIN* each_pin, pins )
-    {
-        if( !each_pin->IsVisible() )
-            continue;
-        if( get_pin_side( aComponent, each_pin ) == aSide )
-            ++pin_count;
-    }
-
-    return pin_count;
-}
-
-
-// Used for iteration
-struct side {
-    enum component_side name;
-    unsigned pins;
-};
-
-
-/**
- * Function populate_preferred_sides
- * Populate a list with the preferred field sides for the component, in
- * decreasing order of preference.
- */
-static void populate_preferred_sides( std::vector<struct side>& aSides,
-                                      SCH_COMPONENT* aComponent )
-{
-    struct side sides[] = {
-        { SIDE_RIGHT,   pins_on_side( aComponent, SIDE_RIGHT ) },
-        { SIDE_TOP,     pins_on_side( aComponent, SIDE_TOP ) },
-        { SIDE_LEFT,    pins_on_side( aComponent, SIDE_LEFT ) },
-        { SIDE_BOTTOM,  pins_on_side( aComponent, SIDE_BOTTOM ) },
+        SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
     };
 
-    int orient = aComponent->GetOrientation();
-    int orient_angle = orient & 0xff; // enum is a bitmask
 
-    // If the component is horizontally mirrored, swap left and right
-    if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+    struct SIDE_AND_NPINS
     {
-        std::swap( sides[0], sides[2] );
+        SIDE name;
+        unsigned pins;
+    };
+
+
+    AUTOPLACER( SCH_COMPONENT* aComponent )
+        :m_component( aComponent )
+    {
+        m_component->GetFields( m_fields, /* aVisibleOnly */ true );
+        Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &m_allow_rejustify, true );
+        Kiface().KifaceSettings()->Read( AUTOPLACE_ALIGN_KEY, &m_align_to_grid, false );
+
+        m_comp_bbox = m_component->GetBodyBoundingBox();
+        m_fbox_size = ComputeFBoxSize();
     }
 
-    // If the component is very long, swap H and V
-    EDA_RECT body_box = aComponent->GetBodyBoundingBox();
-    if( double( body_box.GetWidth() ) / double( body_box.GetHeight() ) > 3.0 )
+
+    void DoAutoplace()
     {
-        std::swap( sides[0], sides[1] );
-        std::swap( sides[1], sides[3] );
-    }
+        // Do not autoplace on power symbols
+        if( ! m_component->IsInNetlist() )
+            return;
 
-    BOOST_FOREACH( struct side& each_side, sides )
-    {
-        aSides.push_back( each_side );
-    }
-}
+        SIDE field_side = choose_side_for_fields();
+        wxPoint fbox_pos = field_box_placement( field_side );
+        EDA_RECT field_box( fbox_pos, m_fbox_size );
 
+        bool h_round_up, v_round_up;
+        h_round_up = ( field_side != SIDE_LEFT );
+        v_round_up = ( field_side == SIDE_BOTTOM );
 
-/**
- * Function choose_side_for_component
- * Look where a component's pins are to pick a side to put the fields on
- */
-static enum component_side choose_side_for_fields( SCH_COMPONENT* aComponent )
-{
-    std::vector<struct side> sides;
-    populate_preferred_sides( sides, aComponent );
-
-
-    BOOST_FOREACH( struct side& each_side, sides )
-    {
-        if( !each_side.pins ) return each_side.name;
-    }
-
-    unsigned min_pins = UINT_MAX;
-    enum component_side min_side = SIDE_RIGHT;
-
-    BOOST_REVERSE_FOREACH( struct side& each_side, sides )
-    {
-        if( each_side.pins < min_pins )
+        // Move the fields
+        for( size_t field_idx = 0; field_idx < m_fields.size(); ++field_idx )
         {
-            min_pins = each_side.pins;
-            min_side = each_side.name;
+            SCH_FIELD* field = m_fields[field_idx];
+
+            if( m_allow_rejustify )
+                justify_field( field, field_side );
+
+            wxPoint pos;
+            pos.x = field_horiz_placement( field, field_box );
+            pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
+
+            if( m_align_to_grid )
+            {
+                pos.x = round_n( pos.x, 50, h_round_up );
+                pos.y = round_n( pos.y, 50, v_round_up );
+            }
+
+            field->SetPosition( pos );
         }
     }
 
-    return min_side;
-}
 
-
-/**
- * Function justify_field
- * Set the justification of a field based on the side it's supposed to be on, taking into
- * account whether the field will be displayed with flipped justification due to mirroring.
- */
-static void justify_field( SCH_FIELD* aField, enum component_side aFieldSide )
-{
-    // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
-    switch( aFieldSide )
+protected:
+    /**
+     * Compute and return the size of the fields' bounding box.
+     */
+    wxSize ComputeFBoxSize()
     {
-    case SIDE_LEFT:
-        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
-        aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
-                ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
-        break;
+        int max_field_width = 0;
+        for( size_t field_idx = 0; field_idx < m_fields.size(); ++field_idx )
+        {
+            if( m_component->GetTransform().y1 )
+                m_fields[field_idx]->SetOrientation( TEXT_ORIENT_VERT );
+            else
+                m_fields[field_idx]->SetOrientation( TEXT_ORIENT_HORIZ );
 
-    case SIDE_RIGHT:
-        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
-        aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
-                ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
-        break;
-    case SIDE_TOP:
-    case SIDE_BOTTOM:
-        aField->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
-        break;
-    }
-    aField->SetVertJustify( GR_TEXT_VJUSTIFY_CENTER );
-}
+            int field_width = m_fields[field_idx]->GetBoundingBox().GetWidth();
+            max_field_width = std::max( max_field_width, field_width );
+        }
 
-
-/**
- * Function place_field_box
- * Return the position of the field bounding box for a component.
- */
-static wxPoint field_box_placement( SCH_COMPONENT* aComponent, enum component_side aFieldSide,
-            wxSize aBoxSize )
-{
-    EDA_RECT body_box = aComponent->GetBodyBoundingBox();
-    wxPoint fbox_pos;
-
-    switch( aFieldSide )
-    {
-    case SIDE_RIGHT:
-        fbox_pos.x = body_box.GetRight() + HPADDING;
-        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
-        break;
-    case SIDE_BOTTOM:
-        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
-        fbox_pos.y = body_box.GetBottom() + VPADDING;
-        break;
-    case SIDE_LEFT:
-        fbox_pos.x = body_box.GetLeft() - aBoxSize.GetWidth() - HPADDING;
-        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
-        break;
-    case SIDE_TOP:
-        fbox_pos.x = body_box.GetLeft() + (body_box.GetWidth() - aBoxSize.GetWidth()) / 2;
-        fbox_pos.y = body_box.GetTop() - aBoxSize.GetHeight() - VPADDING;
-        break;
-    default:
-        wxFAIL_MSG( "Bad enum component_side value" );
-        fbox_pos.x = body_box.GetRight();
-        fbox_pos.y = body_box.Centre().y - aBoxSize.GetHeight()/2;
+        return wxSize( max_field_width, FIELD_V_SPACING * (m_fields.size() - 1) );
     }
 
-    return fbox_pos;
-}
+
+    /**
+     * Function get_pin_side
+     * Return the side that a pin is on.
+     */
+    SIDE get_pin_side( LIB_PIN* aPin )
+    {
+        int pin_orient = aPin->PinDrawOrient( m_component->GetTransform() );
+        switch( pin_orient )
+        {
+            case PIN_RIGHT: return SIDE_LEFT;
+            case PIN_LEFT:  return SIDE_RIGHT;
+            case PIN_UP:    return SIDE_BOTTOM;
+            case PIN_DOWN:  return SIDE_TOP;
+            default:
+                wxFAIL_MSG( "Invalid pin orientation" );
+                return SIDE_LEFT;
+        }
+    }
+
+
+    /**
+     * Function pins_on_side
+     * Count the number of pins on a side of the component.
+     */
+    unsigned pins_on_side( SIDE aSide )
+    {
+        unsigned pin_count = 0;
+
+        std::vector<LIB_PIN*> pins;
+        m_component->GetPins( pins );
+
+        BOOST_FOREACH( LIB_PIN* each_pin, pins )
+        {
+            if( !each_pin->IsVisible() )
+                continue;
+            if( get_pin_side( each_pin ) == aSide )
+                ++pin_count;
+        }
+
+        return pin_count;
+    }
+
+
+    /**
+     * Function populate_preferred_sides
+     * Populate a list with the preferred field sides for the component, in
+     * decreasing order of preference.
+     * @param aSides - empty list of sides to be populated
+     * @param aAvoidCollisions - if true, look for and avoid collisions with other items
+     */
+    void populate_preferred_sides(
+        std::vector<SIDE_AND_NPINS>& aSides )
+    {
+        SIDE_AND_NPINS sides[] = {
+            { SIDE_RIGHT,   pins_on_side( SIDE_RIGHT ) },
+            { SIDE_TOP,     pins_on_side( SIDE_TOP ) },
+            { SIDE_LEFT,    pins_on_side( SIDE_LEFT ) },
+            { SIDE_BOTTOM,  pins_on_side( SIDE_BOTTOM ) },
+        };
+
+        int orient = m_component->GetOrientation();
+        int orient_angle = orient & 0xff; // enum is a bitmask
+
+        // If the component is horizontally mirrored, swap left and right
+        if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+        {
+            std::swap( sides[0], sides[2] );
+        }
+
+        // If the component is very long, swap H and V
+        if( double( m_comp_bbox.GetWidth() ) / double( m_comp_bbox.GetHeight() ) > 3.0 )
+        {
+            std::swap( sides[0], sides[1] );
+            std::swap( sides[1], sides[3] );
+        }
+
+        BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
+        {
+            aSides.push_back( each_side );
+        }
+    }
+
+
+    /**
+     * Function choose_side_for_component
+     * Look where a component's pins are to pick a side to put the fields on
+     */
+    SIDE choose_side_for_fields()
+    {
+        std::vector<SIDE_AND_NPINS> sides;
+        populate_preferred_sides( sides );
+
+
+        BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
+        {
+            if( !each_side.pins ) return each_side.name;
+        }
+
+        unsigned min_pins = UINT_MAX;
+        SIDE min_side = SIDE_RIGHT;
+
+        BOOST_REVERSE_FOREACH( SIDE_AND_NPINS& each_side, sides )
+        {
+            if( each_side.pins < min_pins )
+            {
+                min_pins = each_side.pins;
+                min_side = each_side.name;
+            }
+        }
+
+        return min_side;
+    }
+
+
+    /**
+     * Function justify_field
+     * Set the justification of a field based on the side it's supposed to be on, taking
+     * into account whether the field will be displayed with flipped justification due to
+     * mirroring.
+     */
+    void justify_field( SCH_FIELD* aField, SIDE aFieldSide )
+    {
+        // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
+        switch( aFieldSide )
+        {
+        case SIDE_LEFT:
+            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
+            aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
+                    ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
+            break;
+
+        case SIDE_RIGHT:
+            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
+            aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
+                    ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
+            break;
+        case SIDE_TOP:
+        case SIDE_BOTTOM:
+            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
+            break;
+        }
+        aField->SetVertJustify( GR_TEXT_VJUSTIFY_CENTER );
+    }
+
+
+    /**
+     * Function field_box_placement
+     * Returns the position of the field bounding box.
+     */
+    wxPoint field_box_placement( SIDE aFieldSide )
+    {
+        wxPoint fbox_pos;
+
+        switch( aFieldSide )
+        {
+        case SIDE_RIGHT:
+            fbox_pos.x = m_comp_bbox.GetRight() + HPADDING;
+            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
+            break;
+        case SIDE_BOTTOM:
+            fbox_pos.x = m_comp_bbox.GetLeft() +
+                (m_comp_bbox.GetWidth() - m_fbox_size.GetWidth()) / 2;
+            fbox_pos.y = m_comp_bbox.GetBottom() + VPADDING;
+            break;
+        case SIDE_LEFT:
+            fbox_pos.x = m_comp_bbox.GetLeft() - m_fbox_size.GetWidth() - HPADDING;
+            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
+            break;
+        case SIDE_TOP:
+            fbox_pos.x = m_comp_bbox.GetLeft() +
+                (m_comp_bbox.GetWidth() - m_fbox_size.GetWidth()) / 2;
+            fbox_pos.y = m_comp_bbox.GetTop() - m_fbox_size.GetHeight() - VPADDING;
+            break;
+        default:
+            wxFAIL_MSG( "Bad SIDE value" );
+            fbox_pos.x = m_comp_bbox.GetRight();
+            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
+        }
+
+        return fbox_pos;
+    }
+
+
+    /**
+     * Function field_horiz_placement
+     * Place a field horizontally, taking into account the field width and
+     * justification.
+     *
+     * @param aField - the field to place.
+     * @param aFieldBox - box in which fields will be placed
+     *
+     * @return Correct field horizontal position
+     */
+    int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
+    {
+        EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
+        bool flipped = aField->IsHorizJustifyFlipped();
+        if( flipped && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
+            field_hjust = GR_TEXT_HJUSTIFY_RIGHT;
+        else if( flipped && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
+            field_hjust = GR_TEXT_HJUSTIFY_LEFT;
+
+        int field_xcoord;
+
+        switch( field_hjust )
+        {
+        case GR_TEXT_HJUSTIFY_LEFT:
+            field_xcoord = aFieldBox.GetLeft();
+            break;
+        case GR_TEXT_HJUSTIFY_CENTER:
+            field_xcoord = aFieldBox.Centre().x;
+            break;
+        case GR_TEXT_HJUSTIFY_RIGHT:
+            field_xcoord = aFieldBox.GetRight();
+            break;
+        default:
+            wxFAIL_MSG( "Unexpected value for SCH_FIELD::GetHorizJustify()" );
+            field_xcoord = aFieldBox.Centre().x; // Most are centered
+        }
+
+        return field_xcoord;
+    }
+
+};
 
 
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
@@ -282,106 +404,9 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 }
 
 
-/**
- * Function field_horiz_placement
- * Place a field horizontally, taking into account the field width and
- * justification.
- *
- * @param aField - the field to place.
- * @param aFieldBox - box in which fields will be placed
- *
- * @return Correct field horizontal position
- */
-static int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
-{
-    EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
-    bool flipped = aField->IsHorizJustifyFlipped();
-    if( flipped && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
-        field_hjust = GR_TEXT_HJUSTIFY_RIGHT;
-    else if( flipped && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
-        field_hjust = GR_TEXT_HJUSTIFY_LEFT;
-
-    int field_xcoord;
-
-    switch( field_hjust )
-    {
-    case GR_TEXT_HJUSTIFY_LEFT:
-        field_xcoord = aFieldBox.GetLeft();
-        break;
-    case GR_TEXT_HJUSTIFY_CENTER:
-        field_xcoord = aFieldBox.Centre().x;
-        break;
-    case GR_TEXT_HJUSTIFY_RIGHT:
-        field_xcoord = aFieldBox.GetRight();
-        break;
-    default:
-        wxFAIL_MSG( "Unexpected value for SCH_FIELD::GetHorizJustify()" );
-        field_xcoord = aFieldBox.Centre().x; // Most are centered
-    }
-
-    return field_xcoord;
-}
-
-
 void SCH_COMPONENT::AutoplaceFields( bool aManual )
 {
-    // Do not autoplace on power symbols
-    if( PART_SPTR part = m_part.lock() )
-        if( part->IsPower() ) return;
-
-    // Gather information
-    std::vector<SCH_FIELD*> fields;
-    bool allow_rejustify = true;
-    bool align_to_grid = false;
-    GetFields( fields, /* aVisibleOnly */ true );
-    Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &allow_rejustify, true );
-    Kiface().KifaceSettings()->Read( AUTOPLACE_ALIGN_KEY, &align_to_grid, true );
-
-    int max_field_width = 0;
-    for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
-    {
-        if( GetTransform().y1 )
-            fields[field_idx]->SetOrientation( TEXT_ORIENT_VERT );
-        else
-            fields[field_idx]->SetOrientation( TEXT_ORIENT_HORIZ );
-
-        int field_width = fields[field_idx]->GetBoundingBox().GetWidth();
-        if( field_width > max_field_width )
-            max_field_width = field_width;
-    }
-
-    // Determine which side the fields will be placed on
-    enum component_side field_side = choose_side_for_fields( this );
-
-    // Compute the box into which fields will go
-    wxSize fbox_size( max_field_width, FIELD_V_SPACING * (fields.size() - 1) );
-    wxPoint fbox_pos = field_box_placement( this, field_side, fbox_size );
-    EDA_RECT field_box( fbox_pos, fbox_size );
-
-    bool h_round_up, v_round_up;
-    h_round_up = ( field_side != SIDE_LEFT );
-    v_round_up = ( field_side == SIDE_BOTTOM );
-
-    // Move the fields
-    for( size_t field_idx = 0; field_idx < fields.size(); ++field_idx )
-    {
-        SCH_FIELD* field = fields[field_idx];
-
-        if( allow_rejustify )
-            justify_field( field, field_side );
-
-        wxPoint pos;
-        pos.x = field_horiz_placement( field, field_box );
-        pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
-
-        if( align_to_grid )
-        {
-            pos.x = round_n( pos.x, 50, h_round_up );
-            pos.y = round_n( pos.y, 50, v_round_up );
-        }
-
-        field->SetPosition( pos );
-    }
-
+    AUTOPLACER autoplacer( this );
+    autoplacer.DoAutoplace();
     m_fieldsAutoplaced = true;
 }
