@@ -245,21 +245,17 @@ protected:
         for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
         {
             bool interested = true;
-            if( SCH_FIELD *field = dynamic_cast<SCH_FIELD*>( item ) )
-            {
-                if( ! field->IsVisible() || field->IsVoid() )
-                    interested = false;
-                else
-                    BOOST_FOREACH( SCH_FIELD* each_our_field, m_fields )
-                    {
-                        if( each_our_field == field )
-                            interested = false;
-                    }
-            }
-            else if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
+            if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
             {
                 if( comp == m_component )
                     interested = false;
+                else
+                {
+                    std::vector<SCH_FIELD*> fields;
+                    comp->GetFields( fields, /* aVisibleOnly */ true );
+                    BOOST_FOREACH( SCH_FIELD* field, fields )
+                        items.push_back( field );
+                }
             }
             if( interested )
                 items.push_back( item );
