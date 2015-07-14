@@ -316,7 +316,8 @@ protected:
             BOOST_FOREACH( SCH_ITEM* collider, colliders )
             {
                 SCH_LINE* line = dynamic_cast<SCH_LINE*>( collider );
-                if( collision != COLLIDE_OBJECTS && line )
+                if( collision != COLLIDE_OBJECTS && line &&
+                        ( side == SIDE_TOP || side == SIDE_BOTTOM ) )
                 {
                     wxPoint start = line->GetStartPoint(), end = line->GetEndPoint();
                     if( start.y == end.y )
@@ -495,6 +496,10 @@ protected:
         filter_colliders( colliders, aBox );
         if( colliders.empty() )
             return aBox.GetPosition();
+
+        // Find the offset of the wires for proper positioning
+        int offset = 0;
+
         BOOST_FOREACH( SCH_ITEM* item, colliders )
         {
             SCH_LINE* line = dynamic_cast<SCH_LINE*>( item );
@@ -503,10 +508,30 @@ protected:
             wxPoint start = line->GetStartPoint(), end = line->GetEndPoint();
             if( start.y != end.y )
                 return aBox.GetPosition();
+
+            if( start.y % 50 )
+                return aBox.GetPosition();
+            else if( start.y % 100 )
+            {
+                if( offset == 150)
+                    return aBox.GetPosition();
+                else
+                    offset = 100;
+            }
+            else
+            {
+                if( offset == 100 )
+                    return aBox.GetPosition();
+                else
+                    offset = 150;
+            }
         }
 
+        if( aSide == SIDE_TOP )
+            offset = -offset;
+
         wxPoint pos = aBox.GetPosition();
-        pos.y = round_n( pos.y, 50, aSide == SIDE_TOP ) + ( aSide==SIDE_TOP? -100 : 100 );
+        pos.y = round_n( pos.y - offset, 100, aSide == SIDE_BOTTOM ) + offset;
         return pos;
     }
 
