@@ -734,7 +734,7 @@ bool DRAWING_TOOL::drawSegment( int aShape, DRAWSEGMENT*& aGraphic,
             break;
         }
 
-        else if( evt->IsClick( BUT_LEFT ) )
+        else if( evt->IsClick( BUT_LEFT ) || evt->IsDblClick( BUT_LEFT ) )
         {
             if( !started )
             {
@@ -766,18 +766,31 @@ bool DRAWING_TOOL::drawSegment( int aShape, DRAWSEGMENT*& aGraphic,
             }
             else
             {
-                if( aGraphic->GetEnd() != aGraphic->GetStart() )
+                if( aGraphic->GetEnd() == aGraphic->GetStart() ||
+                        ( evt->IsDblClick( BUT_LEFT ) && aShape == S_SEGMENT ) )
+                                                // User has clicked twice in the same spot
+                {                               // a clear sign that the current drawing is finished
+                    if( direction45 )
+                    {
+                        DRAWSEGMENT* l = static_cast<DRAWSEGMENT*>( line45.Clone() );
+                        l->SetEnd( aGraphic->GetStart() );
+                        m_board->Add( l );
+                        m_frame->OnModify();
+                        m_frame->SaveCopyInUndoList( l, UR_NEW );
+                        m_view->Add( l );
+                        l->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
+                    }
+
+                    delete aGraphic;            // but only if at least one graphic was created
+                    aGraphic = NULL;            // otherwise - force user to draw more or cancel
+                }
+                else
                 {
                     assert( aGraphic->GetLength() > 0 );
                     assert( aGraphic->GetWidth() > 0 );
 
                     m_view->Add( aGraphic );
                     aGraphic->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
-                }
-                else                            // User has clicked twice in the same spot
-                {                               // a clear sign that the current drawing is finished
-                    delete aGraphic;            // but only if at least one graphic was created
-                    aGraphic = NULL;            // otherwise - force user to draw more or cancel
                 }
 
                 preview.Clear();
@@ -1082,10 +1095,10 @@ int DRAWING_TOOL::drawZone( bool aKeepout )
                 break;
         }
 
-        else if( evt->IsClick( BUT_LEFT ) )
+        else if( evt->IsClick( BUT_LEFT ) || evt->IsDblClick( BUT_LEFT ) )
         {
             // Check if it is double click / closing line (so we have to finish the zone)
-            if( lastCursorPos == cursorPos || ( numPoints > 0 && cursorPos == origin ) )
+            if( evt->IsDblClick( BUT_LEFT ) || lastCursorPos == cursorPos || ( numPoints > 0 && cursorPos == origin ) )
             {
                 if( numPoints > 2 )     // valid zone consists of more than 2 points
                 {
@@ -1238,11 +1251,10 @@ int DRAWING_TOOL::placeTextModule()
     m_toolMgr->RunAction( COMMON_ACTIONS::selectionClear, true );
     m_controls->ShowCursor( true );
     m_controls->SetSnapping( true );
-    m_controls->SetAutoPan( true );
-    m_controls->CaptureCursor( true );
+    // do not capture or auto-pan until we start placing some text
 
     Activate();
-    m_frame->SetToolID( ID_PCB_ADD_TEXT_BUTT, wxCURSOR_PENCIL, _( "Add text" ) );
+    m_frame->SetToolID( ID_MODEDIT_TEXT_TOOL, wxCURSOR_PENCIL, _( "Add text" ) );
     bool placing = false;
 
     // Main loop: keep receiving events
@@ -1254,6 +1266,8 @@ int DRAWING_TOOL::placeTextModule()
         {
             preview.Clear();
             preview.ViewUpdate();
+            m_controls->SetAutoPan( false );
+            m_controls->CaptureCursor( false );
             m_controls->ShowCursor( true );
 
             if( !placing || evt->IsActivate() )
@@ -1295,6 +1309,8 @@ int DRAWING_TOOL::placeTextModule()
                 if( !placing )
                     continue;
 
+                m_controls->CaptureCursor( true );
+                m_controls->SetAutoPan( true );
                 m_controls->ShowCursor( false );
                 text->SetParent( m_board->m_Modules );  // it has to set after the settings dialog
                                                         // otherwise the dialog stores it in undo buffer
@@ -1318,6 +1334,8 @@ int DRAWING_TOOL::placeTextModule()
                 m_frame->OnModify();
 
                 preview.Remove( text );
+                m_controls->CaptureCursor( false );
+                m_controls->SetAutoPan( false );
                 m_controls->ShowCursor( true );
 
                 text = new TEXTE_MODULE( NULL );
@@ -1337,7 +1355,7 @@ int DRAWING_TOOL::placeTextModule()
     m_controls->ShowCursor( false );
     m_controls->SetSnapping( false );
     m_controls->SetAutoPan( false );
-    m_controls->CaptureCursor( true );
+    m_controls->CaptureCursor( false );
     m_view->Remove( &preview );
 
     m_frame->SetToolID( ID_NO_TOOL_SELECTED, wxCURSOR_DEFAULT, wxEmptyString );
@@ -1357,8 +1375,7 @@ int DRAWING_TOOL::placeTextPcb()
     m_toolMgr->RunAction( COMMON_ACTIONS::selectionClear, true );
     m_controls->ShowCursor( true );
     m_controls->SetSnapping( true );
-    m_controls->SetAutoPan( true );
-    m_controls->CaptureCursor( true );
+     // do not capture or auto-pan until we start placing some text
 
     Activate();
     m_frame->SetToolID( ID_PCB_ADD_TEXT_BUTT, wxCURSOR_PENCIL, _( "Add text" ) );
@@ -1378,6 +1395,8 @@ int DRAWING_TOOL::placeTextPcb()
 
                 preview.Clear();
                 preview.ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
+                m_controls->SetAutoPan( false );
+                m_controls->CaptureCursor( false );
                 m_controls->ShowCursor( true );
             }
             else
@@ -1411,6 +1430,8 @@ int DRAWING_TOOL::placeTextPcb()
                 if( text == NULL )
                     continue;
 
+                m_controls->CaptureCursor( true );
+                m_controls->SetAutoPan( true );
                 m_controls->ShowCursor( false );
                 preview.Add( text );
             }
@@ -1428,6 +1449,8 @@ int DRAWING_TOOL::placeTextPcb()
                 m_frame->SaveCopyInUndoList( text, UR_NEW );
 
                 preview.Remove( text );
+                m_controls->CaptureCursor( false );
+                m_controls->SetAutoPan( false );
                 m_controls->ShowCursor( true );
 
                 text = NULL;

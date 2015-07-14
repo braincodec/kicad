@@ -153,7 +153,7 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
                 if( !m_additive )
                     clearSelection();
 
-                selectCursor( evt->Position() );
+                selectPoint( evt->Position() );
             }
         }
 
@@ -163,7 +163,7 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
             bool emptySelection = m_selection.Empty();
 
             if( emptySelection )
-                selectCursor( evt->Position() );
+                selectPoint( evt->Position() );
 
             CONTEXT_MENU& contextMenu = m_menu.Generate( m_selection );
 
@@ -177,7 +177,7 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
         else if( evt->IsDblClick( BUT_LEFT ) )
         {
             if( m_selection.Empty() )
-                selectCursor( evt->Position() );
+                selectPoint( evt->Position() );
 
             m_toolMgr->RunAction( COMMON_ACTIONS::properties );
         }
@@ -196,7 +196,7 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
                 m_preliminary = false;
 
                 // There is nothing selected, so try to select something
-                if( !selectCursor( getView()->ToWorld( getViewControls()->GetMousePosition() ), false ) )
+                if( !selectCursor() )
                 {
                     // If nothings has been selected or user wants to select more
                     // draw the selection box
@@ -227,7 +227,7 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
         else if( evt->IsAction( &COMMON_ACTIONS::selectionCursor ) )
         {
             // GetMousePosition() is used, as it is independent of snapping settings
-            selectCursor( getView()->ToWorld( getViewControls()->GetMousePosition() ) );
+            selectCursor( true );
         }
 
         else if( evt->IsAction( &COMMON_ACTIONS::find ) )
@@ -311,7 +311,7 @@ void SELECTION_TOOL::toggleSelection( BOARD_ITEM* aItem )
 }
 
 
-bool SELECTION_TOOL::selectCursor( const VECTOR2I& aWhere, bool aOnDrag )
+bool SELECTION_TOOL::selectPoint( const VECTOR2I& aWhere, bool aOnDrag )
 {
     BOARD_ITEM* item;
     GENERAL_COLLECTORS_GUIDE guide = m_frame->GetCollectorsGuide();
@@ -378,6 +378,18 @@ bool SELECTION_TOOL::selectCursor( const VECTOR2I& aWhere, bool aOnDrag )
 }
 
 
+bool SELECTION_TOOL::selectCursor( bool aSelectAlways )
+{
+    if( aSelectAlways || m_selection.Empty() )
+    {
+        clearSelection();
+        selectPoint( getViewControls()->GetCursorPosition() );
+    }
+
+    return !m_selection.Empty();
+}
+
+
 bool SELECTION_TOOL::selectMultiple()
 {
     bool cancelled = false;     // Was the tool cancelled while it was running?
@@ -432,8 +444,10 @@ bool SELECTION_TOOL::selectMultiple()
                 }
             }
 
-            // Do not display information about selected item,as there is more than one
-            m_frame->SetCurItem( NULL );
+            if( m_selection.Size() == 1 )
+                m_frame->SetCurItem( m_selection.Item<BOARD_ITEM>( 0 ) );
+            else
+                m_frame->SetCurItem( NULL );
 
             if( !m_selection.Empty() )
             {
@@ -519,7 +533,7 @@ SELECTION_LOCK_FLAGS SELECTION_TOOL::CheckLock()
 
 int SELECTION_TOOL::CursorSelection( const TOOL_EVENT& aEvent )
 {
-    selectCursor( getView()->ToWorld( getViewControls()->GetMousePosition() ) );
+    selectCursor( true );
 
     return 0;
 }
@@ -569,15 +583,26 @@ int SELECTION_TOOL::UnselectItem( const TOOL_EVENT& aEvent )
 
 int SELECTION_TOOL::selectConnection( const TOOL_EVENT& aEvent )
 {
-    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
-    int segmentCount;
+    bool unselect = m_selection.Empty();
 
-    if( item->Type() != PCB_TRACE_T && item->Type() != PCB_VIA_T )
+    if( !selectCursor( true ) )
         return 0;
 
+    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
+
+    if( item->Type() != PCB_TRACE_T && item->Type() != PCB_VIA_T )
+    {
+        if( unselect )
+            clearSelection();
+
+        return 0;
+    }
+
     clearSelection();
+
+    int segmentCount;
     TRACK* trackList = getModel<BOARD>()->MarkTrace( static_cast<TRACK*>( item ), &segmentCount,
-                                                        NULL, NULL, true );
+                                                     NULL, NULL, true );
 
     if( segmentCount == 0 )
         return 0;
@@ -598,9 +623,23 @@ int SELECTION_TOOL::selectConnection( const TOOL_EVENT& aEvent )
 
 int SELECTION_TOOL::selectCopper( const TOOL_EVENT& aEvent )
 {
+    bool unselect = m_selection.Empty();
+
+    if( !selectCursor( true ) )
+        return 0;
+
+    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
+
+    if( item->Type() != PCB_TRACE_T && item->Type() != PCB_VIA_T )
+    {
+        if( unselect )
+            clearSelection();
+
+        return 0;
+    }
+
     std::list<BOARD_CONNECTED_ITEM*> itemsList;
     RN_DATA* ratsnest = getModel<BOARD>()->GetRatsnest();
-    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
 
     clearSelection();
     ratsnest->GetConnectedItems( item, itemsList, (RN_ITEM_TYPE)( RN_TRACKS | RN_VIAS ) );
@@ -621,9 +660,13 @@ int SELECTION_TOOL::selectCopper( const TOOL_EVENT& aEvent )
 
 int SELECTION_TOOL::selectNet( const TOOL_EVENT& aEvent )
 {
+    if( !selectCursor( true ) )
+        return 0;
+
+    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
+
     std::list<BOARD_CONNECTED_ITEM*> itemsList;
     RN_DATA* ratsnest = getModel<BOARD>()->GetRatsnest();
-    BOARD_CONNECTED_ITEM* item = m_selection.Item<BOARD_CONNECTED_ITEM>( 0 );
     int netCode = item->GetNetCode();
 
     clearSelection();
@@ -649,7 +692,6 @@ void SELECTION_TOOL::findCallback( BOARD_ITEM* aItem )
 
     if( aItem )
     {
-        clearSelection();
         select( aItem );
         EDA_RECT bbox = aItem->GetBoundingBox();
         BOX2D viewport( VECTOR2D( bbox.GetOrigin() ), VECTOR2D( bbox.GetSize() ) );

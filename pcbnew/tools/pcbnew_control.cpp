@@ -84,7 +84,15 @@ int PCBNEW_CONTROL::ZoomInOut( const TOOL_EVENT& aEvent )
     else if( aEvent.IsAction( &COMMON_ACTIONS::zoomOut ) )
         zoomScale = 0.7;
 
-    view->SetScale( view->GetScale() * zoomScale, getViewControls()->GetCursorPosition() );
+    if( getViewControls()->GetEnableZoomNoCenter() )
+        view->SetScale( view->GetScale() * zoomScale, getViewControls()->GetCursorPosition() );
+    else
+    {
+        const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
+        view->SetCenter( getViewControls()->GetCursorPosition() );
+        view->SetScale( view->GetScale() * zoomScale );
+        m_frame->GetGalCanvas()->WarpPointer( screenSize.x / 2, screenSize.y / 2 );
+    }
 
     return 0;
 }
@@ -111,6 +119,12 @@ int PCBNEW_CONTROL::ZoomCenter( const TOOL_EVENT& aEvent )
     KIGFX::VIEW* view = m_frame->GetGalCanvas()->GetView();
     view->SetCenter( getViewControls()->GetCursorPosition() );
 
+    if( !getViewControls()->GetEnableZoomNoCenter() )
+    {
+        const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
+        m_frame->GetGalCanvas()->WarpPointer( screenSize.x / 2, screenSize.y / 2 );
+    }
+
     return 0;
 }
 
@@ -123,22 +137,31 @@ int PCBNEW_CONTROL::ZoomFitScreen( const TOOL_EVENT& aEvent )
     board->ComputeBoundingBox();
 
     BOX2I boardBBox = board->ViewBBox();
-    VECTOR2I screenSize = galCanvas->GetClientSize();
-    VECTOR2I scrollbarSize = VECTOR2I( galCanvas->GetSize() ) - screenSize;
-    VECTOR2D worldScrollbarSize = view->ToWorld( scrollbarSize, false );
+    VECTOR2D scrollbarSize = VECTOR2D( galCanvas->GetSize() - galCanvas->GetClientSize() );
 
     if( boardBBox.GetWidth() == 0 || boardBBox.GetHeight() == 0 )
     {
         // Empty view
-        view->SetScale( 17.0 );
-        view->SetCenter( view->ToWorld( VECTOR2D( screenSize + scrollbarSize ) / 2, false ) );
+        view->SetScale( 17.0 );     // works fine for the standard worksheet frame
+
+        VECTOR2D screenSize = view->ToWorld( galCanvas->GetClientSize(), false );
+        view->SetCenter( screenSize / 2.0 );
     }
     else
     {
-        // Autozoom to board
-        view->SetViewport( BOX2D( boardBBox.GetOrigin(),
-                                  boardBBox.GetSize() + worldScrollbarSize ) );
+        VECTOR2D vsize = boardBBox.GetSize();
+        VECTOR2D screenSize = view->ToWorld( galCanvas->GetClientSize(), false );
+        double scale = view->GetScale() / std::max( fabs( vsize.x / screenSize.x ),
+                                                    fabs( vsize.y / screenSize.y ) );
+
+        view->SetScale( scale );
+        view->SetCenter( boardBBox.Centre() );
     }
+
+
+    // Take scrollbars into account
+    VECTOR2D worldScrollbarSize = view->ToWorld( scrollbarSize, false );
+    view->SetCenter( view->GetCenter() + worldScrollbarSize / 2.0 );
 
     return 0;
 }
@@ -429,7 +452,6 @@ int PCBNEW_CONTROL::CursorControl( const TOOL_EVENT& aEvent )
     VECTOR2D cursor = getViewControls()->GetCursorPosition();
     VECTOR2I gridSize = gridHelper.GetGrid();
     VECTOR2D newCursor = gridHelper.Align( cursor );
-    bool warp = true;
 
     if( fastMove )
         gridSize = gridSize * 10;
@@ -452,69 +474,74 @@ int PCBNEW_CONTROL::CursorControl( const TOOL_EVENT& aEvent )
             newCursor += VECTOR2D( gridSize.x, 0 );
             break;
 
-        case COMMON_ACTIONS::CURSOR_CLICK:
-            {
-                TOOL_EVENT evtClick( TC_MOUSE, TA_MOUSE_CLICK, BUT_LEFT );
-                evtClick.SetMousePosition( getViewControls()->GetCursorPosition() );
-                m_toolMgr->ProcessEvent( evtClick );
-                warp = false;
-            }
-            break;
-
+        case COMMON_ACTIONS::CURSOR_CLICK:              // fall through
         case COMMON_ACTIONS::CURSOR_DBL_CLICK:
-            {
-                TOOL_EVENT evtDblClick( TC_MOUSE, TA_MOUSE_DBLCLICK, BUT_LEFT );
-                evtDblClick.SetMousePosition( getViewControls()->GetCursorPosition() );
-                m_toolMgr->ProcessEvent( evtDblClick );
-                warp = false;
-            }
-            break;
+        {
+            TOOL_ACTIONS action;
+            int modifiers = 0;
+
+            modifiers |= wxGetKeyState( WXK_SHIFT ) ? MD_SHIFT : 0;
+            modifiers |= wxGetKeyState( WXK_CONTROL ) ? MD_CTRL : 0;
+            modifiers |= wxGetKeyState( WXK_ALT ) ? MD_ALT : 0;
+
+            if( type == COMMON_ACTIONS::CURSOR_CLICK )
+                action = TA_MOUSE_CLICK;
+            else if( type == COMMON_ACTIONS::CURSOR_DBL_CLICK )
+                action = TA_MOUSE_DBLCLICK;
+            else
+                assert( false );
+
+            TOOL_EVENT evt( TC_MOUSE, action, BUT_LEFT | modifiers );
+            evt.SetMousePosition( getViewControls()->GetCursorPosition() );
+            m_toolMgr->ProcessEvent( evt );
+
+            return 0;
+        }
+        break;
     }
 
-    if( warp )
+    // Handler cursor movement
+    KIGFX::VIEW* view = getView();
+    newCursor = view->ToScreen( newCursor );
+
+    // Pan the screen if required
+    const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
+    BOX2I screenBox( VECTOR2I( 0, 0 ), screenSize );
+
+    if( !screenBox.Contains( newCursor ) )
     {
-        KIGFX::VIEW* view = getView();
-        newCursor = view->ToScreen( newCursor );
+        VECTOR2D delta( 0, 0 );
 
-        // Pan the screen if required
-        const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
-        BOX2I screenBox( VECTOR2I( 0, 0 ), screenSize );
-
-        if( !screenBox.Contains( newCursor ) )
+        if( newCursor.x < screenBox.GetLeft() )
         {
-            VECTOR2D delta( 0, 0 );
-
-            if( newCursor.x < screenBox.GetLeft() )
-            {
-                delta.x = newCursor.x - screenBox.GetLeft();
-                newCursor.x = screenBox.GetLeft();
-            }
-            else if( newCursor.x > screenBox.GetRight() )
-            {
-                delta.x = newCursor.x - screenBox.GetRight();
-                // -1 is to keep the cursor within the drawing area,
-                // so the cursor coordinates are updated
-                newCursor.x = screenBox.GetRight() - 1;
-            }
-
-            if( newCursor.y < screenBox.GetTop() )
-            {
-                delta.y = newCursor.y - screenBox.GetTop();
-                newCursor.y = screenBox.GetTop();
-            }
-            else if( newCursor.y > screenBox.GetBottom() )
-            {
-                delta.y = newCursor.y - screenBox.GetBottom();
-                // -1 is to keep the cursor within the drawing area,
-                // so the cursor coordinates are updated
-                newCursor.y = screenBox.GetBottom() - 1;
-            }
-
-            view->SetCenter( view->GetCenter() + view->ToWorld( delta, false ) );
+            delta.x = newCursor.x - screenBox.GetLeft();
+            newCursor.x = screenBox.GetLeft();
+        }
+        else if( newCursor.x > screenBox.GetRight() )
+        {
+            delta.x = newCursor.x - screenBox.GetRight();
+            // -1 is to keep the cursor within the drawing area,
+            // so the cursor coordinates are still updated
+            newCursor.x = screenBox.GetRight() - 1;
         }
 
-        m_frame->GetGalCanvas()->WarpPointer( newCursor.x, newCursor.y );
+        if( newCursor.y < screenBox.GetTop() )
+        {
+            delta.y = newCursor.y - screenBox.GetTop();
+            newCursor.y = screenBox.GetTop();
+        }
+        else if( newCursor.y > screenBox.GetBottom() )
+        {
+            delta.y = newCursor.y - screenBox.GetBottom();
+            // -1 is to keep the cursor within the drawing area,
+            // so the cursor coordinates are still updated
+            newCursor.y = screenBox.GetBottom() - 1;
+        }
+
+        view->SetCenter( view->GetCenter() + view->ToWorld( delta, false ) );
     }
+
+    m_frame->GetGalCanvas()->WarpPointer( newCursor.x, newCursor.y );
 
     return 0;
 }

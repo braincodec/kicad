@@ -47,7 +47,7 @@ PNS_LINE::PNS_LINE( const PNS_LINE& aOther ) :
         m_marker = aOther.m_marker;
         m_rank = aOther.m_rank;
 
-        copyLinks ( &aOther );
+        copyLinks( &aOther );
 }
 
 
@@ -71,7 +71,7 @@ const PNS_LINE& PNS_LINE::operator=( const PNS_LINE& aOther )
     m_marker = aOther.m_marker;
     m_rank = aOther.m_rank;
 
-    copyLinks ( &aOther );
+    copyLinks( &aOther );
 
     return *this;
 }
@@ -97,7 +97,7 @@ void PNS_LINE::Mark( int aMarker )
 }
 
 
-void PNS_LINE::Unmark ()
+void PNS_LINE::Unmark()
 {
     if( m_segmentRefs )
     {
@@ -109,7 +109,7 @@ void PNS_LINE::Unmark ()
 }
 
 
-int PNS_LINE::Marker()const
+int PNS_LINE::Marker() const
 {
     int marker = m_marker;
 
@@ -176,7 +176,7 @@ int PNS_LINE::CountCorners( int aAngles )
 bool PNS_LINE::Walkaround( SHAPE_LINE_CHAIN aObstacle, SHAPE_LINE_CHAIN& aPre,
                            SHAPE_LINE_CHAIN& aWalk, SHAPE_LINE_CHAIN& aPost, bool aCw ) const
 {
-    const SHAPE_LINE_CHAIN& line ( CLine() );
+    const SHAPE_LINE_CHAIN& line( CLine() );
     VECTOR2I ip_start;
     VECTOR2I ip_end;
 

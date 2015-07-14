@@ -71,7 +71,16 @@ struct SELECTION
         return static_cast<T*>( items.GetPickedItem( aIndex ) );
     }
 
+    /// Returns the center point of the selection area bounding box.
     VECTOR2I GetCenter() const;
+
+    /// Runs a function on all selected items.
+    template <typename T>
+    void ForAll( boost::function<void (T*)> aFunction ) const
+    {
+        for( unsigned int i = 0; i < items.GetCount(); ++i )
+            aFunction( Item<T>( i ) );
+    }
 
 private:
     /// Clears both the VIEW_GROUP and set of selected items. Please note that it does not
@@ -180,7 +189,7 @@ public:
 
 private:
     /**
-     * Function selectCursor()
+     * Function selectPoint()
      * Selects an item pointed by the parameter aWhere. If there is more than one item at that
      * place, there is a menu displayed that allows to choose the item.
      *
@@ -189,7 +198,16 @@ private:
      * a menu is shown, otherise function finishes without selecting anything.
      * @return True if an item was selected, false otherwise.
      */
-    bool selectCursor( const VECTOR2I& aWhere, bool aOnDrag = false );
+    bool selectPoint( const VECTOR2I& aWhere, bool aOnDrag = false );
+
+    /**
+     * Function selectCursor()
+     * Selects an item under the cursor unless there is something already selected or aSelectAlways
+     * is true.
+     * @param aSelectAlways forces to select an item even if there is an item already selected.
+     * @return true if eventually there is an item selected, false otherwise.
+     */
+    bool selectCursor( bool aSelectAlways = false );
 
     /**
      * Function selectMultiple()

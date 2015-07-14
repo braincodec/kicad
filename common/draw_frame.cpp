@@ -217,11 +217,7 @@ bool EDA_DRAW_FRAME::LockFile( const wxString& aFileName )
 void EDA_DRAW_FRAME::unitsChangeRefresh()
 {
     UpdateStatusBar();
-
-    EDA_ITEM* item = GetScreen()->GetCurItem();
-
-    if( item )
-        SetMsgPanel( item );
+    UpdateMsgPanel();
 }
 
 
@@ -447,7 +443,10 @@ void EDA_DRAW_FRAME::OnSelectZoom( wxCommandEvent& event )
     TOOL_MANAGER* mgr = GetToolManager();
 
     if( mgr && IsGalCanvasActive() )
+    {
         mgr->RunAction( "common.Control.zoomPreset", true, id );
+        UpdateStatusBar();
+    }
 }
 
 
@@ -634,16 +633,24 @@ void EDA_DRAW_FRAME::UpdateStatusBar()
 
 const wxString EDA_DRAW_FRAME::GetZoomLevelIndicator() const
 {
-    BASE_SCREEN*    screen = GetScreen();
     wxString Line;
+    double level = 0.0;
 
-    if( screen )
+    if( IsGalCanvasActive() )
     {
-        // returns a human readable value which can be displayed as zoom
-        // level indicator in dialogs.
-        double level =  m_zoomLevelCoeff / (double)screen->GetZoom();
-        Line.Printf( wxT( "Z %.2f" ), level );
+        KIGFX::GAL* gal = m_galCanvas->GetGAL();
+        KIGFX::VIEW* view = m_galCanvas->GetView();
+        double zoomFactor = gal->GetWorldScale() / gal->GetZoomFactor();
+        level = m_zoomLevelCoeff * zoomFactor * view->GetScale();
     }
+    else if( BASE_SCREEN* screen = GetScreen() )
+    {
+        level = m_zoomLevelCoeff / (double) screen->GetZoom();
+    }
+
+    // returns a human readable value which can be displayed as zoom
+    // level indicator in dialogs.
+    Line.Printf( wxT( "Z %.2f" ), level );
 
     return Line;
 }
@@ -725,6 +732,15 @@ void EDA_DRAW_FRAME::SetMsgPanel( EDA_ITEM* aItem )
     MSG_PANEL_ITEMS items;
     aItem->GetMsgPanelInfo( items );
     SetMsgPanel( items );
+}
+
+
+void EDA_DRAW_FRAME::UpdateMsgPanel()
+{
+    EDA_ITEM* item = GetScreen()->GetCurItem();
+
+    if( item )
+        SetMsgPanel( item );
 }
 
 
@@ -1025,36 +1041,38 @@ void EDA_DRAW_FRAME::AdjustScrollBars( const wxPoint& aCenterPositionIU )
 
 void EDA_DRAW_FRAME::UseGalCanvas( bool aEnable )
 {
-    if( m_galCanvasActive == aEnable )
-        return;
-
     KIGFX::VIEW* view = GetGalCanvas()->GetView();
     KIGFX::GAL* gal = GetGalCanvas()->GetGAL();
 
-    double zoomFactor = gal->GetWorldScale() / gal->GetZoomFactor();
-    BASE_SCREEN* screen = GetScreen();
-
     // Display the same view after canvas switching
-    if( aEnable )       // Switch to GAL rendering
+    if( aEnable )
     {
-        // Set up viewport
-        double zoom = 1.0 / ( zoomFactor * m_canvas->GetZoom() );
-        view->SetScale( zoom );
-        view->SetCenter( VECTOR2D( m_canvas->GetScreenCenterLogicalPosition() ) );
+        // Switch to GAL rendering
+        if( !m_galCanvasActive )
+        {
+            // Set up viewport
+            double zoomFactor = gal->GetWorldScale() / gal->GetZoomFactor();
+            double zoom = 1.0 / ( zoomFactor * m_canvas->GetZoom() );
+            view->SetScale( zoom );
+            view->SetCenter( VECTOR2D( m_canvas->GetScreenCenterLogicalPosition() ) );
+        }
 
         // Set up grid settings
         gal->SetGridVisibility( IsGridVisible() );
-        gal->SetGridSize( VECTOR2D( screen->GetGridSize() ) );
+        gal->SetGridSize( VECTOR2D( GetScreen()->GetGridSize() ) );
         gal->SetGridOrigin( VECTOR2D( GetGridOrigin() ) );
+
+        // Transfer EDA_DRAW_PANEL settings
+        GetGalCanvas()->GetViewControls()->SetEnableZoomNoCenter( m_canvas->GetEnableZoomNoCenter() );
 
         GetToolManager()->RunAction( "pcbnew.Control.switchCursor" );
     }
-    else                // Switch to standard rendering
+    else if( m_galCanvasActive )
     {
-        // Change view settings only if GAL was active previously
-        double zoom = 1.0 / ( zoomFactor * view->GetScale() );
-        m_canvas->SetZoom( zoom );
-
+        // Switch to standard rendering
+        double zoomFactor = gal->GetWorldScale() / gal->GetZoomFactor();
+        // TODO replace it with EDA_DRAW_PANEL_GAL::GetLegacyZoom
+        m_canvas->SetZoom( 1.0 / ( zoomFactor * view->GetScale() ) );
         VECTOR2D center = view->GetCenter();
         AdjustScrollBars( wxPoint( center.x, center.y ) );
     }

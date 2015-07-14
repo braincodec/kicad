@@ -121,7 +121,7 @@ void SCH_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
     switch( id )
     {
     case ID_HIERARCHY:
-        InstallHierarchyFrame( &dc, pos );
+        InstallHierarchyFrame( pos );
         SetRepeatItem( NULL );
         break;
 
