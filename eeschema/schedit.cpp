@@ -833,9 +833,9 @@ void SCH_EDIT_FRAME::OnRotate( wxCommandEvent& aEvent )
             else
                 wxFAIL_MSG( wxT( "Unknown rotate item command ID." ) );
 
-            if( m_autoplaceFields && component->GetFieldsAutoplaced() ) {
-                component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
-            }
+            if( m_autoplaceFields )
+                component->AutoAutoplaceFields( GetScreen() );
+
             m_canvas->Refresh();
 
             break;
@@ -1149,9 +1149,9 @@ void SCH_EDIT_FRAME::OnOrient( wxCommandEvent& aEvent )
             else
                 wxFAIL_MSG( wxT( "Invalid orient schematic component command ID." ) );
 
-            if( m_autoplaceFields && component->GetFieldsAutoplaced() ) {
-                component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
-            }
+            if( m_autoplaceFields )
+                component->AutoAutoplaceFields( GetScreen() );
+
             m_canvas->Refresh();
 
             break;

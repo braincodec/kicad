@@ -158,8 +158,8 @@ void SCH_EDIT_FRAME::EditComponent( SCH_COMPONENT* aComponent )
     // the QUASIMODAL macros here.
     int ret = dlg->ShowQuasiModal();
 
-    if( m_autoplaceFields && aComponent->GetFieldsAutoplaced() )
-        aComponent->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
+    if( m_autoplaceFields )
+        aComponent->AutoAutoplaceFields( GetScreen() );
 
     m_canvas->SetIgnoreMouseEvents( false );
     m_canvas->MoveCursorToCrossHair();

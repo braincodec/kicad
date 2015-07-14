@@ -330,9 +330,8 @@ void SCH_EDIT_FRAME::OnSelectUnit( wxCommandEvent& aEvent )
         component->ClearFlags();
         component->SetFlags( flags );   // Restore m_Flag modified by SetUnit()
 
-        if( m_autoplaceFields && component->GetFieldsAutoplaced() ) {
-            component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
-        }
+        if( m_autoplaceFields )
+            component->AutoAutoplaceFields( GetScreen() );
 
         screen->TestDanglingEnds( m_canvas, &dc );
         m_canvas->Refresh();

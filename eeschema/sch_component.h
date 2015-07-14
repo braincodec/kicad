@@ -64,6 +64,10 @@ class SCH_COMPONENT : public SCH_ITEM
 {
     friend class DIALOG_EDIT_COMPONENT_IN_SCHEMATIC;
 
+public:
+    enum AUTOPLACED { AUTOPLACED_NO = 0, AUTOPLACED_AUTO, AUTOPLACED_MANUAL };
+private:
+
     wxPoint     m_Pos;
     wxString    m_part_name;    ///< Name to look for in the library, i.e. "74LS00".
 
@@ -82,7 +86,7 @@ class SCH_COMPONENT : public SCH_ITEM
 
     std::vector<bool> m_isDangling; ///< One isDangling per pin
 
-    bool        m_fieldsAutoplaced; ///< true if fields have not been moved since last autoplace
+    AUTOPLACED  m_fieldsAutoplaced; ///< indicates status of field autoplacement
 
     /**
      * A temporary sheet path is required to generate the correct reference designator string
@@ -309,13 +313,13 @@ public:
      * Function GetFieldsAutoplaced
      * returns whether the fields are autoplaced.
      */
-    bool GetFieldsAutoplaced() const { return m_fieldsAutoplaced; }
+    AUTOPLACED GetFieldsAutoplaced() const { return m_fieldsAutoplaced; }
 
     /**
      * Function ClearFieldsAutoplaced
      * Set fields autoplaced flag false.
      */
-    void ClearFieldsAutoplaced() { m_fieldsAutoplaced = false; }
+    void ClearFieldsAutoplaced() { m_fieldsAutoplaced = AUTOPLACED_NO; }
 
     /**
      * Function AutoplaceFields
@@ -327,6 +331,20 @@ public:
      *  annoying if done automatically during moves.
      */
     void AutoplaceFields( SCH_SCREEN* aScreen, bool aManual );
+
+    /**
+     * Function AutoAutoplaceFields
+     * Autoplace fields only if correct to do so automatically. That is, do not
+     * autoplace if fields have been moved by hand.
+     * @param aScreen - the SCH_SCREEN associated with the current instance of the
+     *  component.
+     */
+    void AutoAutoplaceFields( SCH_SCREEN* aScreen )
+    {
+        if( GetFieldsAutoplaced() )
+            AutoplaceFields( aScreen, GetFieldsAutoplaced() == AUTOPLACED_MANUAL );
+    }
+
 
     //-----</Fields>----------------------------------------------------------
 

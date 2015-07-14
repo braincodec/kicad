@@ -500,5 +500,5 @@ void SCH_COMPONENT::AutoplaceFields( SCH_SCREEN* aScreen, bool aManual )
         wxASSERT_MSG( aScreen, "A SCH_SCREEN pointer must be given for manual autoplacement" );
     AUTOPLACER autoplacer( this, aScreen );
     autoplacer.DoAutoplace( aManual );
-    m_fieldsAutoplaced = true;
+    m_fieldsAutoplaced = ( aManual? AUTOPLACED_MANUAL : AUTOPLACED_AUTO );
 }
