@@ -85,13 +85,18 @@ public:
     }
 
 
-    void DoAutoplace()
+    /**
+     * Do the actual autoplacement.
+     * @param aManual - if true, use extra heuristics for smarter placement when manually
+     * called up.
+     */
+    void DoAutoplace( bool aManual )
     {
         // Do not autoplace on power symbols
         if( ! m_component->IsInNetlist() )
             return;
 
-        SIDE field_side = choose_side_for_fields();
+        SIDE field_side = choose_side_for_fields( aManual );
         wxPoint fbox_pos = field_box_placement( field_side );
         EDA_RECT field_box( fbox_pos, m_fbox_size );
 
@@ -188,21 +193,19 @@ protected:
 
 
     /**
-     * Function populate_preferred_sides
-     * Populate a list with the preferred field sides for the component, in
+     * Function get_preferred_sides
+     * Return a list with the preferred field sides for the component, in
      * decreasing order of preference.
-     * @param aSides - empty list of sides to be populated
-     * @param aAvoidCollisions - if true, look for and avoid collisions with other items
      */
-    void populate_preferred_sides(
-        std::vector<SIDE_AND_NPINS>& aSides )
+    std::vector<SIDE_AND_NPINS> get_preferred_sides()
     {
-        SIDE_AND_NPINS sides[] = {
+        SIDE_AND_NPINS sides_init[] = {
             { SIDE_RIGHT,   pins_on_side( SIDE_RIGHT ) },
             { SIDE_TOP,     pins_on_side( SIDE_TOP ) },
             { SIDE_LEFT,    pins_on_side( SIDE_LEFT ) },
             { SIDE_BOTTOM,  pins_on_side( SIDE_BOTTOM ) },
         };
+        std::vector<SIDE_AND_NPINS> sides( sides_init, sides_init + DIM( sides_init ) );
 
         int orient = m_component->GetOrientation();
         int orient_angle = orient & 0xff; // enum is a bitmask
@@ -220,34 +223,116 @@ protected:
             std::swap( sides[1], sides[3] );
         }
 
-        BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
+        return sides;
+    }
+
+
+    /**
+     * Function get_colliding_sides
+     * Return a list of the sides where a field set would collide with another item.
+     */
+    std::vector<SIDE> get_colliding_sides()
+    {
+        SIDE sides_init[] = { SIDE_RIGHT, SIDE_TOP, SIDE_LEFT, SIDE_BOTTOM };
+        std::vector<SIDE> sides( sides_init, sides_init + DIM( sides_init ) );
+        std::vector<SIDE> colliding;
+
+        // Iterate over all items, and throw out the ones that are this component or
+        // this component's fields
+        SCH_SCREENS screens;
+        std::vector<SCH_ITEM*> items;
+        SCH_SCREEN* screen = GetScreen();
+        for( SCH_SCREEN* screen = screens.GetFirst(); screen; screen = screens.GetNext() )
         {
-            aSides.push_back( each_side );
+            for( SCH_ITEM* item = screen->GetDrawItems(); item; item = item->Next() )
+            {
+                bool interested = true;
+                if( SCH_FIELD *field = dynamic_cast<SCH_FIELD*>( item ) )
+                {
+                    BOOST_FOREACH( SCH_FIELD* each_our_field, m_fields )
+                    {
+                        if( each_our_field == field )
+                            interested = false;
+                    }
+                }
+                else if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
+                {
+                    if( comp == m_component )
+                        interested = false;
+                }
+                if( interested )
+                    items.push_back( item );
+            }
         }
+
+        // Iterate over all sides and find the ones that collide
+        BOOST_FOREACH( SIDE side, sides )
+        {
+            wxPoint box_pos = field_box_placement( side );
+            EDA_RECT box( box_pos, m_fbox_size );
+
+            BOOST_FOREACH( SCH_ITEM* item, items )
+            {
+                if( item->GetBoundingBox().Intersects( box ) )
+                {
+                    colliding.push_back( side );
+                    break;
+                }
+            }
+        }
+
+        return colliding;
     }
 
 
     /**
      * Function choose_side_for_component
      * Look where a component's pins are to pick a side to put the fields on
+     * @param aAvoidCollisions - if true, pick last the sides where the label will collide
+     *      with other items.
      */
-    SIDE choose_side_for_fields()
+    SIDE choose_side_for_fields( bool aAvoidCollisions )
     {
-        std::vector<SIDE_AND_NPINS> sides;
-        populate_preferred_sides( sides );
+        std::vector<SIDE_AND_NPINS> sides = get_preferred_sides();
 
+        unsigned min_pins = UINT_MAX;
+        SIDE min_side = SIDE_RIGHT;
+
+        if( aAvoidCollisions )
+        {
+            // Scan any colliding sides first so they end up overwritten later
+            std::vector<SIDE_AND_NPINS> test_sides( sides );
+            std::vector<SIDE> colliding_sides = get_colliding_sides();
+            sides.clear();
+            BOOST_REVERSE_FOREACH( SIDE_AND_NPINS test_side, test_sides )
+            {
+                bool collide = false;
+                BOOST_FOREACH( SIDE coll_side, colliding_sides )
+                {
+                    if( coll_side == test_side.name )
+                        collide = true;
+                }
+                if( !collide )
+                    sides.push_back( test_side );
+                else
+                {
+                    if( test_side.pins <= min_pins )
+                    {
+                        min_pins = test_side.pins;
+                        min_side = test_side.name;
+                    }
+                }
+            }
+        }
 
         BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
         {
             if( !each_side.pins ) return each_side.name;
         }
 
-        unsigned min_pins = UINT_MAX;
-        SIDE min_side = SIDE_RIGHT;
-
         BOOST_REVERSE_FOREACH( SIDE_AND_NPINS& each_side, sides )
         {
-            if( each_side.pins < min_pins )
+            if( each_side.pins <= min_pins )
             {
                 min_pins = each_side.pins;
                 min_side = each_side.name;
@@ -407,6 +492,6 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 void SCH_COMPONENT::AutoplaceFields( bool aManual )
 {
     AUTOPLACER autoplacer( this );
-    autoplacer.DoAutoplace();
+    autoplacer.DoAutoplace( aManual );
     m_fieldsAutoplaced = true;
 }
