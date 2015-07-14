@@ -307,11 +307,8 @@ void DIALOG_SCH_EDIT_ONE_FIELD::TransfertDataToField( bool aIncludeText )
     if( old_hjust != m_textHjustify || old_vjust != m_textVjustify )
     {
         EDA_ITEM *parent = m_field->GetParent();
-        if( parent->Type() == SCH_COMPONENT_T )
-        {
-            SCH_COMPONENT* component = dynamic_cast<SCH_COMPONENT*>( parent );
+        if( SCH_COMPONENT* component = dynamic_cast<SCH_COMPONENT*>( parent ) )
             component->ClearFieldsAutoplaced();
-        }
     }
 
     m_field->SetHorizJustify( m_textHjustify );
