@@ -161,10 +161,6 @@ public:
             field_box.SetOrigin( fbox_pos );
         }
 
-        bool h_round_up, v_round_up;
-        h_round_up = ( field_side != SIDE_LEFT );
-        v_round_up = ( field_side == SIDE_BOTTOM );
-
         // Move the fields
         for( size_t field_idx = 0; field_idx < m_fields.size(); ++field_idx )
         {
@@ -179,8 +175,8 @@ public:
 
             if( m_align_to_grid )
             {
-                pos.x = round_n( pos.x, 50, h_round_up );
-                pos.y = round_n( pos.y, 50, v_round_up );
+                pos.x = round_n( pos.x, 50, field_side.x >= 0 );
+                pos.y = round_n( pos.y, 50, field_side.y == 1 );
             }
 
             field->SetPosition( pos );
@@ -195,14 +191,14 @@ protected:
     wxSize ComputeFBoxSize()
     {
         int max_field_width = 0;
-        for( size_t field_idx = 0; field_idx < m_fields.size(); ++field_idx )
+        BOOST_FOREACH( SCH_FIELD* field, m_fields )
         {
             if( m_component->GetTransform().y1 )
-                m_fields[field_idx]->SetOrientation( TEXT_ORIENT_VERT );
+                field->SetOrientation( TEXT_ORIENT_VERT );
             else
-                m_fields[field_idx]->SetOrientation( TEXT_ORIENT_HORIZ );
+                field->SetOrientation( TEXT_ORIENT_HORIZ );
 
-            int field_width = m_fields[field_idx]->GetBoundingBox().GetWidth();
+            int field_width = field->GetBoundingBox().GetWidth();
             max_field_width = std::max( max_field_width, field_width );
         }
 
@@ -265,21 +261,16 @@ protected:
         wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
         for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
         {
-            bool interested = true;
             if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
             {
-                if( comp == m_component )
-                    interested = false;
-                else
-                {
-                    std::vector<SCH_FIELD*> fields;
-                    comp->GetFields( fields, /* aVisibleOnly */ true );
-                    BOOST_FOREACH( SCH_FIELD* field, fields )
-                        items.push_back( field );
-                }
+                if( comp == m_component ) continue;
+
+                std::vector<SCH_FIELD*> fields;
+                comp->GetFields( fields, /* aVisibleOnly */ true );
+                BOOST_FOREACH( SCH_FIELD* field, fields )
+                    items.push_back( field );
             }
-            if( interested )
-                items.push_back( item );
+            items.push_back( item );
         }
         return items;
     }
@@ -527,7 +518,7 @@ protected:
             if( start.y != end.y )
                 return aBox.GetPosition();
 
-            int this_offset = 150 - ( start.y % 100 );
+            int this_offset = (3 * FIELD_V_SPACING / 2) - ( start.y % FIELD_V_SPACING );
             if( offset == 0 )
                 offset = this_offset;
             else if( offset != this_offset )
@@ -538,7 +529,7 @@ protected:
             offset = -offset;
 
         wxPoint pos = aBox.GetPosition();
-        pos.y = round_n( pos.y - offset, 100, aSide == SIDE_BOTTOM ) + offset;
+        pos.y = round_n( pos.y - offset, FIELD_V_SPACING, aSide == SIDE_BOTTOM ) + offset;
         return pos;
     }
 
