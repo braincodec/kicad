@@ -241,7 +241,6 @@ protected:
         // this component's fields
         SCH_SCREENS screens;
         std::vector<SCH_ITEM*> items;
-        SCH_SCREEN* screen = GetScreen();
         for( SCH_SCREEN* screen = screens.GetFirst(); screen; screen = screens.GetNext() )
         {
             for( SCH_ITEM* item = screen->GetDrawItems(); item; item = item->Next() )
