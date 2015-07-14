@@ -243,7 +243,8 @@ SCH_COMPONENT* SCH_EDIT_FRAME::Load_Component( wxDC*           aDC,
     component->Draw( m_canvas, aDC, wxPoint( 0, 0 ), g_XorMode );
     component->SetFlags( IS_NEW );
 
-    if( m_autoplaceFields ) component->AutoplaceFields( /* aManual */ false );
+    if( m_autoplaceFields )
+        component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
 
     PrepareMoveItem( (SCH_ITEM*) component, aDC );
 
@@ -330,7 +331,7 @@ void SCH_EDIT_FRAME::OnSelectUnit( wxCommandEvent& aEvent )
         component->SetFlags( flags );   // Restore m_Flag modified by SetUnit()
 
         if( m_autoplaceFields && component->GetFieldsAutoplaced() ) {
-            component->AutoplaceFields( /* aManual */ false );
+            component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
         }
 
         screen->TestDanglingEnds( m_canvas, &dc );

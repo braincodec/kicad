@@ -320,11 +320,13 @@ public:
     /**
      * Function AutoplaceFields
      * Automatically orient all the fields in the component.
+     * @param aScreen - the SCH_SCREEN associated with the current instance of the
+     *  component. This can be NULL when aManual is false.
      * @param aManual - True if the autoplace was manually initiated (e.g. by a hotkey
      *  or a menu item). Some more 'intelligent' routines will be used that would be
      *  annoying if done automatically during moves.
      */
-    void AutoplaceFields( bool aManual );
+    void AutoplaceFields( SCH_SCREEN* aScreen, bool aManual );
 
     //-----</Fields>----------------------------------------------------------
 

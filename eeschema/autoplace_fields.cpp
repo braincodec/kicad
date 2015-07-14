@@ -53,6 +53,7 @@ template<typename T> T round_n( const T& value, const T& n, bool aRoundUp )
 
 class AUTOPLACER
 {
+    SCH_SCREEN* m_screen;
     SCH_COMPONENT* m_component;
     std::vector<SCH_FIELD*> m_fields;
     EDA_RECT m_comp_bbox;
@@ -73,8 +74,8 @@ public:
     };
 
 
-    AUTOPLACER( SCH_COMPONENT* aComponent )
-        :m_component( aComponent )
+    AUTOPLACER( SCH_COMPONENT* aComponent, SCH_SCREEN* aScreen )
+        :m_screen( aScreen ), m_component( aComponent )
     {
         m_component->GetFields( m_fields, /* aVisibleOnly */ true );
         Kiface().KifaceSettings()->Read( AUTOPLACE_JUSTIFY_KEY, &m_allow_rejustify, true );
@@ -239,29 +240,29 @@ protected:
 
         // Iterate over all items, and throw out the ones that are this component or
         // this component's fields
-        SCH_SCREENS screens;
         std::vector<SCH_ITEM*> items;
-        for( SCH_SCREEN* screen = screens.GetFirst(); screen; screen = screens.GetNext() )
+        wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
+        for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
         {
-            for( SCH_ITEM* item = screen->GetDrawItems(); item; item = item->Next() )
+            bool interested = true;
+            if( SCH_FIELD *field = dynamic_cast<SCH_FIELD*>( item ) )
             {
-                bool interested = true;
-                if( SCH_FIELD *field = dynamic_cast<SCH_FIELD*>( item ) )
-                {
+                if( ! field->IsVisible() || field->IsVoid() )
+                    interested = false;
+                else
                     BOOST_FOREACH( SCH_FIELD* each_our_field, m_fields )
                     {
                         if( each_our_field == field )
                             interested = false;
                     }
-                }
-                else if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
-                {
-                    if( comp == m_component )
-                        interested = false;
-                }
-                if( interested )
-                    items.push_back( item );
             }
+            else if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
+            {
+                if( comp == m_component )
+                    interested = false;
+            }
+            if( interested )
+                items.push_back( item );
         }
 
         // Iterate over all sides and find the ones that collide
@@ -272,7 +273,16 @@ protected:
 
             BOOST_FOREACH( SCH_ITEM* item, items )
             {
-                if( item->GetBoundingBox().Intersects( box ) )
+                // SCH_COMPONENT bounding boxes include all fields, even hidden ones.
+                // Since we're including fields as well anyway, we don't need fields.
+                // Just use the body box
+                EDA_RECT item_box;
+                if( SCH_COMPONENT* item_comp = dynamic_cast<SCH_COMPONENT*>( item ) )
+                    item_box = item_comp->GetBodyBoundingBox();
+                else
+                    item_box = item->GetBoundingBox();
+
+                if( item_box.Intersects( box ) )
                 {
                     colliding.push_back( side );
                     break;
@@ -312,7 +322,7 @@ protected:
                         collide = true;
                 }
                 if( !collide )
-                    sides.push_back( test_side );
+                    sides.insert( sides.begin(), test_side );
                 else
                 {
                     if( test_side.pins <= min_pins )
@@ -481,16 +491,18 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
 
     SCH_COMPONENT& component = dynamic_cast<SCH_COMPONENT&>( *item );
 
-    component.AutoplaceFields( /* aManual */ true );
+    component.AutoplaceFields( screen, /* aManual */ true );
 
     GetCanvas()->Refresh();
     OnModify();
 }
 
 
-void SCH_COMPONENT::AutoplaceFields( bool aManual )
+void SCH_COMPONENT::AutoplaceFields( SCH_SCREEN* aScreen, bool aManual )
 {
-    AUTOPLACER autoplacer( this );
+    if( aManual )
+        wxASSERT_MSG( aScreen, "A SCH_SCREEN pointer must be given for manual autoplacement" );
+    AUTOPLACER autoplacer( this, aScreen );
     autoplacer.DoAutoplace( aManual );
     m_fieldsAutoplaced = true;
 }

@@ -139,7 +139,7 @@ void SCH_EDIT_FRAME::EditComponentFieldText( SCH_FIELD* aField )
         OnModify();
 
         if( m_autoplaceFields && component->GetFieldsAutoplaced() )
-            component->AutoplaceFields( /* aManual */ false );
+            component->AutoplaceFields( /* aScreen */ NULL, /* aManual */ false );
 
         m_canvas->Refresh();
     }
