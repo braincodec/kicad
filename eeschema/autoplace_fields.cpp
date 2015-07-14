@@ -25,6 +25,7 @@
 #include <schframe.h>
 #include <hotkeys_basic.h>
 #include <sch_component.h>
+#include <sch_line.h>
 #include <lib_pin.h>
 #include <class_drawpanel.h>
 #include <class_libentry.h>
@@ -61,16 +62,19 @@ class AUTOPLACER
     bool m_allow_rejustify, m_align_to_grid;
 
 public:
-    enum SIDE
-    {
-        SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT
-    };
-
+    enum SIDE { SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT };
+    enum COLLISION { COLLIDE_NONE, COLLIDE_OBJECTS, COLLIDE_H_WIRES };
 
     struct SIDE_AND_NPINS
     {
         SIDE name;
         unsigned pins;
+    };
+
+    struct SIDE_AND_COLL
+    {
+        SIDE side;
+        COLLISION collision;
     };
 
 
@@ -100,6 +104,12 @@ public:
         SIDE field_side = choose_side_for_fields( aManual );
         wxPoint fbox_pos = field_box_placement( field_side );
         EDA_RECT field_box( fbox_pos, m_fbox_size );
+
+        if( aManual )
+        {
+            fbox_pos = fit_fields_between_wires( field_box, field_side );
+            field_box.SetOrigin( fbox_pos );
+        }
 
         bool h_round_up, v_round_up;
         h_round_up = ( field_side != SIDE_LEFT );
@@ -194,6 +204,62 @@ protected:
 
 
     /**
+     * Function get_possible_colliders
+     * Return a list of all drawing items that *may* collide with the fields. That is,
+     * all drawing items, including other fields, that are not the current component or
+     * its own fields.
+     */
+    std::vector<SCH_ITEM*> get_possible_colliders()
+    {
+        std::vector<SCH_ITEM*> items;
+        wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
+        for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
+        {
+            bool interested = true;
+            if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
+            {
+                if( comp == m_component )
+                    interested = false;
+                else
+                {
+                    std::vector<SCH_FIELD*> fields;
+                    comp->GetFields( fields, /* aVisibleOnly */ true );
+                    BOOST_FOREACH( SCH_FIELD* field, fields )
+                        items.push_back( field );
+                }
+            }
+            if( interested )
+                items.push_back( item );
+        }
+        return items;
+    }
+
+
+    /**
+     * Function filter_colliders
+     * Filter a list of possible colliders to include only those that actually collide
+     * with a given rectangle. Vector is modified in-place.
+     */
+    void filter_colliders( std::vector<SCH_ITEM*>& aColliders, const EDA_RECT& aRect )
+    {
+        std::vector<SCH_ITEM*>::iterator it = aColliders.begin();
+        while( it != aColliders.end() )
+        {
+            EDA_RECT item_box;
+            if( SCH_COMPONENT* item_comp = dynamic_cast<SCH_COMPONENT*>( *it ) )
+                item_box = item_comp->GetBodyBoundingBox();
+            else
+                item_box = (*it)->GetBoundingBox();
+
+            if( item_box.Intersects( aRect ) )
+                ++it;
+            else
+                it = aColliders.erase( it );
+        }
+    }
+
+
+    /**
      * Function get_preferred_sides
      * Return a list with the preferred field sides for the component, in
      * decreasing order of preference.
@@ -232,58 +298,38 @@ protected:
      * Function get_colliding_sides
      * Return a list of the sides where a field set would collide with another item.
      */
-    std::vector<SIDE> get_colliding_sides()
+    std::vector<SIDE_AND_COLL> get_colliding_sides()
     {
         SIDE sides_init[] = { SIDE_RIGHT, SIDE_TOP, SIDE_LEFT, SIDE_BOTTOM };
         std::vector<SIDE> sides( sides_init, sides_init + DIM( sides_init ) );
-        std::vector<SIDE> colliding;
-
-        // Iterate over all items, and throw out the ones that are this component or
-        // this component's fields
-        std::vector<SCH_ITEM*> items;
-        wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
-        for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
-        {
-            bool interested = true;
-            if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
-            {
-                if( comp == m_component )
-                    interested = false;
-                else
-                {
-                    std::vector<SCH_FIELD*> fields;
-                    comp->GetFields( fields, /* aVisibleOnly */ true );
-                    BOOST_FOREACH( SCH_FIELD* field, fields )
-                        items.push_back( field );
-                }
-            }
-            if( interested )
-                items.push_back( item );
-        }
+        std::vector<SIDE_AND_COLL> colliding;
+        std::vector<SCH_ITEM*> possible_colliders = get_possible_colliders();
 
         // Iterate over all sides and find the ones that collide
         BOOST_FOREACH( SIDE side, sides )
         {
             wxPoint box_pos = field_box_placement( side );
             EDA_RECT box( box_pos, m_fbox_size );
-
-            BOOST_FOREACH( SCH_ITEM* item, items )
+            std::vector<SCH_ITEM*> colliders( possible_colliders );
+            filter_colliders( colliders, box );
+            COLLISION collision = COLLIDE_NONE;
+            BOOST_FOREACH( SCH_ITEM* collider, colliders )
             {
-                // SCH_COMPONENT bounding boxes include all fields, even hidden ones.
-                // Since we're including fields as well anyway, we don't need fields.
-                // Just use the body box
-                EDA_RECT item_box;
-                if( SCH_COMPONENT* item_comp = dynamic_cast<SCH_COMPONENT*>( item ) )
-                    item_box = item_comp->GetBodyBoundingBox();
-                else
-                    item_box = item->GetBoundingBox();
-
-                if( item_box.Intersects( box ) )
+                SCH_LINE* line = dynamic_cast<SCH_LINE*>( collider );
+                if( collision != COLLIDE_OBJECTS && line )
                 {
-                    colliding.push_back( side );
-                    break;
+                    wxPoint start = line->GetStartPoint(), end = line->GetEndPoint();
+                    if( start.y == end.y )
+                        collision = COLLIDE_H_WIRES;
+                    else
+                        collision = COLLIDE_OBJECTS;
                 }
+                else
+                    collision = COLLIDE_OBJECTS;
             }
+
+            if( collision != COLLIDE_NONE )
+                colliding.push_back( (SIDE_AND_COLL){ side, collision } );
         }
 
         return colliding;
@@ -291,7 +337,43 @@ protected:
 
 
     /**
-     * Function choose_side_for_component
+     * Function choose_side_filtered
+     * Choose a side for the fields, filtered on only one side collision type.
+     * Removes the sides matching the filter from the list.
+     */
+    SIDE_AND_NPINS choose_side_filtered( std::vector<SIDE_AND_NPINS>& aSides,
+            const std::vector<SIDE_AND_COLL>& aCollidingSides, COLLISION aCollision,
+            SIDE_AND_NPINS aLastSelection = (SIDE_AND_NPINS){ SIDE_RIGHT, UINT_MAX } )
+    {
+        SIDE_AND_NPINS sel = aLastSelection;
+
+        std::vector<SIDE_AND_NPINS>::iterator it = aSides.begin();
+        while( it != aSides.end() )
+        {
+            bool collide = false;
+            BOOST_FOREACH( SIDE_AND_COLL collision, aCollidingSides )
+            {
+                if( collision.side == it->name && collision.collision == aCollision )
+                    collide = true;
+            }
+            if( !collide )
+                ++it;
+            else
+            {
+                if( it->pins <= sel.pins )
+                {
+                    sel.pins = it->pins;
+                    sel.name = it->name;
+                }
+                it = aSides.erase( it );
+            }
+        }
+        return sel;
+    }
+
+
+    /**
+     * Function choose_side_for_fields
      * Look where a component's pins are to pick a side to put the fields on
      * @param aAvoidCollisions - if true, pick last the sides where the label will collide
      *      with other items.
@@ -300,51 +382,31 @@ protected:
     {
         std::vector<SIDE_AND_NPINS> sides = get_preferred_sides();
 
-        unsigned min_pins = UINT_MAX;
-        SIDE min_side = SIDE_RIGHT;
+        std::reverse( sides.begin(), sides.end() );
+        SIDE_AND_NPINS side;
 
         if( aAvoidCollisions )
         {
-            // Scan any colliding sides first so they end up overwritten later
-            std::vector<SIDE_AND_NPINS> test_sides( sides );
-            std::vector<SIDE> colliding_sides = get_colliding_sides();
-            sides.clear();
-            BOOST_REVERSE_FOREACH( SIDE_AND_NPINS test_side, test_sides )
-            {
-                bool collide = false;
-                BOOST_FOREACH( SIDE coll_side, colliding_sides )
-                {
-                    if( coll_side == test_side.name )
-                        collide = true;
-                }
-                if( !collide )
-                    sides.insert( sides.begin(), test_side );
-                else
-                {
-                    if( test_side.pins <= min_pins )
-                    {
-                        min_pins = test_side.pins;
-                        min_side = test_side.name;
-                    }
-                }
-            }
-        }
-
-        BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
-        {
-            if( !each_side.pins ) return each_side.name;
+            std::vector<SIDE_AND_COLL> colliding_sides = get_colliding_sides();
+            side = choose_side_filtered( sides, colliding_sides, COLLIDE_OBJECTS );
+            side = choose_side_filtered( sides, colliding_sides, COLLIDE_H_WIRES, side );
         }
 
         BOOST_REVERSE_FOREACH( SIDE_AND_NPINS& each_side, sides )
         {
-            if( each_side.pins <= min_pins )
+            if( !each_side.pins ) return each_side.name;
+        }
+
+        BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
+        {
+            if( each_side.pins <= side.pins )
             {
-                min_pins = each_side.pins;
-                min_side = each_side.name;
+                side.pins = each_side.pins;
+                side.name = each_side.name;
             }
         }
 
-        return min_side;
+        return side.name;
     }
 
 
@@ -414,6 +476,38 @@ protected:
         }
 
         return fbox_pos;
+    }
+
+
+    /**
+     * Function fit_fields_between_wires
+     * Shift a field box up or down a bit to make the fields fit between some wires.
+     * Returns the new position of the field bounding box.
+     */
+    wxPoint fit_fields_between_wires( const EDA_RECT& aBox, SIDE aSide )
+    {
+        // Do not fit under these conditions:
+        //   - There are colliders that are NOT horizontal wires
+        //   - aSide is NOT top or bottom
+        if( aSide != SIDE_TOP && aSide != SIDE_BOTTOM )
+            return aBox.GetPosition();
+        std::vector<SCH_ITEM*> colliders = get_possible_colliders();
+        filter_colliders( colliders, aBox );
+        if( colliders.empty() )
+            return aBox.GetPosition();
+        BOOST_FOREACH( SCH_ITEM* item, colliders )
+        {
+            SCH_LINE* line = dynamic_cast<SCH_LINE*>( item );
+            if( !line )
+                return aBox.GetPosition();
+            wxPoint start = line->GetStartPoint(), end = line->GetEndPoint();
+            if( start.y != end.y )
+                return aBox.GetPosition();
+        }
+
+        wxPoint pos = aBox.GetPosition();
+        pos.y = round_n( pos.y, 50, aSide == SIDE_TOP ) + ( aSide==SIDE_TOP? -100 : 100 );
+        return pos;
     }
 
 
