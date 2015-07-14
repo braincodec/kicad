@@ -22,6 +22,34 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
+/******************************************************************************
+ * Field autoplacer: Tries to find an optimal place for component fields, and
+ * places them there. There are two modes: "auto"-autoplace, and "manual" autoplace.
+ * Auto mode is for when the process is run automatically, like when rotating parts,
+ * and it avoids doing things that would be helpful for the final positioning but
+ * annoying if they happened without permission.
+ * Short description of the process:
+ *
+ * 1. Compute the dimensions of the fields' bounding box    ::ComputeFBoxSize
+ * 2. Determine which side the fields will go on.           ::choose_side_for_fields
+ *      1. Sort the four sides in preference order,
+ *          depending on the component's shape and
+ *          orientation                                     ::get_preferred_sides
+ *      2. If in manual mode, sift out the sides that would
+ *          cause fields to overlap other items             ::get_colliding_sides
+ *      3. If any remaining sides have zero pins there,
+ *          choose the highest zero-pin side according to
+ *          preference order.
+ *      4. If all sides have pins, choose the side with the
+ *          fewest pins.
+ * 3. Compute the position of the fields' bounding box      ::field_box_placement
+ * 4. In manual mode, shift the box vertically if possible
+ *      to fit fields between adjacent wires                ::fit_fields_between_wires
+ * 5. Move all fields to their final positions
+ *      1. Re-justify fields if options allow that          ::justify_field
+ *      2. Round to a 50-mil grid coordinate if desired
+ */
+
 #include <schframe.h>
 #include <hotkeys_basic.h>
 #include <sch_component.h>
