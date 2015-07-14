@@ -80,6 +80,21 @@ template<typename T> T round_n( const T& value, const T& n, bool aRoundUp )
 }
 
 
+/**
+ * Function TO_HJUSTIFY
+ * Converts an integer to a horizontal justification; neg=L zero=C pos=R
+ */
+EDA_TEXT_HJUSTIFY_T TO_HJUSTIFY( int x )
+{
+    if( x < 0 )
+        return GR_TEXT_HJUSTIFY_LEFT;
+    else if( x == 0 )
+        return GR_TEXT_HJUSTIFY_CENTER;
+    else
+        return GR_TEXT_HJUSTIFY_RIGHT;
+}
+
+
 class AUTOPLACER
 {
     SCH_SCREEN* m_screen;
@@ -90,12 +105,19 @@ class AUTOPLACER
     bool m_allow_rejustify, m_align_to_grid;
 
 public:
-    enum SIDE { SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT };
+    struct SIDE
+    {
+        int x; int y;
+        bool operator==( SIDE rhs ) { return x == rhs.x && y == rhs.y; }
+        bool operator!=( SIDE rhs ) { return !( *this == rhs ); }
+    };
+
+    static const SIDE SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT;
     enum COLLISION { COLLIDE_NONE, COLLIDE_OBJECTS, COLLIDE_H_WIRES };
 
     struct SIDE_AND_NPINS
     {
-        SIDE name;
+        SIDE side;
         unsigned pins;
     };
 
@@ -151,9 +173,9 @@ public:
             if( m_allow_rejustify )
                 justify_field( field, field_side );
 
-            wxPoint pos;
-            pos.x = field_horiz_placement( field, field_box );
-            pos.y = field_box.GetY() + (FIELD_V_SPACING * field_idx);
+            wxPoint pos(
+                field_horiz_placement( field, field_box ),
+                field_box.GetY() + (FIELD_V_SPACING * field_idx) );
 
             if( m_align_to_grid )
             {
@@ -306,7 +328,8 @@ protected:
         int orient_angle = orient & 0xff; // enum is a bitmask
 
         // If the component is horizontally mirrored, swap left and right
-        if( ( orient & CMP_MIRROR_X ) && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+        if( ( orient & CMP_MIRROR_X ) &&
+                ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
         {
             std::swap( sides[0], sides[2] );
         }
@@ -344,11 +367,10 @@ protected:
             BOOST_FOREACH( SCH_ITEM* collider, colliders )
             {
                 SCH_LINE* line = dynamic_cast<SCH_LINE*>( collider );
-                if( collision != COLLIDE_OBJECTS && line &&
-                        ( side == SIDE_TOP || side == SIDE_BOTTOM ) )
+                if( line && !side.x )
                 {
                     wxPoint start = line->GetStartPoint(), end = line->GetEndPoint();
-                    if( start.y == end.y )
+                    if( start.y == end.y && collision != COLLIDE_OBJECTS )
                         collision = COLLIDE_H_WIRES;
                     else
                         collision = COLLIDE_OBJECTS;
@@ -372,7 +394,7 @@ protected:
      */
     SIDE_AND_NPINS choose_side_filtered( std::vector<SIDE_AND_NPINS>& aSides,
             const std::vector<SIDE_AND_COLL>& aCollidingSides, COLLISION aCollision,
-            SIDE_AND_NPINS aLastSelection = (SIDE_AND_NPINS){ SIDE_RIGHT, UINT_MAX } )
+            SIDE_AND_NPINS aLastSelection = (SIDE_AND_NPINS){ {1, 0}, UINT_MAX } )
     {
         SIDE_AND_NPINS sel = aLastSelection;
 
@@ -382,7 +404,7 @@ protected:
             bool collide = false;
             BOOST_FOREACH( SIDE_AND_COLL collision, aCollidingSides )
             {
-                if( collision.side == it->name && collision.collision == aCollision )
+                if( collision.side == it->side && collision.collision == aCollision )
                     collide = true;
             }
             if( !collide )
@@ -392,7 +414,7 @@ protected:
                 if( it->pins <= sel.pins )
                 {
                     sel.pins = it->pins;
-                    sel.name = it->name;
+                    sel.side = it->side;
                 }
                 it = aSides.erase( it );
             }
@@ -423,7 +445,7 @@ protected:
 
         BOOST_REVERSE_FOREACH( SIDE_AND_NPINS& each_side, sides )
         {
-            if( !each_side.pins ) return each_side.name;
+            if( !each_side.pins ) return each_side.side;
         }
 
         BOOST_FOREACH( SIDE_AND_NPINS& each_side, sides )
@@ -431,11 +453,11 @@ protected:
             if( each_side.pins <= side.pins )
             {
                 side.pins = each_side.pins;
-                side.name = each_side.name;
+                side.side = each_side.side;
             }
         }
 
-        return side.name;
+        return side.side;
     }
 
 
@@ -448,24 +470,9 @@ protected:
     void justify_field( SCH_FIELD* aField, SIDE aFieldSide )
     {
         // Justification is set twice to allow IsHorizJustifyFlipped() to work correctly.
-        switch( aFieldSide )
-        {
-        case SIDE_LEFT:
-            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_RIGHT );
-            aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
-                    ? GR_TEXT_HJUSTIFY_LEFT : GR_TEXT_HJUSTIFY_RIGHT );
-            break;
-
-        case SIDE_RIGHT:
-            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_LEFT );
-            aField->SetHorizJustify( aField->IsHorizJustifyFlipped()
-                    ? GR_TEXT_HJUSTIFY_RIGHT : GR_TEXT_HJUSTIFY_LEFT );
-            break;
-        case SIDE_TOP:
-        case SIDE_BOTTOM:
-            aField->SetHorizJustify( GR_TEXT_HJUSTIFY_CENTER );
-            break;
-        }
+        aField->SetHorizJustify( TO_HJUSTIFY( -aFieldSide.x ) );
+        aField->SetHorizJustify( TO_HJUSTIFY( -aFieldSide.x *
+                    ( aField->IsHorizJustifyFlipped() ? -1 : 1 ) ) );
         aField->SetVertJustify( GR_TEXT_VJUSTIFY_CENTER );
     }
 
@@ -476,33 +483,16 @@ protected:
      */
     wxPoint field_box_placement( SIDE aFieldSide )
     {
-        wxPoint fbox_pos;
+        wxPoint fbox_center = m_comp_bbox.Centre();
+        int offs_x = ( m_comp_bbox.GetWidth() + m_fbox_size.GetWidth() ) / 2 + HPADDING;
+        int offs_y = ( m_comp_bbox.GetHeight() + m_fbox_size.GetHeight() ) / 2 + VPADDING;
 
-        switch( aFieldSide )
-        {
-        case SIDE_RIGHT:
-            fbox_pos.x = m_comp_bbox.GetRight() + HPADDING;
-            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
-            break;
-        case SIDE_BOTTOM:
-            fbox_pos.x = m_comp_bbox.GetLeft() +
-                (m_comp_bbox.GetWidth() - m_fbox_size.GetWidth()) / 2;
-            fbox_pos.y = m_comp_bbox.GetBottom() + VPADDING;
-            break;
-        case SIDE_LEFT:
-            fbox_pos.x = m_comp_bbox.GetLeft() - m_fbox_size.GetWidth() - HPADDING;
-            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
-            break;
-        case SIDE_TOP:
-            fbox_pos.x = m_comp_bbox.GetLeft() +
-                (m_comp_bbox.GetWidth() - m_fbox_size.GetWidth()) / 2;
-            fbox_pos.y = m_comp_bbox.GetTop() - m_fbox_size.GetHeight() - VPADDING;
-            break;
-        default:
-            wxFAIL_MSG( "Bad SIDE value" );
-            fbox_pos.x = m_comp_bbox.GetRight();
-            fbox_pos.y = m_comp_bbox.Centre().y - m_fbox_size.GetHeight()/2;
-        }
+        fbox_center.x += aFieldSide.x * offs_x;
+        fbox_center.y += aFieldSide.y * offs_y;
+
+        wxPoint fbox_pos(
+                fbox_center.x - m_fbox_size.GetWidth() / 2,
+                fbox_center.y - m_fbox_size.GetHeight() / 2 );
 
         return fbox_pos;
     }
@@ -537,22 +527,11 @@ protected:
             if( start.y != end.y )
                 return aBox.GetPosition();
 
-            if( start.y % 50 )
+            int this_offset = 150 - ( start.y % 100 );
+            if( offset == 0 )
+                offset = this_offset;
+            else if( offset != this_offset )
                 return aBox.GetPosition();
-            else if( start.y % 100 )
-            {
-                if( offset == 150)
-                    return aBox.GetPosition();
-                else
-                    offset = 100;
-            }
-            else
-            {
-                if( offset == 100 )
-                    return aBox.GetPosition();
-                else
-                    offset = 150;
-            }
         }
 
         if( aSide == SIDE_TOP )
@@ -605,6 +584,11 @@ protected:
     }
 
 };
+
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_TOP = { 0, -1 };
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_BOTTOM = { 0, 1 };
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_LEFT = { -1, 0 };
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_RIGHT = { 1, 0 };
 
 
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
