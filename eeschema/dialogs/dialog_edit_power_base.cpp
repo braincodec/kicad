@@ -22,7 +22,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	wxBoxSizer* bSizer71;
 	bSizer71 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_pPreview = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_pPreview = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER );
 	m_pPreview->SetMinSize( wxSize( 150,150 ) );
 	
 	bSizer71->Add( m_pPreview, 1, wxEXPAND | wxALL, 5 );
@@ -82,6 +82,9 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_stdButtons->Realize();
 	
 	bSizer6->Add( m_stdButtons, 0, wxALL|wxEXPAND, 2 );
+	
+	
+	bSizer6->Add( 0, 5, 0, wxEXPAND, 5 );
 	
 	
 	bMainSizer->Add( bSizer6, 1, wxEXPAND, 5 );
