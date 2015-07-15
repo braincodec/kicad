@@ -100,18 +100,13 @@ class AUTOPLACER
     SCH_SCREEN* m_screen;
     SCH_COMPONENT* m_component;
     std::vector<SCH_FIELD*> m_fields;
+    std::vector<SCH_ITEM*> m_colliders;
     EDA_RECT m_comp_bbox;
     wxSize m_fbox_size;
     bool m_allow_rejustify, m_align_to_grid;
 
 public:
-    struct SIDE
-    {
-        int x; int y;
-        bool operator==( SIDE rhs ) { return x == rhs.x && y == rhs.y; }
-        bool operator!=( SIDE rhs ) { return !( *this == rhs ); }
-    };
-
+    typedef wxPoint SIDE;
     static const SIDE SIDE_TOP, SIDE_BOTTOM, SIDE_LEFT, SIDE_RIGHT;
     enum COLLISION { COLLIDE_NONE, COLLIDE_OBJECTS, COLLIDE_H_WIRES };
 
@@ -137,6 +132,9 @@ public:
 
         m_comp_bbox = m_component->GetBodyBoundingBox();
         m_fbox_size = ComputeFBoxSize();
+
+        if( aScreen )
+            get_possible_colliders( m_colliders );
     }
 
 
@@ -251,13 +249,12 @@ protected:
 
     /**
      * Function get_possible_colliders
-     * Return a list of all drawing items that *may* collide with the fields. That is,
+     * Populate a list of all drawing items that *may* collide with the fields. That is,
      * all drawing items, including other fields, that are not the current component or
      * its own fields.
      */
-    std::vector<SCH_ITEM*> get_possible_colliders()
+    void get_possible_colliders( std::vector<SCH_ITEM*>& aItems )
     {
-        std::vector<SCH_ITEM*> items;
         wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
         for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
         {
@@ -268,35 +265,33 @@ protected:
                 std::vector<SCH_FIELD*> fields;
                 comp->GetFields( fields, /* aVisibleOnly */ true );
                 BOOST_FOREACH( SCH_FIELD* field, fields )
-                    items.push_back( field );
+                    aItems.push_back( field );
             }
-            items.push_back( item );
+            aItems.push_back( item );
         }
-        return items;
     }
 
 
     /**
-     * Function filter_colliders
+     * Function filtered_colliders
      * Filter a list of possible colliders to include only those that actually collide
-     * with a given rectangle. Vector is modified in-place.
+     * with a given rectangle. Returns the new vector.
      */
-    void filter_colliders( std::vector<SCH_ITEM*>& aColliders, const EDA_RECT& aRect )
+    std::vector<SCH_ITEM*> filtered_colliders( const EDA_RECT& aRect )
     {
-        std::vector<SCH_ITEM*>::iterator it = aColliders.begin();
-        while( it != aColliders.end() )
+        std::vector<SCH_ITEM*> filtered;
+        BOOST_FOREACH( SCH_ITEM* item, m_colliders )
         {
             EDA_RECT item_box;
-            if( SCH_COMPONENT* item_comp = dynamic_cast<SCH_COMPONENT*>( *it ) )
+            if( SCH_COMPONENT* item_comp = dynamic_cast<SCH_COMPONENT*>( item ) )
                 item_box = item_comp->GetBodyBoundingBox();
             else
-                item_box = (*it)->GetBoundingBox();
+                item_box = item->GetBoundingBox();
 
             if( item_box.Intersects( aRect ) )
-                ++it;
-            else
-                it = aColliders.erase( it );
+                filtered.push_back( item );
         }
+        return filtered;
     }
 
 
@@ -345,17 +340,14 @@ protected:
         SIDE sides_init[] = { SIDE_RIGHT, SIDE_TOP, SIDE_LEFT, SIDE_BOTTOM };
         std::vector<SIDE> sides( sides_init, sides_init + DIM( sides_init ) );
         std::vector<SIDE_AND_COLL> colliding;
-        std::vector<SCH_ITEM*> possible_colliders = get_possible_colliders();
 
         // Iterate over all sides and find the ones that collide
         BOOST_FOREACH( SIDE side, sides )
         {
-            wxPoint box_pos = field_box_placement( side );
-            EDA_RECT box( box_pos, m_fbox_size );
-            std::vector<SCH_ITEM*> colliders( possible_colliders );
-            filter_colliders( colliders, box );
+            EDA_RECT box( field_box_placement( side ), m_fbox_size );
+
             COLLISION collision = COLLIDE_NONE;
-            BOOST_FOREACH( SCH_ITEM* collider, colliders )
+            BOOST_FOREACH( SCH_ITEM* collider, filtered_colliders( box ) )
             {
                 SCH_LINE* line = dynamic_cast<SCH_LINE*>( collider );
                 if( line && !side.x )
@@ -385,7 +377,7 @@ protected:
      */
     SIDE_AND_NPINS choose_side_filtered( std::vector<SIDE_AND_NPINS>& aSides,
             const std::vector<SIDE_AND_COLL>& aCollidingSides, COLLISION aCollision,
-            SIDE_AND_NPINS aLastSelection = (SIDE_AND_NPINS){ {1, 0}, UINT_MAX } )
+            SIDE_AND_NPINS aLastSelection)
     {
         SIDE_AND_NPINS sel = aLastSelection;
 
@@ -425,12 +417,12 @@ protected:
         std::vector<SIDE_AND_NPINS> sides = get_preferred_sides();
 
         std::reverse( sides.begin(), sides.end() );
-        SIDE_AND_NPINS side;
+        SIDE_AND_NPINS side = { wxPoint( 1, 0 ), UINT_MAX };
 
         if( aAvoidCollisions )
         {
             std::vector<SIDE_AND_COLL> colliding_sides = get_colliding_sides();
-            side = choose_side_filtered( sides, colliding_sides, COLLIDE_OBJECTS );
+            side = choose_side_filtered( sides, colliding_sides, COLLIDE_OBJECTS, side );
             side = choose_side_filtered( sides, colliding_sides, COLLIDE_H_WIRES, side );
         }
 
@@ -496,13 +488,10 @@ protected:
      */
     wxPoint fit_fields_between_wires( const EDA_RECT& aBox, SIDE aSide )
     {
-        // Do not fit under these conditions:
-        //   - There are colliders that are NOT horizontal wires
-        //   - aSide is NOT top or bottom
         if( aSide != SIDE_TOP && aSide != SIDE_BOTTOM )
             return aBox.GetPosition();
-        std::vector<SCH_ITEM*> colliders = get_possible_colliders();
-        filter_colliders( colliders, aBox );
+
+        std::vector<SCH_ITEM*> colliders = filtered_colliders( aBox );
         if( colliders.empty() )
             return aBox.GetPosition();
 
@@ -546,14 +535,13 @@ protected:
      */
     int field_horiz_placement( SCH_FIELD *aField, const EDA_RECT &aFieldBox )
     {
-        EDA_TEXT_HJUSTIFY_T field_hjust = aField->GetHorizJustify();
-        bool flipped = aField->IsHorizJustifyFlipped();
-        if( flipped && field_hjust == GR_TEXT_HJUSTIFY_LEFT )
-            field_hjust = GR_TEXT_HJUSTIFY_RIGHT;
-        else if( flipped && field_hjust == GR_TEXT_HJUSTIFY_RIGHT )
-            field_hjust = GR_TEXT_HJUSTIFY_LEFT;
-
+        int field_hjust;
         int field_xcoord;
+
+        if( aField->IsHorizJustifyFlipped() )
+            field_hjust = -aField->GetHorizJustify();
+        else
+            field_hjust = aField->GetHorizJustify();
 
         switch( field_hjust )
         {
@@ -576,10 +564,10 @@ protected:
 
 };
 
-const AUTOPLACER::SIDE AUTOPLACER::SIDE_TOP = { 0, -1 };
-const AUTOPLACER::SIDE AUTOPLACER::SIDE_BOTTOM = { 0, 1 };
-const AUTOPLACER::SIDE AUTOPLACER::SIDE_LEFT = { -1, 0 };
-const AUTOPLACER::SIDE AUTOPLACER::SIDE_RIGHT = { 1, 0 };
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_TOP( 0, -1 );
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_BOTTOM( 0, 1 );
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_LEFT( -1, 0 );
+const AUTOPLACER::SIDE AUTOPLACER::SIDE_RIGHT( 1, 0 );
 
 
 void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
@@ -601,15 +589,14 @@ void SCH_EDIT_FRAME::OnAutoplaceFields( wxCommandEvent& aEvent )
             return;
     }
 
-    if( item->Type() != SCH_COMPONENT_T )
+    SCH_COMPONENT* component = dynamic_cast<SCH_COMPONENT*>( item );
+    if( !component )
         return;
 
-    if( !item->IsNew() )
-        SaveCopyInUndoList( item, UR_CHANGED );
+    if( !component->IsNew() )
+        SaveCopyInUndoList( component, UR_CHANGED );
 
-    SCH_COMPONENT& component = dynamic_cast<SCH_COMPONENT&>( *item );
-
-    component.AutoplaceFields( screen, /* aManual */ true );
+    component->AutoplaceFields( screen, /* aManual */ true );
 
     GetCanvas()->Refresh();
     OnModify();
