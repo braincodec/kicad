@@ -46,10 +46,7 @@
 
 class SCH_EDIT_FRAME;
 
-static const wxString gsStyleName( _( "FLAT" ) );
 static const wxString gsNameAutomatic( _( "::AUTOMATIC" ) );
-
-class wxDataViewItem;
 
 /**
  * Subclass of wxClientData that holds any POD.
