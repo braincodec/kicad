@@ -255,7 +255,7 @@ protected:
      */
     void get_possible_colliders( std::vector<SCH_ITEM*>& aItems )
     {
-        wxASSERT_MSG( m_screen, "get_colliding_sides() with null m_screen" );
+        wxASSERT_MSG( m_screen, "get_possible_colliders() with null m_screen" );
         for( SCH_ITEM* item = m_screen->GetDrawItems(); item; item = item->Next() )
         {
             if( SCH_COMPONENT* comp = dynamic_cast<SCH_COMPONENT*>( item ) )
