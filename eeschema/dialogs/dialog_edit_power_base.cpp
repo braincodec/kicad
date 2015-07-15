@@ -16,84 +16,63 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	wxBoxSizer* bMainSizer;
 	bMainSizer = new wxBoxSizer( wxVERTICAL );
 	
-	m_stInfo = new wxStaticText( this, wxID_ANY, _("Select a premade symbol on the left, or choose a net and style:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_stInfo->Wrap( -1 );
-	bMainSizer->Add( m_stInfo, 0, wxALL, 5 );
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer( wxVERTICAL );
 	
-	wxBoxSizer* bSizer5;
-	bSizer5 = new wxBoxSizer( wxVERTICAL );
+	wxBoxSizer* bSizer71;
+	bSizer71 = new wxBoxSizer( wxHORIZONTAL );
 	
-	wxBoxSizer* bSizer7;
-	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
+	m_pPreview = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_pPreview->SetMinSize( wxSize( 150,150 ) );
 	
-	wxBoxSizer* bSizer8;
-	bSizer8 = new wxBoxSizer( wxVERTICAL );
+	bSizer71->Add( m_pPreview, 1, wxEXPAND | wxALL, 5 );
 	
-	m_stLib = new wxStaticText( this, wxID_ANY, _("Library of symbols:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_stLib->Wrap( -1 );
-	bSizer8->Add( m_stLib, 0, wxALL, 5 );
+	wxFlexGridSizer* fgSizer2;
+	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer2->AddGrowableCol( 1 );
+	fgSizer2->SetFlexibleDirection( wxBOTH );
+	fgSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	m_dvtLib = new wxDataViewTreeCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_VARIABLE_LINE_HEIGHT );
-	bSizer8->Add( m_dvtLib, 1, wxALL|wxEXPAND, 5 );
+	m_staticText7 = new wxStaticText( this, wxID_ANY, _("Style:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7->Wrap( -1 );
+	fgSizer2->Add( m_staticText7, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	m_cboStyle = new wxBitmapComboBox( this, wxID_ANY, _("Combo!"), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY ); 
+	fgSizer2->Add( m_cboStyle, 1, wxALL|wxEXPAND, 5 );
+	
+	m_staticText8 = new wxStaticText( this, wxID_ANY, _("Text:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText8->Wrap( -1 );
+	fgSizer2->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	m_textText = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer2->Add( m_textText, 1, wxALL|wxEXPAND, 5 );
 	
 	
-	bSizer7->Add( bSizer8, 1, wxEXPAND, 5 );
+	fgSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	wxBoxSizer* bSizer9;
-	bSizer9 = new wxBoxSizer( wxVERTICAL );
+	m_cbShowText = new wxCheckBox( this, wxID_ANY, _("Show Text"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer2->Add( m_cbShowText, 1, wxALL, 5 );
 	
-	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 0 );
-	fgSizer1->AddGrowableCol( 1 );
-	fgSizer1->SetFlexibleDirection( wxBOTH );
-	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	
+	bSizer71->Add( fgSizer2, 1, wxEXPAND, 5 );
+	
+	
+	bSizer6->Add( bSizer71, 1, wxEXPAND, 5 );
+	
+	wxBoxSizer* bSizer10;
+	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
 	
 	m_stNet = new wxStaticText( this, wxID_ANY, _("Net:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_stNet->Wrap( -1 );
-	fgSizer1->Add( m_stNet, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 5 );
+	bSizer10->Add( m_stNet, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_textNet = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	m_textNet->SetValidator( wxTextValidator( wxFILTER_EXCLUDE_CHAR_LIST, &m_labelText ) );
+	m_cboNet = new wxBitmapComboBox( this, wxID_ANY, _("Combo!"), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	m_cboNet->SetValidator( wxTextValidator( wxFILTER_EXCLUDE_CHAR_LIST, &m_valcboNet ) );
 	
-	fgSizer1->Add( m_textNet, 1, wxALL|wxEXPAND, 5 );
-	
-	m_stLabelText = new wxStaticText( this, wxID_ANY, _("Text:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_stLabelText->Wrap( -1 );
-	fgSizer1->Add( m_stLabelText, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 5 );
-	
-	m_textLabelText = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer1->Add( m_textLabelText, 1, wxALL|wxEXPAND, 5 );
+	bSizer10->Add( m_cboNet, 1, wxALL, 5 );
 	
 	
-	bSizer9->Add( fgSizer1, 0, wxEXPAND, 5 );
-	
-	m_cbHideLabel = new wxCheckBox( this, wxID_ANY, _("Hide label"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( m_cbHideLabel, 0, wxALL, 5 );
-	
-	m_stStyles = new wxStaticText( this, wxID_ANY, _("Styles:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_stStyles->Wrap( -1 );
-	bSizer9->Add( m_stStyles, 0, wxALL, 5 );
-	
-	m_dvtStyles = new wxDataViewTreeCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_VARIABLE_LINE_HEIGHT );
-	bSizer9->Add( m_dvtStyles, 1, wxALL|wxEXPAND, 5 );
-	
-	m_stPreview = new wxStaticText( this, wxID_ANY, _("Preview:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_stPreview->Wrap( -1 );
-	bSizer9->Add( m_stPreview, 0, wxALL, 5 );
-	
-	m_pPreview = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER );
-	m_pPreview->SetMinSize( wxSize( 150,150 ) );
-	
-	bSizer9->Add( m_pPreview, 0, wxEXPAND | wxALL, 5 );
-	
-	
-	bSizer7->Add( bSizer9, 1, wxEXPAND, 5 );
-	
-	
-	bSizer5->Add( bSizer7, 1, wxEXPAND, 5 );
-	
-	
-	bMainSizer->Add( bSizer5, 1, wxEXPAND, 5 );
+	bSizer6->Add( bSizer10, 0, wxEXPAND, 5 );
 	
 	m_stdButtons = new wxStdDialogButtonSizer();
 	m_stdButtonsOK = new wxButton( this, wxID_OK );
@@ -102,22 +81,22 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	m_stdButtons->AddButton( m_stdButtonsCancel );
 	m_stdButtons->Realize();
 	
-	bMainSizer->Add( m_stdButtons, 0, wxALL|wxEXPAND, 2 );
+	bSizer6->Add( m_stdButtons, 0, wxALL|wxEXPAND, 2 );
 	
 	
-	bMainSizer->Add( 0, 5, 0, wxEXPAND, 5 );
+	bMainSizer->Add( bSizer6, 1, wxEXPAND, 5 );
 	
 	
 	this->SetSizer( bMainSizer );
 	this->Layout();
 	
 	// Connect Events
-	m_dvtLib->Connect( wxEVT_CHAR, wxKeyEventHandler( DIALOG_EDIT_POWER_BASE::OnLibKey ), NULL, this );
-	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
-	m_textNet->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	m_textLabelText->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	this->Connect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_pPreview->Connect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_EDIT_POWER_BASE::OnPreviewRepaint ), NULL, this );
+	m_cboStyle->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCombo ), NULL, this );
+	m_textText->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_cbShowText->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_cboNet->Connect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCombo ), NULL, this );
+	m_cboNet->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_stdButtonsCancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCancelClick ), NULL, this );
 	m_stdButtonsOK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnOkClick ), NULL, this );
 }
@@ -125,12 +104,12 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 DIALOG_EDIT_POWER_BASE::~DIALOG_EDIT_POWER_BASE()
 {
 	// Disconnect Events
-	m_dvtLib->Disconnect( wxEVT_CHAR, wxKeyEventHandler( DIALOG_EDIT_POWER_BASE::OnLibKey ), NULL, this );
-	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
-	m_textNet->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	m_textLabelText->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
-	this->Disconnect( wxID_ANY, wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( DIALOG_EDIT_POWER_BASE::OnTreeChange ) );
 	m_pPreview->Disconnect( wxEVT_PAINT, wxPaintEventHandler( DIALOG_EDIT_POWER_BASE::OnPreviewRepaint ), NULL, this );
+	m_cboStyle->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCombo ), NULL, this );
+	m_textText->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_cbShowText->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
+	m_cboNet->Disconnect( wxEVT_COMMAND_COMBOBOX_SELECTED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCombo ), NULL, this );
+	m_cboNet->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnDataChanged ), NULL, this );
 	m_stdButtonsCancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnCancelClick ), NULL, this );
 	m_stdButtonsOK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DIALOG_EDIT_POWER_BASE::OnOkClick ), NULL, this );
 	
