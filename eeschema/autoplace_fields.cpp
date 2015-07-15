@@ -86,12 +86,7 @@ template<typename T> T round_n( const T& value, const T& n, bool aRoundUp )
  */
 EDA_TEXT_HJUSTIFY_T TO_HJUSTIFY( int x )
 {
-    if( x < 0 )
-        return GR_TEXT_HJUSTIFY_LEFT;
-    else if( x == 0 )
-        return GR_TEXT_HJUSTIFY_CENTER;
-    else
-        return GR_TEXT_HJUSTIFY_RIGHT;
+    return static_cast<EDA_TEXT_HJUSTIFY_T>( x );
 }
 
 
