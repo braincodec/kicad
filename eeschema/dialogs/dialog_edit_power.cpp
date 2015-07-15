@@ -148,14 +148,8 @@ static void heur_choose_style( wxString aNet, SCH_POWER* aItem )
     else if( aNet.Find( _( "GND" ) ) != wxNOT_FOUND )
         aItem->SetPartName( _( "GND" ) );
 
-    else if( aNet == _( "VSS" ) || aNet == _( "VEE" ) )
-        aItem->SetPartName( powerstyle + _( "_DOWN" ) );
-
-    else if( aNet.StartsWith( _( "-" ) ) || aNet.EndsWith( _( "-" ) ) )
-        aItem->SetPartName( powerstyle + _( "_DOWN" ) );
-
     else
-        aItem->SetPartName( powerstyle + _( "_UP" ) );
+        aItem->SetPartName( powerstyle );
 }
 
 

@@ -251,7 +251,7 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
             part = PART_SPTR( LIB_PART::GetDummy() );
 
         part->Draw( aPanel, aDC, m_Pos + aOffset - pin_position, /* unit */ 1, /* convert */ 1,
-                aDrawMode, aColor, m_transform, true, false, false, NULL );
+                aDrawMode, aColor, m_transform, false, false, false, NULL );
     }
 
     const LIB_FIELD* field = GetField();
@@ -470,10 +470,7 @@ void SCH_POWER::SetText( const wxString& aText )
 
     lib->GetEntryNames( names );
     BOOST_FOREACH( wxString& name, names )
-    {
-        if( name.EndsWith( wxT( "_UP" ) ) )
-            aVec.push_back( name.SubString( 0, name.size() - 4 ) );
-    }
+        aVec.push_back( name );
 }
 
 

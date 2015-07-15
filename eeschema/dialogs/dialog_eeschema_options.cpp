@@ -169,7 +169,7 @@ void DIALOG_EESCHEMA_OPTIONS::SetPowerStyles( const std::vector<wxString>& aStyl
 
     for( int ii = 0; ii < aStyles.size(); ++ii )
     {
-        wxBitmap bmp = SCH_POWER::RenderStylePreview( aStyles[ii] + wxT( "_UP" ), 32, 32 );
+        wxBitmap bmp = SCH_POWER::RenderStylePreview( aStyles[ii], 32, 32 );
         m_bcomboPowerStyle->Append( aStyles[ii], bmp );
 
         if( aStyles[ii] == aSelection )
