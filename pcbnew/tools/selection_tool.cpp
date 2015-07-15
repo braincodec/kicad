@@ -226,7 +226,6 @@ int SELECTION_TOOL::Main( const TOOL_EVENT& aEvent )
 
         else if( evt->IsAction( &COMMON_ACTIONS::selectionCursor ) )
         {
-            // GetMousePosition() is used, as it is independent of snapping settings
             selectCursor( true );
         }
 
@@ -1166,8 +1165,6 @@ void SELECTION_TOOL::guessSelectionCandidates( GENERAL_COLLECTOR& aCollector ) c
 
                     if( item->Type() == PCB_MODULE_T && areaRatio < textToFootprintMinRatio )
                     {
-                        //printf("rejectModuleN\n");
-
                         rejected.insert( item );
                     }
 
@@ -1180,7 +1177,6 @@ void SELECTION_TOOL::guessSelectionCandidates( GENERAL_COLLECTOR& aCollector ) c
                         case PCB_MODULE_T:
                             if( areaRatio > textToFeatureMinRatio )
                             {
-                                //printf("t after moduleRejected\n");
                                 rejected.insert( txt );
                             }
                             break;
@@ -1199,21 +1195,21 @@ void SELECTION_TOOL::guessSelectionCandidates( GENERAL_COLLECTOR& aCollector ) c
         if( calcRatio( minArea, maxArea ) <= footprintAreaRatio )
         {
             for( int i = 0; i < aCollector.GetCount(); ++i )
+            {
                 if( MODULE* mod = dyn_cast<MODULE*>( aCollector[i] ) )
                 {
                     double normalizedArea = calcRatio( calcArea(mod), maxArea );
 
                     if( normalizedArea > footprintAreaRatio )
                     {
-                        //printf("rejectModule1\n");
-
                         rejected.insert( mod );
                     }
                 }
+            }
         }
     }
 
-    if( aCollector.CountType ( PCB_PAD_T ) > 0 )
+    if( aCollector.CountType( PCB_PAD_T ) > 0 )
     {
         for( int i = 0; i < aCollector.GetCount(); ++i )
         {
@@ -1310,18 +1306,20 @@ void SELECTION_TOOL::guessSelectionCandidates( GENERAL_COLLECTOR& aCollector ) c
         }
     }
 
-    BOOST_FOREACH( BOARD_ITEM* item, rejected )
+    if( (unsigned) aCollector.GetCount() > rejected.size() )  // do not remove everything
     {
-        aCollector.Remove( item );
+        BOOST_FOREACH( BOARD_ITEM* item, rejected )
+        {
+            aCollector.Remove( item );
+        }
     }
-
-    //printf("Post-selection: %d\n", aCollector.GetCount() );
 }
 
 
 bool SELECTION_TOOL::SanitizeSelection()
 {
     std::set<BOARD_ITEM*> rejected;
+    std::set<BOARD_ITEM*> added;
 
     if( !m_editModules )
     {
@@ -1331,21 +1329,31 @@ bool SELECTION_TOOL::SanitizeSelection()
 
             if( item->Type() == PCB_PAD_T )
             {
-                MODULE* mod = static_cast <MODULE*>( item->GetParent() );
+                MODULE* mod = static_cast<MODULE*>( item->GetParent() );
 
                 // case 1: module (or its pads) are locked
                 if( mod && ( mod->PadsLocked() || mod->IsLocked() ) )
+                {
                     rejected.insert( item );
+
+                    if( !mod->IsLocked() && !mod->IsSelected() )
+                        added.insert( mod );
+                }
 
                 // case 2: multi-item selection contains both the module and its pads - remove the pads
                 if( mod && m_selection.items.FindItem( mod ) >= 0 )
+                {
                     rejected.insert( item );
+                }
             }
         }
     }
 
     BOOST_FOREACH( BOARD_ITEM* item, rejected )
         unselect( item );
+
+    BOOST_FOREACH( BOARD_ITEM* item, added )
+        select( item );
 
     return true;
 }

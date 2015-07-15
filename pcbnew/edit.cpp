@@ -202,8 +202,6 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
             if( !editor )
             {
                 editor = (FOOTPRINT_EDIT_FRAME*) Kiway().Player( FRAME_PCB_MODULE_EDITOR, true );
-
-                editor->Show( true );
                 editor->Zoom_Automatique( false );
             }
             else
@@ -230,8 +228,6 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
             if( !viewer )
             {
                 viewer = (FOOTPRINT_VIEWER_FRAME*) Kiway().Player( FRAME_PCB_MODULE_VIEWER, true );
-
-                viewer->Show( true );
                 viewer->Zoom_Automatique( false );
             }
             else
@@ -649,7 +645,7 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
         {
             // Remove filled areas in zone
             ZONE_CONTAINER* zone_container = GetBoard()->GetArea( ii );
-            zone_container->ClearFilledPolysList();
+            zone_container->UnFill();
         }
 
         SetCurItem( NULL );        // CurItem might be deleted by this command, clear the pointer
@@ -871,10 +867,6 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
             editor->Load_Module_From_BOARD( (MODULE*)GetCurItem() );
             SetCurItem( NULL );     // the current module could be deleted by
-
-            editor->Show( true );
-
-            editor->Raise();        // Iconize( false );
         }
         m_canvas->MoveCursorToCrossHair();
         break;
