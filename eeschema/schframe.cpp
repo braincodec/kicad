@@ -959,15 +959,19 @@ void SCH_EDIT_FRAME::OnLoadProject( wxCommandEvent& event )
 
 void SCH_EDIT_FRAME::OnOpenPcbnew( wxCommandEvent& event )
 {
-    wxFileName fn = Prj().AbsolutePath( g_RootSheet->GetScreen()->GetFileName() );
+    wxFileName kicad_board = Prj().AbsolutePath( g_RootSheet->GetScreen()->GetFileName() );
 
-    if( fn.IsOk() )
+    if( kicad_board.IsOk() )
     {
-        fn.SetExt( PcbFileExtension );
+        kicad_board.SetExt( PcbFileExtension );
+        wxFileName legacy_board( kicad_board );
+        legacy_board.SetExt( LegacyPcbFileExtension );
+        wxFileName& boardfn = ( !legacy_board.FileExists() || kicad_board.FileExists() ) ?
+                                    kicad_board : legacy_board;
 
         if( Kiface().IsSingle() )
         {
-            wxString filename = QuoteFullPath( fn );
+            wxString filename = QuoteFullPath( boardfn );
             ExecuteFile( this, PCBNEW_EXE, filename );
         }
         else
@@ -979,7 +983,7 @@ void SCH_EDIT_FRAME::OnOpenPcbnew( wxCommandEvent& event )
             // if the frame is not visible, the board is not yet loaded
              if( !frame->IsVisible() )
             {
-                frame->OpenProjectFiles( std::vector<wxString>( 1, fn.GetFullPath() ) );
+                frame->OpenProjectFiles( std::vector<wxString>( 1, boardfn.GetFullPath() ) );
                 frame->Show( true );
             }
 
@@ -1005,9 +1009,14 @@ void SCH_EDIT_FRAME::OnOpenPcbModuleEditor( wxCommandEvent& event )
 
         if( fn.IsOk() )
         {
-            KIWAY_PLAYER* player = Kiway().Player( FRAME_PCB_MODULE_EDITOR );
-            player->Show( true );
-            player->Raise();
+            KIWAY_PLAYER* fp_editor = Kiway().Player( FRAME_PCB_MODULE_EDITOR );
+
+            // On Windows, Raise() does not bring the window on screen, when iconized
+            if( fp_editor->IsIconized() )
+                fp_editor->Iconize( false );
+
+            fp_editor->Show( true );
+            fp_editor->Raise();
         }
     }
 }
@@ -1108,6 +1117,10 @@ void SCH_EDIT_FRAME::OnOpenLibraryEditor( wxCommandEvent& event )
         libeditFrame = (LIB_EDIT_FRAME*) Kiway().Player( FRAME_SCH_LIB_EDITOR, true );
         libeditFrame->Show( true );
     }
+
+    // On Windows, Raise() does not bring the window on screen, when iconized
+    if( libeditFrame->IsIconized() )
+        libeditFrame->Iconize( false );
 
     libeditFrame->Raise();
 
