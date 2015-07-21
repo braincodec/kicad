@@ -393,6 +393,12 @@ public:
      */
     bool IsVisible() const { return ( m_attributes & PIN_INVISIBLE ) == 0; }
 
+    /**
+     * Return whether this pin forms an implicit power connection: i.e., is hidden
+     * and of type POWER_IN.
+     */
+    bool IsPowerConnection() const { return !IsVisible() && GetType() == PIN_POWER_IN; }
+
     int GetPenSize() const;
 
     /**
