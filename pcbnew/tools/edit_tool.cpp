@@ -113,6 +113,9 @@ bool EDIT_TOOL::invokeInlineRouter()
     TRACK* track = uniqueSelected<TRACK>();
     VIA* via = uniqueSelected<VIA>();
 
+    if( isUndoInhibited() )
+        return false;
+
     if( track || via )
     {
         ROUTER_TOOL* theRouter = static_cast<ROUTER_TOOL*>( m_toolMgr->FindTool( "pcbnew.InteractiveRouter" ) );
@@ -155,8 +158,6 @@ int EDIT_TOOL::Main( const TOOL_EVENT& aEvent )
     m_updateFlag = KIGFX::VIEW_ITEM::GEOMETRY;
 
     controls->ShowCursor( true );
-    //controls->SetSnapping( true );
-    controls->ForceCursorPosition( false );
 
     // cumulative translation
     wxPoint totalMovement( 0, 0 );
@@ -337,9 +338,7 @@ int EDIT_TOOL::Main( const TOOL_EVENT& aEvent )
     ratsnest->Recalculate();
 
     controls->ShowCursor( false );
-    //controls->SetSnapping( false );
     controls->SetAutoPan( false );
-    controls->ForceCursorPosition( false );
 
     return 0;
 }
@@ -380,6 +379,7 @@ int EDIT_TOOL::Properties( const TOOL_EVENT& aEvent )
         // Display properties dialog
         BOARD_ITEM* item = selection.Item<BOARD_ITEM>( 0 );
 
+        // Store the head of the undo list to compare if anything has changed
         std::vector<PICKED_ITEMS_LIST*>& undoList = editFrame->GetScreen()->m_UndoList.m_CommandsList;
 
         // Some of properties dialogs alter pointers, so we should deselect them
@@ -753,7 +753,7 @@ int EDIT_TOOL::Duplicate( const TOOL_EVENT& aEvent )
             // so zones are not duplicated
             if( item->Type() != PCB_ZONE_AREA_T )
 #endif
-                new_item = editFrame->GetBoard()->DuplicateAndAddItem( item, increment );
+            new_item = editFrame->GetBoard()->DuplicateAndAddItem( item, increment );
         }
 
         if( new_item )

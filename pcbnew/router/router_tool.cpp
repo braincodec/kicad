@@ -211,9 +211,8 @@ public:
 
         AppendSeparator();
 
-        CONTEXT_TRACK_WIDTH_MENU* trackMenu = new CONTEXT_TRACK_WIDTH_MENU;
-        trackMenu->SetBoard( aBoard );
-        Add( trackMenu, _( "Select Track/Via Width" ) );
+        m_widthMenu.SetBoard( aBoard );
+        Add( &m_widthMenu, _( "Select Track/Via Width" ) );
 
         Add( ACT_CustomTrackWidth );
 
@@ -223,6 +222,9 @@ public:
         AppendSeparator();
         Add( PNS_TOOL_BASE::ACT_RouterOptions );
     }
+
+private:
+    CONTEXT_TRACK_WIDTH_MENU m_widthMenu;
 };
 
 
@@ -663,9 +665,6 @@ int ROUTER_TOOL::mainLoop( PNS_ROUTER_MODE aMode )
         handleCommonEvents( *evt );
     }
 
-    // Restore the default settings
-    m_ctls->SetAutoPan( false );
-    m_ctls->ShowCursor( false );
     frame->SetToolID( ID_NO_TOOL_SELECTED, wxCURSOR_DEFAULT, wxEmptyString );
 
     // Store routing settings till the next invocation
@@ -797,7 +796,6 @@ int ROUTER_TOOL::InlineDrag( const TOOL_EVENT& aEvent )
     }
 
     ctls->SetAutoPan( false );
-    ctls->ForceCursorPosition( false );
     ctls->ShowCursor( false );
 
     return 0;
