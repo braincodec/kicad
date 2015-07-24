@@ -99,6 +99,7 @@ class AUTOPLACER
     EDA_RECT m_comp_bbox;
     wxSize m_fbox_size;
     bool m_allow_rejustify, m_align_to_grid;
+    bool m_power_symbol;
 
 public:
     typedef wxPoint SIDE;
@@ -128,6 +129,8 @@ public:
         m_comp_bbox = m_component->GetBodyBoundingBox();
         m_fbox_size = ComputeFBoxSize();
 
+        m_power_symbol = ! m_component->IsInNetlist();
+
         if( aScreen )
             get_possible_colliders( m_colliders );
     }
@@ -140,10 +143,6 @@ public:
      */
     void DoAutoplace( bool aManual )
     {
-        // Do not autoplace on power symbols
-        if( ! m_component->IsInNetlist() )
-            return;
-
         SIDE field_side = choose_side_for_fields( aManual );
         wxPoint fbox_pos = field_box_placement( field_side );
         EDA_RECT field_box( fbox_pos, m_fbox_size );
@@ -307,19 +306,46 @@ protected:
 
         int orient = m_component->GetOrientation();
         int orient_angle = orient & 0xff; // enum is a bitmask
+        bool h_mirrored = ( ( orient & CMP_MIRROR_X )
+                && ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) );
+        double w = double( m_comp_bbox.GetWidth() );
+        double h = double( m_comp_bbox.GetHeight() );
 
-        // If the component is horizontally mirrored, swap left and right
-        if( ( orient & CMP_MIRROR_X ) &&
-                ( orient_angle == CMP_ORIENT_0 || orient_angle == CMP_ORIENT_180 ) )
+        // The preferred-sides heuristics are a bit magical. These were determined mostly
+        // by trial and error.
+
+        if( m_power_symbol )
         {
-            std::swap( sides[0], sides[2] );
+            // For power symbols, we generally want the label at the top first.
+            switch( orient_angle )
+            {
+            case CMP_ORIENT_0:
+                std::swap( sides[0], sides[1] );
+                break;
+            case CMP_ORIENT_90:
+                std::swap( sides[0], sides[2] );
+                break;
+            case CMP_ORIENT_180:
+                std::swap( sides[0], sides[3] );
+                break;
+            case CMP_ORIENT_270:
+                break;
+            }
         }
-
-        // If the component is very long, swap H and V
-        if( double( m_comp_bbox.GetWidth() ) / double( m_comp_bbox.GetHeight() ) > 3.0 )
+        else
         {
-            std::swap( sides[0], sides[1] );
-            std::swap( sides[1], sides[3] );
+            // If the component is horizontally mirrored, swap left and right
+            if( h_mirrored )
+            {
+                std::swap( sides[0], sides[2] );
+            }
+
+            // If the component is very long or is a power symbol, swap H and V
+            if( w/h > 3.0 )
+            {
+                std::swap( sides[0], sides[1] );
+                std::swap( sides[1], sides[3] );
+            }
         }
 
         return sides;
