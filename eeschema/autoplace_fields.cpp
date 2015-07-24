@@ -238,7 +238,7 @@ protected:
 
         BOOST_FOREACH( LIB_PIN* each_pin, pins )
         {
-            if( !each_pin->IsVisible() )
+            if( !each_pin->IsVisible() && !m_power_symbol )
                 continue;
             if( get_pin_side( each_pin ) == aSide )
                 ++pin_count;
@@ -328,14 +328,21 @@ protected:
             {
             case CMP_ORIENT_0:
                 std::swap( sides[0], sides[1] );
+                std::swap( sides[1], sides[3] );
+                // TOP, BOTTOM, RIGHT, LEFT
                 break;
             case CMP_ORIENT_90:
                 std::swap( sides[0], sides[2] );
+                std::swap( sides[1], sides[2] );
+                // LEFT, RIGHT, TOP, BOTTOM
                 break;
             case CMP_ORIENT_180:
                 std::swap( sides[0], sides[3] );
+                // BOTTOM, TOP, LEFT, RIGHT
                 break;
             case CMP_ORIENT_270:
+                std::swap( sides[1], sides[2] );
+                // RIGHT, LEFT, TOP, BOTTOM
                 break;
             }
         }
