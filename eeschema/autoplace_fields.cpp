@@ -185,12 +185,19 @@ protected:
         int max_field_width = 0;
         BOOST_FOREACH( SCH_FIELD* field, m_fields )
         {
-            if( m_component->GetTransform().y1 )
-                field->SetOrientation( TEXT_ORIENT_VERT );
-            else
-                field->SetOrientation( TEXT_ORIENT_HORIZ );
+            int field_width;
 
-            int field_width = field->GetBoundingBox().GetWidth();
+            if( m_component->GetTransform().y1 )
+            {
+                field->SetOrientation( TEXT_ORIENT_VERT );
+                field_width = field->GetBoundingBox().GetHeight();
+            }
+            else
+            {
+                field->SetOrientation( TEXT_ORIENT_HORIZ );
+                field_width = field->GetBoundingBox().GetWidth();
+            }
+
             max_field_width = std::max( max_field_width, field_width );
         }
 
