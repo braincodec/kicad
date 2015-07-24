@@ -77,6 +77,7 @@ void PCBNEW_CONTROL::Reset( RESET_REASON aReason )
 int PCBNEW_CONTROL::ZoomInOut( const TOOL_EVENT& aEvent )
 {
     KIGFX::VIEW* view = m_frame->GetGalCanvas()->GetView();
+    KIGFX::VIEW_CONTROLS* ctls = getViewControls();
     double zoomScale = 1.0;
 
     if( aEvent.IsAction( &COMMON_ACTIONS::zoomIn ) )
@@ -84,15 +85,10 @@ int PCBNEW_CONTROL::ZoomInOut( const TOOL_EVENT& aEvent )
     else if( aEvent.IsAction( &COMMON_ACTIONS::zoomOut ) )
         zoomScale = 0.7;
 
-    if( !getViewControls()->IsCursorWarpingEnabled() )
-        view->SetScale( view->GetScale() * zoomScale, getViewControls()->GetCursorPosition() );
-    else
-    {
-        const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
-        view->SetCenter( getViewControls()->GetCursorPosition() );
-        view->SetScale( view->GetScale() * zoomScale );
-        m_frame->GetGalCanvas()->WarpPointer( screenSize.x / 2, screenSize.y / 2 );
-    }
+    view->SetScale( view->GetScale() * zoomScale, getViewControls()->GetCursorPosition() );
+
+    if( ctls->IsCursorWarpingEnabled() )
+        ctls->CenterOnCursor();
 
     return 0;
 }
@@ -100,7 +96,7 @@ int PCBNEW_CONTROL::ZoomInOut( const TOOL_EVENT& aEvent )
 
 int PCBNEW_CONTROL::ZoomInOutCenter( const TOOL_EVENT& aEvent )
 {
-    KIGFX::VIEW* view = m_frame->GetGalCanvas()->GetView();
+    KIGFX::VIEW* view = getView();
     double zoomScale = 1.0;
 
     if( aEvent.IsAction( &COMMON_ACTIONS::zoomInCenter ) )
@@ -116,14 +112,12 @@ int PCBNEW_CONTROL::ZoomInOutCenter( const TOOL_EVENT& aEvent )
 
 int PCBNEW_CONTROL::ZoomCenter( const TOOL_EVENT& aEvent )
 {
-    KIGFX::VIEW* view = m_frame->GetGalCanvas()->GetView();
-    view->SetCenter( getViewControls()->GetCursorPosition() );
+    KIGFX::VIEW_CONTROLS* ctls = getViewControls();
 
-    if( getViewControls()->IsCursorWarpingEnabled() )
-    {
-        const VECTOR2I& screenSize = view->GetGAL()->GetScreenPixelSize();
-        m_frame->GetGalCanvas()->WarpPointer( screenSize.x / 2, screenSize.y / 2 );
-    }
+    if( ctls->IsCursorWarpingEnabled() )
+        ctls->CenterOnCursor();
+    else
+        getView()->SetCenter( getViewControls()->GetCursorPosition() );
 
     return 0;
 }
@@ -138,19 +132,18 @@ int PCBNEW_CONTROL::ZoomFitScreen( const TOOL_EVENT& aEvent )
 
     BOX2I boardBBox = board->ViewBBox();
     VECTOR2D scrollbarSize = VECTOR2D( galCanvas->GetSize() - galCanvas->GetClientSize() );
+    VECTOR2D screenSize = view->ToWorld( galCanvas->GetClientSize(), false );
 
     if( boardBBox.GetWidth() == 0 || boardBBox.GetHeight() == 0 )
     {
         // Empty view
         view->SetScale( 17.0 );     // works fine for the standard worksheet frame
 
-        VECTOR2D screenSize = view->ToWorld( galCanvas->GetClientSize(), false );
         view->SetCenter( screenSize / 2.0 );
     }
     else
     {
         VECTOR2D vsize = boardBBox.GetSize();
-        VECTOR2D screenSize = view->ToWorld( galCanvas->GetClientSize(), false );
         double scale = view->GetScale() / std::max( fabs( vsize.x / screenSize.x ),
                                                     fabs( vsize.y / screenSize.y ) );
 
@@ -646,6 +639,8 @@ int PCBNEW_CONTROL::GridSetOrigin( const TOOL_EVENT& aEvent )
     }
     else
     {
+        Activate();
+
         PICKER_TOOL* picker = m_toolMgr->GetTool<PICKER_TOOL>();
         assert( picker );
 
@@ -653,6 +648,7 @@ int PCBNEW_CONTROL::GridSetOrigin( const TOOL_EVENT& aEvent )
         m_frame->SetToolID( ID_PCB_PLACE_GRID_COORD_BUTT, wxCURSOR_PENCIL, _( "Adjust grid origin" ) );
         picker->SetClickHandler( boost::bind( setOrigin, getView(), m_frame, m_gridOrigin, _1 ) );
         picker->Activate();
+        Wait();
     }
 
     return 0;
@@ -725,8 +721,8 @@ static bool deleteItem( TOOL_MANAGER* aToolMgr, const VECTOR2D& aPosition )
 
     if( IsOK( aToolMgr->GetEditFrame(), _( "Are you sure you want to delete item?" ) ) )
         aToolMgr->RunAction( COMMON_ACTIONS::remove, true );
-
-    aToolMgr->RunAction( COMMON_ACTIONS::selectionClear, true );
+    else
+        aToolMgr->RunAction( COMMON_ACTIONS::selectionClear, true );
 
     return true;
 }
@@ -734,6 +730,8 @@ static bool deleteItem( TOOL_MANAGER* aToolMgr, const VECTOR2D& aPosition )
 
 int PCBNEW_CONTROL::DeleteItemCursor( const TOOL_EVENT& aEvent )
 {
+    Activate();
+
     PICKER_TOOL* picker = m_toolMgr->GetTool<PICKER_TOOL>();
     assert( picker );
 
@@ -742,6 +740,7 @@ int PCBNEW_CONTROL::DeleteItemCursor( const TOOL_EVENT& aEvent )
     picker->SetSnapping( false );
     picker->SetClickHandler( boost::bind( deleteItem, m_toolMgr, _1 ) );
     picker->Activate();
+    Wait();
 
     return 0;
 }

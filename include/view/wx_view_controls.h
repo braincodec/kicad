@@ -86,7 +86,7 @@ public:
     }
 
     /// @copydoc VIEW_CONTROLS::GetMousePosition()
-    VECTOR2D GetMousePosition() const;
+    VECTOR2I GetMousePosition() const;
 
     /// @copydoc VIEW_CONTROLS::GetCursorPosition()
     VECTOR2D GetCursorPosition() const;
@@ -94,6 +94,9 @@ public:
     /// @copydoc VIEW_CONTROLS::CursorWarp()
     void WarpCursor( const VECTOR2D& aPosition, bool aWorldCoordinates = false,
             bool aWarpView = false ) const;
+
+    /// @copydoc VIEW_CONTROLS::CenterOnCursor()
+    void CenterOnCursor() const;
 
     /// Adjusts the scrollbars position to match the current viewport.
     void UpdateScrollbars();
