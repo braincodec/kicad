@@ -25,12 +25,13 @@
 #ifndef CONDITIONAL_MENU_H
 #define CONDITIONAL_MENU_H
 
-#include <tool/context_menu.h>
 #include "selection_conditions.h"
-
 #include <boost/unordered_map.hpp>
+#include <wx/wx.h>
 
 class SELECTION_TOOL;
+class TOOL_ACTION;
+class CONTEXT_MENU;
 
 class CONDITIONAL_MENU
 {
@@ -54,7 +55,8 @@ public:
     /**
      * Function AddMenu()
      *
-     * Adds a submenu to the menu.
+     * Adds a submenu to the menu. CONDITIONAL_MENU takes ownership of the added menu, so it will
+     * be freed when the CONDITIONAL_MENU object is destroyed.
      * @param aMenu is the submenu to be added.
      * @param aLabel is the label of added submenu.
      * @param aExpand determines if the added submenu items should be added as individual items
@@ -85,12 +87,9 @@ public:
      * @param aSelection is selection for which the conditions are checked against.
      * @return Menu filtered by the entry conditions.
      */
-    CONTEXT_MENU& Generate( SELECTION& aSelection );
+    CONTEXT_MENU* Generate( SELECTION& aSelection );
 
 private:
-    ///> Returned menu instance, prepared by Generate() function.
-    CONTEXT_MENU m_menu;
-
     ///> Helper class to organize menu entries.
     class ENTRY
     {
