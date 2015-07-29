@@ -138,6 +138,13 @@ enum id_kicad_frm {
     ID_KICADMANAGER_END_LIST
 };
 
+
+/**
+ * Command IDs requiring an active project. Any command IDs in here will have their
+ * associated buttons greyed if a project has not been loaded.
+ */
+extern const enum id_kicad_frm COMMANDS_REQUIRING_PROJECT[];
+
 /**
  * Class KICAD_MANAGER_FRAME
  * is the main KiCad project manager frame.  It is not a KIWAY_PLAYER.
@@ -196,7 +203,8 @@ public:
 
     void Process_Config( wxCommandEvent& event );
 
-    void ReCreateMenuBar();
+    void ReCreateMenuBar( bool aToolsEnabled );
+    void ReCreateMenuBar() { ReCreateMenuBar( true ); }
     void RecreateBaseHToolbar();
 
     /**
@@ -282,6 +290,20 @@ public:
     /// it must have the same path and name as the project *.pro file.
     void RunEeschema( const wxString& aProjectSchematicFileName );
 
+    /**
+    * Return whether a given command ID is in COMMANDS_REQUIRING_PROJECT.
+    */
+    static bool CommandRequiresProject( int aID )
+    {
+        for( size_t i = 0; COMMANDS_REQUIRING_PROJECT[i] != ID_KICADMANAGER_END_LIST; ++i )
+        {
+            if( COMMANDS_REQUIRING_PROJECT[i] == aID )
+                return true;
+        }
+        return false;
+    }
+
+
     DECLARE_EVENT_TABLE()
 
 private:
@@ -317,10 +339,22 @@ private:
     int     m_bitmapButtons_maxHeigth;      // height of bigger bitmap buttons
                                             // Used to calculate the height of the panel.
 
+    // List of buttons that require an active project in order to be enabled
+    std::vector<wxButton*> m_buttonsRequiringProject;
+
 public: LAUNCHER_PANEL( wxWindow* parent );
     ~LAUNCHER_PANEL() { };
 
     int GetPanelHeight() const;
+
+    /**
+     * Set the project-requiring buttons either enabled or disabled. This can
+     * lock out the buttons for applications that require an active project until
+     * a project has been created.
+     *
+     * @param aEnabled true to enable, false to disable
+     */
+    void SetButtonsEnabled( bool aEnabled );
 
 private:
 

@@ -112,5 +112,17 @@ wxBitmapButton* LAUNCHER_PANEL::AddBitmapButton( wxWindowID aId, const wxBitmap&
     wxBitmapButton* btn = new wxBitmapButton( this, aId, aBitmap, buttPos, buttSize );
     m_buttonLastPosition.x += buttSize.x + m_buttonSeparation;
 
+    if( KICAD_MANAGER_FRAME::CommandRequiresProject( aId ) )
+        m_buttonsRequiringProject.push_back( btn );
+
     return btn;
+}
+
+
+void LAUNCHER_PANEL::SetButtonsEnabled( bool aEnabled )
+{
+    for( size_t i = 0; i < m_buttonsRequiringProject.size(); ++i )
+    {
+        m_buttonsRequiringProject[i]->Enable( aEnabled );
+    }
 }

@@ -80,7 +80,7 @@ KICAD_MANAGER_FRAME::KICAD_MANAGER_FRAME( wxWindow* parent,
                                     wxTE_MULTILINE | wxSUNKEN_BORDER | wxTE_READONLY );
 
     RecreateBaseHToolbar();
-    ReCreateMenuBar();
+    ReCreateMenuBar( /* aToolsEnabled */ true );
 
     m_auimgr.SetManagedWindow( this );
 

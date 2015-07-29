@@ -198,6 +198,11 @@ void KICAD_MANAGER_FRAME::CreateNewProject( const wxString& aPrjFullFileName,
 
         // wxFile dtor will close the file
     }
+
+    // Enable the toolbar and menubar buttons and clear the help text.
+    m_Launcher->SetButtonsEnabled( true );
+    ReCreateMenuBar( /* aToolsEnabled */ true );
+    m_MessagesBox->Clear();
 }
 
 
@@ -218,11 +223,12 @@ void KICAD_MANAGER_FRAME::OnLoadProject( wxCommandEvent& event )
 
     ClearMsg();
 
+    bool newProject = ( evt_id == ID_NEW_PROJECT ) ||
+                        ( evt_id == ID_NEW_PROJECT_FROM_TEMPLATE );
+
     if( evt_id != wxID_ANY )
     {
         int  style;
-        bool newProject = ( evt_id == ID_NEW_PROJECT ) ||
-                          ( evt_id == ID_NEW_PROJECT_FROM_TEMPLATE );
 
         if( newProject )
         {
@@ -310,8 +316,19 @@ void KICAD_MANAGER_FRAME::OnLoadProject( wxCommandEvent& event )
     // Either this is the first time kicad has been run or one of the projects in the
     // history list is no longer valid.  This prevents kicad from automatically creating
     // a noname.pro file in the same folder as the kicad binary.
-    if( wxFileName( prj_filename ).GetFullName().IsSameAs( nameless_prj ) )
+    if( wxFileName( prj_filename ).GetFullName().IsSameAs( nameless_prj ) && !newProject )
+    {
+        m_Launcher->SetButtonsEnabled( false );
+        ReCreateMenuBar( /* aToolsEnabled */ false );
+        m_MessagesBox->SetValue( _( "To proceed, you can use the File menu to start a new project." ) );
         return;
+    }
+    else
+    {
+        m_Launcher->SetButtonsEnabled( true );
+        ReCreateMenuBar( /* aToolsEnabled */ true );
+        m_MessagesBox->Clear();
+    }
 
     Prj().ConfigLoad( Pgm().SysSearch(), GeneralGroupName, s_KicadManagerParams );
 

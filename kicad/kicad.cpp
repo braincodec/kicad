@@ -331,3 +331,10 @@ void KIWAY_MGR::OnEnd()
 }
 
 #endif
+
+const enum id_kicad_frm COMMANDS_REQUIRING_PROJECT[] = {
+    ID_TO_SCH,
+    ID_TO_SCH_LIB_EDITOR,
+    ID_TO_PCB,
+    ID_TO_PCB_FP_EDITOR,
+    ID_KICADMANAGER_END_LIST /* sentinel */ };
