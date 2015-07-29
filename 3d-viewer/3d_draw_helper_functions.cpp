@@ -189,16 +189,24 @@ void EDA_3D_CANVAS::draw3DAxis()
         glNewList( m_glLists[GL_ID_AXIS], GL_COMPILE );
 
         glEnable( GL_COLOR_MATERIAL );
-        SetGLColor( WHITE );
         glBegin( GL_LINES );
+        SetGLColor( RED );
         glNormal3f( 0.0f, 0.0f, 1.0f );     // Normal is Z axis
         glVertex3f( 0.0f, 0.0f, 0.0f );
-        glVertex3f( 1.0f, 0.0f, 0.0f );     // X axis
+        glVertex3f( -10.0f, 0.0f, 0.0f );
         glVertex3f( 0.0f, 0.0f, 0.0f );
-        glVertex3f( 0.0f, -1.0f, 0.0f );    // Y axis
+        glVertex3f( 10.0f, 0.0f, 0.0f );    // X axis
+        SetGLColor( GREEN );
+        glVertex3f( 0.0f, 0.0f, 0.0f );
+        glVertex3f( 0.0f, -10.0f, 0.0f );   // Y axis
+        glVertex3f( 0.0f, 0.0f, 0.0f );
+        glVertex3f( 0.0f, 10.0f, 0.0f );
+        SetGLColor( BLUE );
         glNormal3f( 1.0f, 0.0f, 0.0f );     // Normal is Y axis
         glVertex3f( 0.0f, 0.0f, 0.0f );
-        glVertex3f( 0.0f, 0.0f, 0.3f );     // Z axis
+        glVertex3f( 0.0f, 0.0f, -10.0f );
+        glVertex3f( 0.0f, 0.0f, 0.0f );
+        glVertex3f( 0.0f, 0.0f, 10.0f );    // Z axis
         glEnd();
 
         glEndList();
@@ -358,7 +366,7 @@ void EDA_3D_CANVAS::draw3DPadHole( const D_PAD* aPad )
         return;
 
     // Store here the points to approximate hole by segments
-    CPOLYGONS_LIST  holecornersBuffer;
+    SHAPE_POLY_SET  holecornersBuffer;
     int             thickness   = GetPrm3DVisu().GetCopperThicknessBIU();
     int             height      = GetPrm3DVisu().GetLayerZcoordBIU( F_Cu ) -
                                   GetPrm3DVisu().GetLayerZcoordBIU( B_Cu );
@@ -436,7 +444,7 @@ void EDA_3D_CANVAS::draw3DViaHole( const VIA* aVia )
  * Used only to draw pads outlines on silkscreen layers.
  */
 void EDA_3D_CANVAS::buildPadShapeThickOutlineAsPolygon( const D_PAD*  aPad,
-                                                CPOLYGONS_LIST& aCornerBuffer,
+                                                SHAPE_POLY_SET& aCornerBuffer,
                                                 int             aWidth,
                                                 int             aCircleToSegmentsCount,
                                                 double          aCorrectionFactor )
@@ -449,17 +457,22 @@ void EDA_3D_CANVAS::buildPadShapeThickOutlineAsPolygon( const D_PAD*  aPad,
     }
 
     // For other shapes, draw polygon outlines
-    CPOLYGONS_LIST corners;
+    SHAPE_POLY_SET corners;
     aPad->BuildPadShapePolygon( corners, wxSize( 0, 0 ),
                                 aCircleToSegmentsCount, aCorrectionFactor );
 
     // Add outlines as thick segments in polygon buffer
-    for( unsigned ii = 0, jj = corners.GetCornersCount() - 1;
-         ii < corners.GetCornersCount(); jj = ii, ii++ )
+
+    const SHAPE_LINE_CHAIN& path = corners.COutline( 0 );
+
+    for( int ii = 0; ii < path.PointCount(); ii++ )
     {
+        const VECTOR2I& a = path.CPoint( ii );
+        const VECTOR2I& b = path.CPoint( ii + 1 );
+
         TransformRoundedEndsSegmentToPolygon( aCornerBuffer,
-                                              corners.GetPos( jj ),
-                                              corners.GetPos( ii ),
+                                              wxPoint( a.x, a.y ),
+                                              wxPoint( b.x, b.y ),
                                               aCircleToSegmentsCount, aWidth );
     }
 }
