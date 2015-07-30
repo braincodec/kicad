@@ -61,7 +61,6 @@ CONTEXT_MENU::~CONTEXT_MENU()
 CONTEXT_MENU& CONTEXT_MENU::operator=( const CONTEXT_MENU& aMenu )
 {
     Clear();
-
     copyFrom( aMenu );
 
     return *this;
@@ -158,9 +157,6 @@ std::list<wxMenuItem*> CONTEXT_MENU::Add( CONTEXT_MENU* aMenu, const wxString& a
         }
     }
 
-    m_submenus.push_back( aMenu );
-    aMenu->m_parent = this;
-
     return items;
 }
 
@@ -182,8 +178,17 @@ void CONTEXT_MENU::Clear()
 
 void CONTEXT_MENU::UpdateAll()
 {
-    m_update_handler();
-    updateHotKeys();
+    try
+    {
+        m_update_handler();
+    }
+    catch( std::exception& e )
+    {
+        std::cerr << "CONTEXT_MENU error running update handler: " << e.what() << std::endl;
+    }
+
+    if( m_tool )
+        updateHotKeys();
 
     runOnSubmenus( boost::bind( &CONTEXT_MENU::UpdateAll, _1 ) );
 }
@@ -370,7 +375,7 @@ void CONTEXT_MENU::copyFrom( const CONTEXT_MENU& aMenu )
 
 OPT_TOOL_EVENT CONTEXT_MENU::menuHandlerStub( const wxMenuEvent& )
 {
-    return OPT_TOOL_EVENT();
+    return boost::none;
 }
 
 
