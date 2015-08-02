@@ -250,8 +250,10 @@ void SCH_POWER::Draw( EDA_DRAW_PANEL* aPanel,
         if( !part )
             part = PART_SPTR( LIB_PART::GetDummy() );
 
+        // Don't draw the target yet
+        std::vector<bool> dangling; // noninitialized items default to "false" in ::Draw
         part->Draw( aPanel, aDC, m_Pos + aOffset - pin_position, /* unit */ 1, /* convert */ 1,
-                aDrawMode, aColor, m_transform, false, false, false, NULL );
+                aDrawMode, aColor, m_transform, false, false, false, &dangling );
     }
 
     const LIB_FIELD* field = GetField();
