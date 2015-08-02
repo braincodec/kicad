@@ -257,7 +257,7 @@ void SHAPE_POLY_SET::Inflate( int aFactor, int aCircleSegmentsCount )
 
     PolyTree solution;
 
-    c.ArcTolerance = (double)fabs( aFactor ) / M_PI / aCircleSegmentsCount;
+    c.ArcTolerance = fabs( (double) aFactor ) / M_PI / aCircleSegmentsCount;
 
     c.Execute( solution, aFactor );
 
@@ -350,7 +350,7 @@ static int processEdge( FractureEdgeSet& edges, FractureEdge* edge )
 
         int dist = ( x - x_intersect );
 
-        if( dist > 0 && dist < min_dist )
+        if( dist >= 0 && dist < min_dist && (*i)->m_connected )
         {
             min_dist = dist;
             x_nearest = x_intersect;
@@ -362,7 +362,7 @@ static int processEdge( FractureEdgeSet& edges, FractureEdge* edge )
     {
         int count = 0;
 
-        FractureEdge* lead1 = new FractureEdge( true, VECTOR2I( x_nearest, y ), VECTOR2I( x, y ) );
+		FractureEdge* lead1 = new FractureEdge( true, VECTOR2I( x_nearest, y ), VECTOR2I( x, y ) );
         FractureEdge* lead2 = new FractureEdge( true, VECTOR2I( x, y ), VECTOR2I( x_nearest, y ) );
         FractureEdge* split_2 = new FractureEdge( true, VECTOR2I( x_nearest, y ), e_nearest->m_p2 );
 
