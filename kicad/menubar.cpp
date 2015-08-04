@@ -104,6 +104,8 @@ BEGIN_EVENT_TABLE( KICAD_MANAGER_FRAME, EDA_BASE_FRAME )
     EVT_UPDATE_UI( ID_SELECT_DEFAULT_PDF_BROWSER, KICAD_MANAGER_FRAME::OnUpdateDefaultPdfBrowser )
     EVT_UPDATE_UI( ID_SELECT_PREFERED_PDF_BROWSER,
                    KICAD_MANAGER_FRAME::OnUpdatePreferredPdfBrowser )
+    EVT_UPDATE_UI_RANGE( ID_TO_SCH, ID_TO_PCB_FP_EDITOR,
+                         KICAD_MANAGER_FRAME::OnUpdateRequiresProject )
 
 END_EVENT_TABLE()
 
@@ -174,9 +176,8 @@ struct EDA_HOTKEY_CONFIG kicad_Manager_Hokeys_Descr[] = {
 
 /**
  * @brief (Re)Create the menubar
- * @param aToolsDisabled - if true, disable items for tools in COMMANDS_REQUIRING_PROJECT
  */
-void KICAD_MANAGER_FRAME::ReCreateMenuBar( bool aToolsEnabled )
+void KICAD_MANAGER_FRAME::ReCreateMenuBar()
 {
     wxString msg;
     static wxMenu* openRecentMenu;  // Open Recent submenu,
@@ -358,59 +359,42 @@ void KICAD_MANAGER_FRAME::ReCreateMenuBar( bool aToolsEnabled )
 
     // Menu Tools:
     wxMenu* toolsMenu = new wxMenu;
-    wxMenuItem *item;
 
     msg = AddHotkeyName( _( "Run Eeschema" ), kicad_Manager_Hokeys_Descr, HK_RUN_EESCHEMA );
-    item = AddMenuItem( toolsMenu, ID_TO_SCH, msg, KiBitmap( eeschema_xpm ) );
-    if( CommandRequiresProject( ID_TO_SCH ) )
-        item->Enable( aToolsEnabled );
+    AddMenuItem( toolsMenu, ID_TO_SCH, msg, KiBitmap( eeschema_xpm ) );
 
     msg = AddHotkeyName( _( "Run Library Editor" ),
                          kicad_Manager_Hokeys_Descr, HK_RUN_LIBEDIT );
-    item = AddMenuItem( toolsMenu, ID_TO_SCH_LIB_EDITOR, msg, KiBitmap( libedit_xpm ) );
-    if( CommandRequiresProject( ID_TO_SCH_LIB_EDITOR ) )
-        item->Enable( aToolsEnabled );
+    AddMenuItem( toolsMenu, ID_TO_SCH_LIB_EDITOR, msg, KiBitmap( libedit_xpm ) );
 
     msg = AddHotkeyName( _( "Run Pcbnew" ),
                          kicad_Manager_Hokeys_Descr, HK_RUN_PCBNEW );
-    item = AddMenuItem( toolsMenu, ID_TO_PCB, msg, KiBitmap( pcbnew_xpm ) );
-    if( CommandRequiresProject( ID_TO_PCB ) )
-        item->Enable( aToolsEnabled );
+    AddMenuItem( toolsMenu, ID_TO_PCB, msg, KiBitmap( pcbnew_xpm ) );
 
     msg = AddHotkeyName( _( "Run Footprint Editor" ),
                          kicad_Manager_Hokeys_Descr, HK_RUN_FPEDITOR );
-    item = AddMenuItem( toolsMenu, ID_TO_PCB_FP_EDITOR, msg, KiBitmap( module_editor_xpm ) );
-    if( CommandRequiresProject( ID_TO_PCB_FP_EDITOR ) )
-        item->Enable( aToolsEnabled );
+    AddMenuItem( toolsMenu, ID_TO_PCB_FP_EDITOR, msg, KiBitmap( module_editor_xpm ) );
 
     msg = AddHotkeyName( _( "Run Gerbview" ),
                          kicad_Manager_Hokeys_Descr, HK_RUN_GERBVIEW );
-    item = AddMenuItem( toolsMenu, ID_TO_GERBVIEW, msg, KiBitmap( icon_gerbview_small_xpm ) );
-    if( CommandRequiresProject( ID_TO_GERBVIEW ) )
-        item->Enable( aToolsEnabled );
+    AddMenuItem( toolsMenu, ID_TO_GERBVIEW, msg, KiBitmap( icon_gerbview_small_xpm ) );
 
     msg = AddHotkeyName( _( "Run Bitmap2Component" ),
                          kicad_Manager_Hokeys_Descr, HK_RUN_BM2COMPONENT );
-    item = AddMenuItem( toolsMenu, ID_TO_BITMAP_CONVERTER, msg,
+    AddMenuItem( toolsMenu, ID_TO_BITMAP_CONVERTER, msg,
                  _( "Bitmap2Component - Convert bitmap images to Eeschema\n"
                     "or Pcbnew elements" ),
                  KiBitmap( image_xpm ) );
-    if( CommandRequiresProject( ID_TO_BITMAP_CONVERTER ) )
-        item->Enable( aToolsEnabled );
 
     msg = AddHotkeyName( _( "Run Pcb Calculator" ), kicad_Manager_Hokeys_Descr, HK_RUN_PCBCALCULATOR );
-    item = AddMenuItem( toolsMenu, ID_TO_PCB_CALCULATOR, msg,
+    AddMenuItem( toolsMenu, ID_TO_PCB_CALCULATOR, msg,
                  _( "Pcb calculator - Calculator for components, track width, etc." ),
                  KiBitmap( options_module_xpm ) );
-    if( CommandRequiresProject( ID_TO_PCB_CALCULATOR ) )
-        item->Enable( aToolsEnabled );
 
     msg = AddHotkeyName( _( "Run Page Layout Editor" ), kicad_Manager_Hokeys_Descr, HK_RUN_PLEDITOR );
-    item = AddMenuItem( toolsMenu, ID_TO_PL_EDITOR, msg,
+    AddMenuItem( toolsMenu, ID_TO_PL_EDITOR, msg,
                  _( "Pl editor - Worksheet layout editor" ),
                  KiBitmap( pagelayout_load_xpm ) );
-    if( CommandRequiresProject( ID_TO_PL_EDITOR ) )
-        item->Enable( aToolsEnabled );
 
     // Menu Help:
     wxMenu* helpMenu = new wxMenu;

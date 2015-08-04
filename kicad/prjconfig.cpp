@@ -200,8 +200,7 @@ void KICAD_MANAGER_FRAME::CreateNewProject( const wxString& aPrjFullFileName,
     }
 
     // Enable the toolbar and menubar buttons and clear the help text.
-    m_Launcher->SetButtonsEnabled( true );
-    ReCreateMenuBar( /* aToolsEnabled */ true );
+    m_active_project = true;
     m_MessagesBox->Clear();
 }
 
@@ -318,15 +317,13 @@ void KICAD_MANAGER_FRAME::OnLoadProject( wxCommandEvent& event )
     // a noname.pro file in the same folder as the kicad binary.
     if( wxFileName( prj_filename ).GetFullName().IsSameAs( nameless_prj ) && !newProject )
     {
-        m_Launcher->SetButtonsEnabled( false );
-        ReCreateMenuBar( /* aToolsEnabled */ false );
+        m_active_project = false;
         m_MessagesBox->SetValue( _( "To proceed, you can use the File menu to start a new project." ) );
         return;
     }
     else
     {
-        m_Launcher->SetButtonsEnabled( true );
-        ReCreateMenuBar( /* aToolsEnabled */ true );
+        m_active_project = true;
         m_MessagesBox->Clear();
     }
 
@@ -390,4 +387,10 @@ void KICAD_MANAGER_FRAME::OnSaveProject( wxCommandEvent& event )
     // was: wxGetApp().WriteProjectConfig( m_ProjectFileName.GetFullPath(),
     //          GeneralGroupName, s_KicadManagerParams );
     Prj().ConfigSave( Pgm().SysSearch(), GeneralGroupName, s_KicadManagerParams );
+}
+
+
+void KICAD_MANAGER_FRAME::OnUpdateRequiresProject( wxUpdateUIEvent& event )
+{
+    event.Enable( m_active_project );
 }
