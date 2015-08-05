@@ -33,14 +33,14 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	fgSizer2->SetFlexibleDirection( wxBOTH );
 	fgSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	m_staticText7 = new wxStaticText( this, wxID_ANY, _("Style:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7 = new wxStaticText( this, wxID_ANY, _("&Style:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
 	fgSizer2->Add( m_staticText7, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
 	m_cboStyle = new wxBitmapComboBox( this, wxID_ANY, _("Combo!"), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY ); 
 	fgSizer2->Add( m_cboStyle, 1, wxALL|wxEXPAND, 5 );
 	
-	m_staticText8 = new wxStaticText( this, wxID_ANY, _("Text:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText8 = new wxStaticText( this, wxID_ANY, _("&Text:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText8->Wrap( -1 );
 	fgSizer2->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
@@ -50,7 +50,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	
 	fgSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	m_cbShowText = new wxCheckBox( this, wxID_ANY, _("Show Text"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_cbShowText = new wxCheckBox( this, wxID_ANY, _("S&how Text"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer2->Add( m_cbShowText, 1, wxALL, 5 );
 	
 	
@@ -62,7 +62,7 @@ DIALOG_EDIT_POWER_BASE::DIALOG_EDIT_POWER_BASE( wxWindow* parent, wxWindowID id,
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_stNet = new wxStaticText( this, wxID_ANY, _("Net:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_stNet = new wxStaticText( this, wxID_ANY, _("&Net:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_stNet->Wrap( -1 );
 	bSizer10->Add( m_stNet, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
