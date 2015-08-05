@@ -475,14 +475,11 @@ void DIALOG_EXCHANGE_MODULE::BrowseAndSelectFootprint( wxCommandEvent& event )
 {
     wxString newname;
 
-    KIWAY_PLAYER* frame = Kiway().Player( FRAME_PCB_MODULE_VIEWER_MODAL, true );
+    newname = m_parent->SelectFootprint( m_parent, wxEmptyString, wxEmptyString, wxEmptyString,
+                                         Prj().PcbFootprintLibs() );
 
-    if( frame->ShowModal( &newname, this ) )
-    {
+    if( newname != wxEmptyString )
         m_NewModule->SetValue( newname );
-    }
-
-    frame->Destroy();
 }
 
 /*
