@@ -41,6 +41,7 @@
 #include <richio.h>
 #include <class_pcb_screen.h>
 #include <pcbstruct.h>
+#include <class_draw_panel_gal.h>
 
 
 /* Forward declarations of classes. */
@@ -671,6 +672,30 @@ public:
     void SetPrevGrid();
 
     void ClearSelection();
+
+    ///> @copydoc EDA_DRAW_FRAME::UseGalCanvas
+    virtual void UseGalCanvas( bool aEnable );
+
+    /**
+     * Function SwitchCanvas
+     * switches currently used canvas (default / Cairo / OpenGL).
+     */
+    void SwitchCanvas( wxCommandEvent& aEvent );
+
+    /**
+     * Function LoadCanvasTypeSetting()
+     * Returns the canvas type stored in the application settings.
+     */
+    EDA_DRAW_PANEL_GAL::GAL_TYPE LoadCanvasTypeSetting() const;
+
+    /**
+     * Function SaveCanvasTypeSetting()
+     * Stores the canvas type in the application settings.
+     */
+    bool SaveCanvasTypeSetting( EDA_DRAW_PANEL_GAL::GAL_TYPE aCanvasType );
+
+    ///> Key in KifaceSettings to store the canvas type.
+    static const wxString CANVAS_TYPE_KEY;
 
     DECLARE_EVENT_TABLE()
 };

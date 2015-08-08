@@ -607,18 +607,8 @@ public:
      */
     void Show3D_Frame( wxCommandEvent& event );
 
-    /**
-     * Virtual function UseGalCanvas
-     * Enables/disables GAL canvas.
-     * @param aEnable determines if GAL should be active or not.
-     */
+    ///> @copydoc EDA_DRAW_FRAME::UseGalCanvas()
     void UseGalCanvas( bool aEnable );
-
-    /**
-     * Function SwitchCanvas
-     * switches currently used canvas (default / Cairo / OpenGL).
-     */
-    void SwitchCanvas( wxCommandEvent& aEvent );
 
     bool GeneralControl( wxDC* aDC, const wxPoint& aPosition, int aHotKey = 0 );
 
@@ -1124,7 +1114,7 @@ public:
      */
     void Change_Side_Module( MODULE* Module, wxDC* DC );
 
-    void InstallExchangeModuleFrame( MODULE* ExchangeModuleModule );
+    int InstallExchangeModuleFrame( MODULE* ExchangeModuleModule );
 
     /**
      * Function Exchange_Module
