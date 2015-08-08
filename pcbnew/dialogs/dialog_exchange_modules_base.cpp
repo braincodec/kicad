@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Jun  5 2014)
+// C++ code generated with wxFormBuilder (version Jun 17 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -28,18 +28,22 @@ DIALOG_EXCHANGE_MODULE_BASE::DIALOG_EXCHANGE_MODULE_BASE( wxWindow* parent, wxWi
 	
 	m_OldModule = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	m_OldModule->SetMaxLength( 0 ); 
-	bLeftSizer->Add( m_OldModule, 0, wxBOTTOM|wxRIGHT|wxLEFT|wxEXPAND, 5 );
+	bLeftSizer->Add( m_OldModule, 0, wxEXPAND|wxRIGHT|wxLEFT, 5 );
 	
 	m_staticText7 = new wxStaticText( this, wxID_ANY, _("Current value"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
 	bLeftSizer->Add( m_staticText7, 0, wxTOP|wxRIGHT|wxLEFT, 5 );
 	
-	m_OldValue = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
-	m_OldValue->SetMaxLength( 0 ); 
-	bLeftSizer->Add( m_OldValue, 0, wxBOTTOM|wxRIGHT|wxLEFT|wxEXPAND, 5 );
+	m_CurrValue = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	m_CurrValue->SetMaxLength( 0 ); 
+	bLeftSizer->Add( m_CurrValue, 0, wxEXPAND|wxRIGHT|wxLEFT, 5 );
 	
+	m_staticText5 = new wxStaticText( this, wxID_ANY, _("Current reference"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText5->Wrap( -1 );
+	bLeftSizer->Add( m_staticText5, 0, wxTOP|wxRIGHT|wxLEFT, 5 );
 	
-	bLeftSizer->Add( 5, 10, 1, wxEXPAND, 5 );
+	m_CurrReference = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+	bLeftSizer->Add( m_CurrReference, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 	
 	m_staticText8 = new wxStaticText( this, wxID_ANY, _("New footprint"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText8->Wrap( -1 );
@@ -55,14 +59,14 @@ DIALOG_EXCHANGE_MODULE_BASE::DIALOG_EXCHANGE_MODULE_BASE( wxWindow* parent, wxWi
 	wxBoxSizer* bMiddleSizer;
 	bMiddleSizer = new wxBoxSizer( wxVERTICAL );
 	
-	wxString m_SelectionChoices[] = { _("Change footprint"), _("Change same footprint"), _("Ch. same footprint+value"), _("Change all") };
+	wxString m_SelectionChoices[] = { _("Change footprint"), _("Change footprints"), _("Change footprints having same value"), _("Update all footprints of the board") };
 	int m_SelectionNChoices = sizeof( m_SelectionChoices ) / sizeof( wxString );
 	m_Selection = new wxRadioBox( this, ID_SELECTION_CLICKED, _("Options"), wxDefaultPosition, wxDefaultSize, m_SelectionNChoices, m_SelectionChoices, 1, wxRA_SPECIFY_COLS );
 	m_Selection->SetSelection( 1 );
 	bMiddleSizer->Add( m_Selection, 0, wxALL, 5 );
 	
 	
-	bUpperSizer->Add( bMiddleSizer, 0, 0, 5 );
+	bUpperSizer->Add( bMiddleSizer, 0, wxALL, 5 );
 	
 	wxBoxSizer* bRightSizer;
 	bRightSizer = new wxBoxSizer( wxVERTICAL );
@@ -73,33 +77,34 @@ DIALOG_EXCHANGE_MODULE_BASE::DIALOG_EXCHANGE_MODULE_BASE( wxWindow* parent, wxWi
 	m_Quitbutton = new wxButton( this, wxID_CANCEL, _("Close"), wxDefaultPosition, wxDefaultSize, 0 );
 	bRightSizer->Add( m_Quitbutton, 0, wxALL|wxEXPAND, 5 );
 	
-	m_buttonCmpList = new wxButton( this, wxID_ANY, _("Export .cmp List"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_buttonCmpList = new wxButton( this, wxID_ANY, _("Export Footprint Association File"), wxDefaultPosition, wxDefaultSize, 0 );
 	bRightSizer->Add( m_buttonCmpList, 0, wxALL|wxEXPAND, 5 );
 	
-	m_Browsebutton = new wxButton( this, wxID_ANY, _("Browse FP List"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_Browsebutton = new wxButton( this, wxID_ANY, _("List Footprints"), wxDefaultPosition, wxDefaultSize, 0 );
 	bRightSizer->Add( m_Browsebutton, 0, wxEXPAND|wxTOP|wxRIGHT|wxLEFT, 5 );
 	
-	m_buttonFPViewer = new wxButton( this, wxID_ANY, _("FP Viewer"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_buttonFPViewer = new wxButton( this, wxID_ANY, _("View Footprints"), wxDefaultPosition, wxDefaultSize, 0 );
 	bRightSizer->Add( m_buttonFPViewer, 0, wxALL|wxEXPAND, 5 );
 	
 	
 	bUpperSizer->Add( bRightSizer, 0, wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
-	bMainSizer->Add( bUpperSizer, 0, wxEXPAND, 5 );
+	bMainSizer->Add( bUpperSizer, 0, wxALL|wxEXPAND, 5 );
 	
 	m_staticTextMsg = new wxStaticText( this, wxID_ANY, _("Messages:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticTextMsg->Wrap( -1 );
 	bMainSizer->Add( m_staticTextMsg, 0, wxTOP|wxRIGHT|wxLEFT, 5 );
 	
 	m_WinMessages = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY );
-	m_WinMessages->SetMinSize( wxSize( 450,300 ) );
+	m_WinMessages->SetMinSize( wxSize( -1,75 ) );
 	
 	bMainSizer->Add( m_WinMessages, 1, wxEXPAND|wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 	
 	
 	this->SetSizer( bMainSizer );
 	this->Layout();
+	bMainSizer->Fit( this );
 	
 	// Connect Events
 	m_Selection->Connect( wxEVT_COMMAND_RADIOBOX_SELECTED, wxCommandEventHandler( DIALOG_EXCHANGE_MODULE_BASE::OnSelectionClicked ), NULL, this );

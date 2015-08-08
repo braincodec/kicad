@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Jun  5 2014)
+// C++ code generated with wxFormBuilder (version Jun 17 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -41,7 +41,9 @@ class DIALOG_EXCHANGE_MODULE_BASE : public DIALOG_SHIM
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_OldModule;
 		wxStaticText* m_staticText7;
-		wxTextCtrl* m_OldValue;
+		wxTextCtrl* m_CurrValue;
+		wxStaticText* m_staticText5;
+		wxTextCtrl* m_CurrReference;
 		wxStaticText* m_staticText8;
 		wxTextCtrl* m_NewModule;
 		wxRadioBox* m_Selection;
@@ -64,7 +66,7 @@ class DIALOG_EXCHANGE_MODULE_BASE : public DIALOG_SHIM
 	
 	public:
 		
-		DIALOG_EXCHANGE_MODULE_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Exchange Footprints"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 421,517 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+		DIALOG_EXCHANGE_MODULE_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Change Footprint"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
 		~DIALOG_EXCHANGE_MODULE_BASE();
 	
 };
