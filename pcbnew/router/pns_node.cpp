@@ -82,12 +82,13 @@ PNS_NODE::~PNS_NODE()
     allocNodes.erase( this );
 #endif
 
+    m_joints.clear();
+
     for( PNS_INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
     {
         if( (*i)->BelongsTo( this ) )
             delete *i;
     }
-
 
     releaseGarbage();
     unlinkParent();
@@ -1110,13 +1111,12 @@ void PNS_NODE::GetUpdatedItems( ITEM_VECTOR& aRemoved, ITEM_VECTOR& aAdded )
         aAdded.push_back( *i );
 }
 
-
 void PNS_NODE::releaseChildren()
 {
     // copy the kids as the PNS_NODE destructor erases the item from the parent node.
     std::vector<PNS_NODE*> kids = m_children;
 
-    BOOST_FOREACH( PNS_NODE * node, kids )
+    BOOST_FOREACH( PNS_NODE* node, kids )
     {
         node->releaseChildren();
         delete node;
@@ -1126,7 +1126,7 @@ void PNS_NODE::releaseChildren()
 
 void PNS_NODE::releaseGarbage()
 {
-    if( !isRoot( ) )
+    if( !isRoot() )
         return;
 
     BOOST_FOREACH( PNS_ITEM* item, m_garbageItems )
@@ -1162,7 +1162,7 @@ void PNS_NODE::Commit( PNS_NODE* aNode )
 
 void PNS_NODE::KillChildren()
 {
-    assert ( isRoot() );
+    assert( isRoot() );
     releaseChildren();
 }
 
