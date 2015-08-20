@@ -42,59 +42,12 @@ enum LineMarker {
 
 
 /**
- * Class PNS_OBJECT
- *
- * Abstract base class to hold ownership information about items/nodes
- * used by the router.
- */
-class PNS_OBJECT
-{
-public:
-    PNS_OBJECT():
-        m_owner( NULL ) {}
-
-    virtual ~PNS_OBJECT() {}
-
-    /**
-     * Functon SetOwner()
-     *
-     * Sets the node that owns this item. An item can belong to a single
-     * PNS_OBJECT or stay unowned.
-     */
-    void SetOwner( PNS_OBJECT* aOwner )
-    {
-        m_owner = aOwner;
-    }
-
-    /**
-     * Function BelongsTo()
-     *
-     * @return true if the item is owned by aObj
-     */
-    bool BelongsTo( const PNS_OBJECT* aObj ) const
-    {
-        return m_owner == aObj;
-    }
-
-    /**
-     * Function Owner()
-     *
-     * Returns the owner of this item, or NULL if there's none.
-     */
-    PNS_OBJECT* Owner() const { return m_owner; }
-
-protected:
-    PNS_OBJECT* m_owner;
-};
-
-
-/**
  * Class PNS_ITEM
  *
  * Base class for PNS router board items. Implements the shared properties of all PCB items -
  * net, spanned layers, geometric shape & refererence to owning model.
  */
-class PNS_ITEM : public PNS_OBJECT
+class PNS_ITEM
 {
 public:
     static const int UnusedNet = INT_MAX;
@@ -275,6 +228,34 @@ public:
     }
 
     /**
+     * Functon SetOwner()
+     *
+     * Sets the node that owns this item. An item can belong to a single
+     * PNS_NODE or stay unowned.
+     */
+    void SetOwner( PNS_NODE* aOwner )
+    {
+        m_owner = aOwner;
+    }
+
+    /**
+     * Function BelongsTo()
+     *
+     * @return true if the item is owned by the node aNode.
+     */
+    bool BelongsTo( PNS_NODE* aNode ) const
+    {
+        return m_owner == aNode;
+    }
+
+    /**
+     * Function Owner()
+     *
+     * Returns the owner of this item, or NULL if there's none.
+     */
+    PNS_NODE* Owner() const { return m_owner; }
+
+    /**
      * Function Collide()
      *
      * Checks for a collision (clearance violation) with between us and item aOther.
@@ -289,18 +270,18 @@ public:
      * @return true, if a collision was found.
      */
     virtual bool Collide( const PNS_ITEM* aOther, int aClearance, bool aNeedMTV,
-            VECTOR2I& aMTV ) const;
+            VECTOR2I& aMTV,  bool aDifferentNetsOnly = true ) const;
 
     /**
      * Function Collide()
      *
      * A shortcut for PNS_ITEM::Colllide() without MTV stuff.
      */
-    bool Collide( const PNS_ITEM* aOther, int aClearance ) const
+  	bool Collide( const PNS_ITEM* aOther, int aClearance, bool aDifferentNetsOnly = true ) const
     {
         VECTOR2I dummy;
 
-        return Collide( aOther, aClearance, false, dummy );
+        return Collide( aOther, aClearance, false, dummy, aDifferentNetsOnly );
     }
 
     /**
@@ -351,12 +332,13 @@ public:
 
 private:
     bool collideSimple( const PNS_ITEM* aOther, int aClearance, bool aNeedMTV,
-            VECTOR2I& aMTV ) const;
+            VECTOR2I& aMTV, bool aDifferentNetsOnly ) const;
 
 protected:
     PnsKind                 m_kind;
 
     BOARD_CONNECTED_ITEM*   m_parent;
+    PNS_NODE*               m_owner;
     PNS_LAYERSET            m_layers;
 
     bool                    m_movable;
