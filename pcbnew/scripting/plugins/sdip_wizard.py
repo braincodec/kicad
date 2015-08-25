@@ -101,7 +101,7 @@ class RowedFootprint(HFPW.HelpfulFootprintWizardPlugin):
 class SDIPWizard(RowedFootprint):
 
     def GetName(self):
-        return "S/DIP"
+        return "S-DIP"
 
     def GetDescription(self):
         return "Single/Dual Inline Package Footprint Wizard"
@@ -128,14 +128,14 @@ class SDIPWizard(RowedFootprint):
         else:  # triple and up aren't really a thing, but call it something!
             name = "xIP"
 
-        return "%s %d" % (name, self.parameters["Pads"]["*n"])
+        return "%s-%d" % (name, self.parameters["Pads"]["*n"])
 
     def GetPad(self):
         pad_length = self.parameters["Pads"]["pad length"]
         pad_width = self.parameters["Pads"]["pad width"]
         drill = self.parameters["Pads"]["drill size"]
         return PA.PadMaker(self.module).THPad(
-            pad_width, pad_length, drill, shape=pcbnew.PAD_OVAL)
+            pad_width, pad_length, drill, shape=pcbnew.PAD_SHAPE_OVAL)
 
     def DrawBox(self, ssx, ssy):
 
@@ -177,7 +177,7 @@ class SOICWizard(RowedFootprint):
         return "SOIC, MSOP, SSOP, TSSOP, etc, footprint wizard"
 
     def GetValue(self):
-        return "%s %d" % ("SOIC", self.parameters["Pads"]["*n"])
+        return "%s-%d" % ("SOIC", self.parameters["Pads"]["*n"])
 
     def GenerateParameterList(self):
         RowedFootprint.GenerateParameterList(self)
@@ -195,7 +195,7 @@ class SOICWizard(RowedFootprint):
         pad_length = self.parameters["Pads"]["pad length"]
         pad_width = self.parameters["Pads"]["pad width"]
         return PA.PadMaker(self.module).SMDPad(
-            pad_width, pad_length, shape=pcbnew.PAD_RECT)
+            pad_width, pad_length, shape=pcbnew.PAD_SHAPE_RECT)
 
     def DrawBox(self, ssx, ssy):
 
