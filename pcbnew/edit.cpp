@@ -218,6 +218,8 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
                 if( wxWindow::FindFocus() != editor )
                     editor->SetFocus();
             }
+
+            editor->PushPreferences( m_canvas );
         }
         break;
 
@@ -244,6 +246,8 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
                 if( wxWindow::FindFocus() != viewer )
                     viewer->SetFocus();
             }
+
+            viewer->PushPreferences( m_canvas );
         }
         break;
 
@@ -979,7 +983,7 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
             if( itmp >= 0 )
             {
                 // if user changed colors and we are in high contrast mode, then redraw
-                // because the PAD_SMD pads may change color.
+                // because the PAD_ATTRIB_SMD pads may change color.
                 if( displ_opts->m_ContrastModeDisplay && GetActiveLayer() != itmp )
                 {
                     m_canvas->Refresh();
