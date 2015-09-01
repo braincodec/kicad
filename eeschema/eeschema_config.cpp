@@ -753,8 +753,6 @@ void LIB_EDIT_FRAME::LoadSettings( wxConfigBase* aCfg )
 {
     EDA_DRAW_FRAME::LoadSettings( aCfg );
 
-    wxConfigPathChanger cpc( aCfg, m_configPath );
-
     SetGridColor( GetLayerColor( LAYER_GRID ) );
     SetDrawBgColor( GetLayerColor( LAYER_BACKGROUND ) );
 
@@ -779,8 +777,6 @@ void LIB_EDIT_FRAME::LoadSettings( wxConfigBase* aCfg )
 void LIB_EDIT_FRAME::SaveSettings( wxConfigBase* aCfg )
 {
     EDA_DRAW_FRAME::SaveSettings( aCfg );
-
-    wxConfigPathChanger cpc( aCfg, m_configPath );
 
     aCfg->Write( lastLibExportPathEntry, m_lastLibExportPath );
     aCfg->Write( lastLibImportPathEntry, m_lastLibImportPath );
