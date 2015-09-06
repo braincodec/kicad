@@ -289,6 +289,8 @@ wxPoint render_core( wxDC* aDC, EDA_RECT aBBox, EDA_COLOR_T aBGcolor )
     const double yscale = (double) dc_size.y / aBBox.GetHeight();
     const double scale = std::min( xscale, yscale ) * 0.85;
 
+    GRResetPenAndBrush( aDC );
+
     aDC->SetUserScale( scale, scale );
     return -aBBox.Centre();
 }
