@@ -82,12 +82,13 @@ PNS_NODE::~PNS_NODE()
     allocNodes.erase( this );
 #endif
 
+    m_joints.clear();
+
     for( PNS_INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
     {
         if( (*i)->BelongsTo( this ) )
             delete *i;
     }
-
 
     releaseGarbage();
     unlinkParent();
@@ -184,7 +185,11 @@ struct PNS_NODE::OBSTACLE_VISITOR
     ///> additional clearance
     int m_extraClearance;
 
-    OBSTACLE_VISITOR( PNS_NODE::OBSTACLES& aTab, const PNS_ITEM* aItem, int aKindMask ) :
+    bool m_differentNetsOnly;
+
+    int m_forceClearance;
+
+    OBSTACLE_VISITOR( PNS_NODE::OBSTACLES& aTab, const PNS_ITEM* aItem, int aKindMask, bool aDifferentNetsOnly ) :
         m_node( NULL ),
         m_override( NULL ),
         m_tab( aTab ),
@@ -192,7 +197,9 @@ struct PNS_NODE::OBSTACLE_VISITOR
         m_kindMask( aKindMask ),
         m_limitCount( -1 ),
         m_matchCount( 0 ),
-        m_extraClearance( 0 )
+        m_extraClearance( 0 ),
+        m_differentNetsOnly( aDifferentNetsOnly ),
+        m_forceClearance( -1 )
     {
        if( aItem->Kind() == PNS_ITEM::LINE )
             m_extraClearance += static_cast<const PNS_LINE*>( aItem )->Width() / 2;
@@ -227,7 +234,10 @@ struct PNS_NODE::OBSTACLE_VISITOR
         if( aItem->Kind() == PNS_ITEM::LINE )
             clearance += static_cast<PNS_LINE*>( aItem )->Width() / 2;
 
-        if( !aItem->Collide( m_item, clearance ) )
+        if( m_forceClearance >= 0 )
+            clearance = m_forceClearance;
+
+        if( !aItem->Collide( m_item, clearance, m_differentNetsOnly ) )
             return true;
 
         PNS_OBSTACLE obs;
@@ -247,9 +257,9 @@ struct PNS_NODE::OBSTACLE_VISITOR
 
 
 int PNS_NODE::QueryColliding( const PNS_ITEM* aItem,
-        PNS_NODE::OBSTACLES& aObstacles, int aKindMask, int aLimitCount )
+        PNS_NODE::OBSTACLES& aObstacles, int aKindMask, int aLimitCount, bool aDifferentNetsOnly, int aForceClearance )
 {
-    OBSTACLE_VISITOR visitor( aObstacles, aItem, aKindMask );
+    OBSTACLE_VISITOR visitor( aObstacles, aItem, aKindMask, aDifferentNetsOnly );
 
 #ifdef DEBUG
     assert( allocNodes.find( this ) != allocNodes.end() );
@@ -257,7 +267,7 @@ int PNS_NODE::QueryColliding( const PNS_ITEM* aItem,
 
     visitor.SetCountLimit( aLimitCount );
     visitor.SetWorld( this, NULL );
-
+    visitor.m_forceClearance = aForceClearance;
     // first, look for colliding items in the local index
     m_index->Query( aItem, m_maxClearance, visitor );
 
@@ -272,7 +282,9 @@ int PNS_NODE::QueryColliding( const PNS_ITEM* aItem,
 }
 
 
-PNS_NODE::OPT_OBSTACLE PNS_NODE::NearestObstacle( const PNS_LINE* aItem, int aKindMask )
+PNS_NODE::OPT_OBSTACLE PNS_NODE::NearestObstacle(   const PNS_LINE* aItem,
+                                                    int aKindMask,
+                                                    const std::set<PNS_ITEM*>* aRestrictedSet )
 {
     OBSTACLES obs_list;
     bool found_isects = false;
@@ -292,7 +304,6 @@ PNS_NODE::OPT_OBSTACLE PNS_NODE::NearestObstacle( const PNS_LINE* aItem, int aKi
     if( aItem->EndsWithVia() )
         n += QueryColliding( &aItem->Via(), obs_list, aKindMask );
 
-    // if(! QueryColliding ( aItem, obs_list, aKindMask ))
     if( !n )
         return OPT_OBSTACLE();
 
@@ -306,6 +317,9 @@ PNS_NODE::OPT_OBSTACLE PNS_NODE::NearestObstacle( const PNS_LINE* aItem, int aKi
     {
         VECTOR2I ip_first, ip_last;
         int dist_max = INT_MIN;
+
+        if( aRestrictedSet && aRestrictedSet->find( obs.m_item ) == aRestrictedSet->end() )
+            continue;
 
         std::vector<SHAPE_LINE_CHAIN::INTERSECTION> isect_list;
 
@@ -633,14 +647,12 @@ void PNS_NODE::removeLine( PNS_LINE* aLine )
     std::vector<PNS_SEGMENT*>* segRefs = aLine->LinkedSegments();
 
     assert( segRefs != NULL );
-    assert( aLine->Owner() );
 
     BOOST_FOREACH( PNS_SEGMENT* seg, *segRefs )
     {
         removeSegment( seg );
     }
 }
-
 
 void PNS_NODE::removeVia( PNS_VIA* aVia )
 {
@@ -1110,13 +1122,12 @@ void PNS_NODE::GetUpdatedItems( ITEM_VECTOR& aRemoved, ITEM_VECTOR& aAdded )
         aAdded.push_back( *i );
 }
 
-
 void PNS_NODE::releaseChildren()
 {
     // copy the kids as the PNS_NODE destructor erases the item from the parent node.
     std::vector<PNS_NODE*> kids = m_children;
 
-    BOOST_FOREACH( PNS_NODE * node, kids )
+    BOOST_FOREACH( PNS_NODE* node, kids )
     {
         node->releaseChildren();
         delete node;
@@ -1126,7 +1137,7 @@ void PNS_NODE::releaseChildren()
 
 void PNS_NODE::releaseGarbage()
 {
-    if( !isRoot( ) )
+    if( !isRoot() )
         return;
 
     BOOST_FOREACH( PNS_ITEM* item, m_garbageItems )
@@ -1162,7 +1173,7 @@ void PNS_NODE::Commit( PNS_NODE* aNode )
 
 void PNS_NODE::KillChildren()
 {
-    assert ( isRoot() );
+    assert( isRoot() );
     releaseChildren();
 }
 

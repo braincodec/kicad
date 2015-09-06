@@ -1449,10 +1449,10 @@ void LEGACY_PLUGIN::loadPAD( MODULE* aModule )
 
             switch( padchar )
             {
-            case 'C':   padshape = PAD_CIRCLE;      break;
-            case 'R':   padshape = PAD_RECT;        break;
-            case 'O':   padshape = PAD_OVAL;        break;
-            case 'T':   padshape = PAD_TRAPEZOID;   break;
+            case 'C':   padshape = PAD_SHAPE_CIRCLE;      break;
+            case 'R':   padshape = PAD_SHAPE_RECT;        break;
+            case 'O':   padshape = PAD_SHAPE_OVAL;        break;
+            case 'T':   padshape = PAD_SHAPE_TRAPEZOID;   break;
             default:
                 m_error.Printf( _( "Unknown padshape '%c=0x%02x' on line: %d of module: '%s'" ),
                                 padchar,
@@ -1500,14 +1500,14 @@ void LEGACY_PLUGIN::loadPAD( MODULE* aModule )
             BIU offs_x  = biuParse( data, &data );
             BIU offs_y  = biuParse( data, &data );
 
-            PAD_DRILL_SHAPE_T drShape = PAD_DRILL_CIRCLE;
+            PAD_DRILL_SHAPE_T drShape = PAD_DRILL_SHAPE_CIRCLE;
 
             data = strtok_r( (char*) data, delims, &saveptr );
             if( data )  // optional shape
             {
                 if( data[0] == 'O' )
                 {
-                    drShape = PAD_DRILL_OBLONG;
+                    drShape = PAD_DRILL_SHAPE_OBLONG;
 
                     data    = strtok_r( NULL, delims, &saveptr );
                     drill_x = biuParse( data );
@@ -1532,13 +1532,13 @@ void LEGACY_PLUGIN::loadPAD( MODULE* aModule )
             data = strtok_r( line + SZ( "At" ), delims, &saveptr );
 
             if( !strcmp( data, "SMD" ) )
-                attribute = PAD_SMD;
+                attribute = PAD_ATTRIB_SMD;
             else if( !strcmp( data, "CONN" ) )
-                attribute = PAD_CONN;
+                attribute = PAD_ATTRIB_CONN;
             else if( !strcmp( data, "HOLE" ) )
-                attribute = PAD_HOLE_NOT_PLATED;
+                attribute = PAD_ATTRIB_HOLE_NOT_PLATED;
             else
-                attribute = PAD_STANDARD;
+                attribute = PAD_ATTRIB_STANDARD;
 
             strtok_r( NULL, delims, &saveptr );  // skip BufCar
             data = strtok_r( NULL, delims, &saveptr );
@@ -2073,6 +2073,13 @@ void LEGACY_PLUGIN::loadPCB_LINE()
 
 void LEGACY_PLUGIN::loadNETINFO_ITEM()
 {
+    /* a net description is something like
+     * $EQUIPOT
+     * Na 5 "/BIT1"
+     * St ~
+     * $EndEQUIPOT
+     */
+
     char  buf[1024];
 
     NETINFO_ITEM*   net = NULL;
@@ -2090,14 +2097,20 @@ void LEGACY_PLUGIN::loadNETINFO_ITEM()
             netCode = intParse( line + SZ( "Na" ), &data );
 
             ReadDelimitedText( buf, data, sizeof(buf) );
-            net = new NETINFO_ITEM( m_board, FROM_UTF8( buf ), netCode );
+
+            if( net == NULL )
+                net = new NETINFO_ITEM( m_board, FROM_UTF8( buf ), netCode );
+            else
+            {
+                THROW_IO_ERROR( "Two net definitions in  '$EQUIPOT' block" );
+            }
         }
 
         else if( TESTLINE( "$EndEQUIPOT" ) )
         {
             // net 0 should be already in list, so store this net
             // if it is not the net 0, or if the net 0 does not exists.
-            if( net != NULL && ( net->GetNet() > 0 || m_board->FindNet( 0 ) == NULL ) )
+            if( net && ( net->GetNet() > 0 || m_board->FindNet( 0 ) == NULL ) )
             {
                 m_board->AppendNet( net );
 
@@ -2662,10 +2675,10 @@ void LEGACY_PLUGIN::loadZONE_CONTAINER()
             ZoneConnection popt;
             switch( *padoption )
             {
-            case 'I':   popt = PAD_IN_ZONE;        break;
-            case 'T':   popt = THERMAL_PAD;        break;
-            case 'H':   popt = THT_THERMAL;        break;
-            case 'X':   popt = PAD_NOT_IN_ZONE;    break;
+            case 'I': popt = PAD_ZONE_CONN_FULL;        break;
+            case 'T': popt = PAD_ZONE_CONN_THERMAL;     break;
+            case 'H': popt = PAD_ZONE_CONN_THT_THERMAL; break;
+            case 'X': popt = PAD_ZONE_CONN_NONE;        break;
 
             default:
                 m_error.Printf( wxT( "Bad ZClearance padoption for CZONE_CONTAINER '%s'" ),
@@ -3676,10 +3689,10 @@ void LEGACY_PLUGIN::savePAD( const D_PAD* me ) const
 
     switch( me->GetShape() )
     {
-    case PAD_CIRCLE:    cshape = 'C';   break;
-    case PAD_RECT:      cshape = 'R';   break;
-    case PAD_OVAL:      cshape = 'O';   break;
-    case PAD_TRAPEZOID: cshape = 'T';   break;
+    case PAD_SHAPE_CIRCLE:    cshape = 'C';   break;
+    case PAD_SHAPE_RECT:      cshape = 'R';   break;
+    case PAD_SHAPE_OVAL:      cshape = 'O';   break;
+    case PAD_SHAPE_TRAPEZOID: cshape = 'T';   break;
 
     default:
         THROW_IO_ERROR( wxString::Format( UNKNOWN_PAD_FORMAT, me->GetShape() ) );
@@ -3719,7 +3732,7 @@ void LEGACY_PLUGIN::savePAD( const D_PAD* me ) const
                     fmtBIU( me->GetDrillSize().x ).c_str(),
                     fmtBIUPoint( me->GetOffset() ).c_str() );
 
-    if( me->GetDrillShape() == PAD_DRILL_OBLONG )
+    if( me->GetDrillShape() == PAD_DRILL_SHAPE_OBLONG )
     {
         fprintf( m_fp, " %c %s", 'O', fmtBIUSize( me->GetDrillSize() ).c_str() );
     }
@@ -3730,10 +3743,10 @@ void LEGACY_PLUGIN::savePAD( const D_PAD* me ) const
 
     switch( me->GetAttribute() )
     {
-    case PAD_STANDARD:          texttype = "STD";       break;
-    case PAD_SMD:               texttype = "SMD";       break;
-    case PAD_CONN:              texttype = "CONN";      break;
-    case PAD_HOLE_NOT_PLATED:   texttype = "HOLE";      break;
+    case PAD_ATTRIB_STANDARD:          texttype = "STD";       break;
+    case PAD_ATTRIB_SMD:               texttype = "SMD";       break;
+    case PAD_ATTRIB_CONN:              texttype = "CONN";      break;
+    case PAD_ATTRIB_HOLE_NOT_PLATED:   texttype = "HOLE";      break;
 
     default:
         THROW_IO_ERROR( wxString::Format( UNKNOWN_PAD_ATTRIBUTE, me->GetAttribute() ) );
@@ -3762,7 +3775,7 @@ void LEGACY_PLUGIN::savePAD( const D_PAD* me ) const
     if( me->GetLocalClearance() != 0 )
         fprintf( m_fp, ".LocalClearance %s\n", fmtBIU( me->GetLocalClearance( ) ).c_str() );
 
-    if( me->GetZoneConnection() != UNDEFINED_CONNECTION )
+    if( me->GetZoneConnection() != PAD_ZONE_CONN_INHERITED )
         fprintf( m_fp, ".ZoneConnection %d\n", me->GetZoneConnection() );
 
     if( me->GetThermalWidth() != 0 )
@@ -3827,7 +3840,7 @@ void LEGACY_PLUGIN::saveMODULE( const MODULE* me ) const
     if( me->GetLocalClearance() != 0 )
         fprintf( m_fp, ".LocalClearance %s\n", fmtBIU( me->GetLocalClearance( ) ).c_str() );
 
-    if( me->GetZoneConnection() != UNDEFINED_CONNECTION )
+    if( me->GetZoneConnection() != PAD_ZONE_CONN_INHERITED )
         fprintf( m_fp, ".ZoneConnection %d\n", me->GetZoneConnection() );
 
     if( me->GetThermalWidth() != 0 )
@@ -4003,10 +4016,10 @@ void LEGACY_PLUGIN::saveZONE_CONTAINER( const ZONE_CONTAINER* me ) const
     switch( me->GetPadConnection() )
     {
     default:
-    case PAD_IN_ZONE:       padoption = 'I';  break;
-    case THERMAL_PAD:       padoption = 'T';  break;
-    case THT_THERMAL:       padoption = 'H';  break; // H is for 'hole' since it reliefs holes only
-    case PAD_NOT_IN_ZONE:   padoption = 'X';  break;
+    case PAD_ZONE_CONN_FULL:        padoption = 'I';  break;
+    case PAD_ZONE_CONN_THERMAL:     padoption = 'T';  break;
+    case PAD_ZONE_CONN_THT_THERMAL: padoption = 'H';  break; // H is for 'hole' since it reliefs holes only
+    case PAD_ZONE_CONN_NONE:        padoption = 'X';  break;
     }
 
     fprintf( m_fp,  "ZClearance %s %c\n",

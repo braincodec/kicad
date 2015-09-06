@@ -438,7 +438,11 @@ bool ROUTER_TOOL::prepareInteractive()
 
     // fixme: switch on invisible layer
 
-    if( m_startItem && m_startItem->Net() >= 0 )
+	// for some reason I don't understand, GetNetclass() may return null sometimes...
+    if( m_startItem &&
+        m_startItem->Net() >= 0 &&
+        m_startItem->Parent() &&
+        m_startItem->Parent()->GetNetClass() )
     {
         highlightNet( true, m_startItem->Net() );
         // Update track width and via size shown in main toolbar comboboxes
@@ -517,6 +521,7 @@ void ROUTER_TOOL::performRouting()
             // Synchronize the indicated layer
             m_frame->SetActiveLayer( ToLAYER_ID( m_router->GetCurrentLayer() ) );
             m_router->Move( m_endSnapPoint, m_endItem );
+            m_startItem = NULL;
         }
         else if( evt->IsAction( &ACT_PlaceThroughVia ) )
         {

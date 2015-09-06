@@ -24,43 +24,28 @@
 #include "pns_line.h"
 
 
-void PNS_ITEMSET::release()
-{
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
-    {
-        if( item->BelongsTo( this ) )
-            delete item;
-    }
-
-    m_items.clear();
-}
-
-
 PNS_ITEMSET::~PNS_ITEMSET()
 {
-    release();
 }
 
 
 void PNS_ITEMSET::Add( const PNS_LINE& aLine )
 {
     PNS_LINE* copy = aLine.Clone();
-    copy->SetOwner( this );
-    m_items.push_back( copy );
+    m_items.push_back( ENTRY( copy, true ) );
 }
 
 
 void PNS_ITEMSET::Prepend( const PNS_LINE& aLine )
 {
     PNS_LINE* copy = aLine.Clone();
-    copy->SetOwner( this );
-    m_items.push_front( copy );
+    m_items.insert( m_items.begin(), ENTRY( copy, true ) );
 }
 
 
 PNS_ITEMSET& PNS_ITEMSET::FilterLayers( int aStart, int aEnd, bool aInvert )
 {
-    ITEMS newItems;
+    ENTRIES newItems;
     PNS_LAYERSET l;
 
     if( aEnd < 0 )
@@ -68,10 +53,13 @@ PNS_ITEMSET& PNS_ITEMSET::FilterLayers( int aStart, int aEnd, bool aInvert )
     else
         l = PNS_LAYERSET( aStart, aEnd );
 
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
-
-    if( item->Layers().Overlaps( l ) ^ aInvert )
-        newItems.push_back( item );
+    BOOST_FOREACH( const ENTRY& ent, m_items )
+    {
+        if( ent.item->Layers().Overlaps( l ) ^ aInvert )
+        {
+            newItems.push_back( ent );
+        }
+    }
 
     m_items = newItems;
 
@@ -81,12 +69,14 @@ PNS_ITEMSET& PNS_ITEMSET::FilterLayers( int aStart, int aEnd, bool aInvert )
 
 PNS_ITEMSET& PNS_ITEMSET::FilterKinds( int aKindMask, bool aInvert )
 {
-    ITEMS newItems;
+    ENTRIES newItems;
 
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
+    BOOST_FOREACH( const ENTRY& ent, m_items )
     {
-        if( item->OfKind( aKindMask ) ^ aInvert )
-            newItems.push_back( item );
+        if( ent.item->OfKind( aKindMask ) ^ aInvert )
+        {
+            newItems.push_back( ent );
+        }
     }
 
     m_items = newItems;
@@ -97,12 +87,14 @@ PNS_ITEMSET& PNS_ITEMSET::FilterKinds( int aKindMask, bool aInvert )
 
 PNS_ITEMSET& PNS_ITEMSET::FilterMarker( int aMarker, bool aInvert )
 {
-    ITEMS newItems;
+    ENTRIES newItems;
 
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
+    BOOST_FOREACH( const ENTRY& ent, m_items )
     {
-        if( item->Marker() & aMarker )
-            newItems.push_back( item );
+        if( ent.item->Marker() & aMarker )
+        {
+            newItems.push_back( ent );
+        }
     }
 
     m_items = newItems;
@@ -113,12 +105,14 @@ PNS_ITEMSET& PNS_ITEMSET::FilterMarker( int aMarker, bool aInvert )
 
 PNS_ITEMSET& PNS_ITEMSET::FilterNet( int aNet, bool aInvert )
 {
-    ITEMS newItems;
+    ENTRIES newItems;
 
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
+    BOOST_FOREACH( const ENTRY& ent, m_items )
     {
-        if( ( item->Net() == aNet ) ^ aInvert )
-            newItems.push_back( item );
+        if( ( ent.item->Net() == aNet ) ^ aInvert )
+        {
+            newItems.push_back( ent );
+        }
     }
 
     m_items = newItems;
@@ -129,12 +123,13 @@ PNS_ITEMSET& PNS_ITEMSET::FilterNet( int aNet, bool aInvert )
 
 PNS_ITEMSET& PNS_ITEMSET::ExcludeItem( const PNS_ITEM* aItem )
 {
-    ITEMS newItems;
+    ENTRIES newItems;
 
-    BOOST_FOREACH( PNS_ITEM* item, m_items )
+    BOOST_FOREACH( const ENTRY& ent, m_items )
     {
-        if( item != aItem )
-            newItems.push_back( item );
+        if( ent.item != aItem )
+
+        newItems.push_back( ent );
     }
 
     m_items = newItems;

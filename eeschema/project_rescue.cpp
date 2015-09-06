@@ -33,6 +33,7 @@
 #include <schframe.h>
 #include <wildcards_and_files_ext.h>
 
+#include <cctype>
 #include <boost/foreach.hpp>
 #include <map>
 
@@ -101,15 +102,23 @@ static bool insert_library( PROJECT *aProject, PART_LIB *aLibrary, size_t aIndex
         aProject->SetElem( PROJECT::ELEM_SCH_PART_LIBS, libs );
     }
 
-    PART_LIBS::LibNamesAndPaths( aProject, false, &libPaths, &libNames );
+    try
+    {
+        PART_LIBS::LibNamesAndPaths( aProject, false, &libPaths, &libNames );
 
-    // Make sure the library is not already in the list
-    while( libNames.Index( libName ) != wxNOT_FOUND )
-        libNames.Remove( libName );
+        // Make sure the library is not already in the list
+        while( libNames.Index( libName ) != wxNOT_FOUND )
+            libNames.Remove( libName );
 
-    // Add the library to the list and save
-    libNames.Insert( libName, aIndex );
-    PART_LIBS::LibNamesAndPaths( aProject, true, &libPaths, &libNames );
+        // Add the library to the list and save
+        libNames.Insert( libName, aIndex );
+        PART_LIBS::LibNamesAndPaths( aProject, true, &libPaths, &libNames );
+    }
+    catch( const IO_ERROR& e )
+    {
+        // Could not get or save the current libraries.
+        return false;
+    }
 
     // Save the old libraries in case there is a problem after clear(). We'll
     // put them back in.
@@ -323,7 +332,7 @@ public:
         typedef std::map<wxString, RESCUE_CACHE_CANDIDATE> candidate_map_t;
         candidate_map_t candidate_map;
 
-        wxString part_name_suffix = wxT( "-RESCUE-" ) + aRescuer.GetPrj()->GetProjectName();
+        wxString part_name_suffix = aRescuer.GetPartNameSuffix();
 
         BOOST_FOREACH( SCH_COMPONENT* each_component, *( aRescuer.GetComponents() ) )
         {
@@ -486,6 +495,22 @@ void RESCUER::UndoRescues()
         each_logitem.component->SetPartName( each_logitem.old_name );
         each_logitem.component->ClearFlags();
     }
+}
+
+
+wxString RESCUER::GetPartNameSuffix()
+{
+    wxString suffix = wxT( "-RESCUE-" );
+    wxString pname = GetPrj()->GetProjectName();
+    for( size_t i = 0; i < pname.Len(); ++i )
+    {
+        if( isspace( pname[i].GetValue() ) )
+            suffix.Append( '_' );
+        else
+            suffix.Append( pname[i] );
+    }
+
+    return suffix;
 }
 
 

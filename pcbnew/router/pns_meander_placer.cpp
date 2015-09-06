@@ -152,7 +152,7 @@ bool PNS_MEANDER_PLACER::doMove( const VECTOR2I& aP, PNS_ITEM* aEndItem, int aTa
     {
         if( const PNS_LINE* l = dyn_cast<const PNS_LINE*>( item ) )
         {
-            Router()->DisplayDebugLine( l->CLine(), 5, 10000 );
+            Router()->DisplayDebugLine( l->CLine(), 5, 30000 );
         }
     }
 
@@ -228,13 +228,6 @@ const VECTOR2I& PNS_MEANDER_PLACER::CurrentEnd() const
 {
     return m_currentEnd;
 }
-
-
-int PNS_MEANDER_PLACER::CurrentNet() const
-{
-    return m_initialSegment->Net();
-}
-
 
 int PNS_MEANDER_PLACER::CurrentLayer() const
 {

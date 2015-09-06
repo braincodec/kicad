@@ -477,8 +477,13 @@ bool PNS_LINE_PLACER::rhShoveOnly( const VECTOR2I& aP, PNS_LINE& aNewHead )
 
     m_currentNode = m_shove->CurrentNode();
 
-    if( status == PNS_SHOVE::SH_OK )
+    if( status == PNS_SHOVE::SH_OK  || status == PNS_SHOVE::SH_HEAD_MODIFIED )
     {
+        if( status == PNS_SHOVE::SH_HEAD_MODIFIED )
+        {
+            l2 = m_shove->NewHead();
+        }
+
         optimizer.SetWorld( m_currentNode );
         optimizer.SetEffortLevel( PNS_OPTIMIZER::MERGE_OBTUSE | PNS_OPTIMIZER::SMART_PADS );
         optimizer.SetCollisionMask( PNS_ITEM::ANY );
@@ -938,7 +943,7 @@ void PNS_LINE_PLACER::removeLoops( PNS_NODE* aNode, PNS_LINE& aLatest )
 
     aNode->Add( &aLatest, true );
 
-    for( int s = 0; s < aLatest.SegmentCount(); s++ )
+    for( int s = 0; s < aLatest.LinkCount(); s++ )
     {
         PNS_SEGMENT* seg = ( *aLatest.LinkedSegments() )[s];
         PNS_LINE ourLine = aNode->AssembleLine( seg );
@@ -1086,4 +1091,12 @@ bool PNS_LINE_PLACER::buildInitialLine( const VECTOR2I& aP, PNS_LINE& aHead )
 void PNS_LINE_PLACER::GetModifiedNets( std::vector<int>& aNets ) const
 {
     aNets.push_back( m_currentNet );
+}
+
+PNS_LOGGER* PNS_LINE_PLACER::Logger()
+{
+    if( m_shove )
+        return m_shove->Logger();
+
+    return NULL;
 }

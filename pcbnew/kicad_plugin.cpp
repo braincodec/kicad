@@ -1052,7 +1052,7 @@ void PCB_IO::format( MODULE* aModule, int aNestLevel ) const
         m_out->Print( aNestLevel+1, "(clearance %s)\n",
                       FMT_IU( aModule->GetLocalClearance() ).c_str() );
 
-    if( aModule->GetZoneConnection() != UNDEFINED_CONNECTION )
+    if( aModule->GetZoneConnection() != PAD_ZONE_CONN_INHERITED )
         m_out->Print( aNestLevel+1, "(zone_connect %d)\n", aModule->GetZoneConnection() );
 
     if( aModule->GetThermalWidth() != 0 )
@@ -1225,10 +1225,10 @@ void PCB_IO::format( D_PAD* aPad, int aNestLevel ) const
 
     switch( aPad->GetShape() )
     {
-    case PAD_CIRCLE:    shape = "circle";       break;
-    case PAD_RECT:      shape = "rect";         break;
-    case PAD_OVAL:      shape = "oval";         break;
-    case PAD_TRAPEZOID: shape = "trapezoid";    break;
+    case PAD_SHAPE_CIRCLE:    shape = "circle";       break;
+    case PAD_SHAPE_RECT:      shape = "rect";         break;
+    case PAD_SHAPE_OVAL:      shape = "oval";         break;
+    case PAD_SHAPE_TRAPEZOID: shape = "trapezoid";    break;
 
     default:
         THROW_IO_ERROR( wxString::Format( _( "unknown pad type: %d"), aPad->GetShape() ) );
@@ -1238,10 +1238,10 @@ void PCB_IO::format( D_PAD* aPad, int aNestLevel ) const
 
     switch( aPad->GetAttribute() )
     {
-    case PAD_STANDARD:          type = "thru_hole";      break;
-    case PAD_SMD:               type = "smd";            break;
-    case PAD_CONN:              type = "connect";        break;
-    case PAD_HOLE_NOT_PLATED:   type = "np_thru_hole";   break;
+    case PAD_ATTRIB_STANDARD:          type = "thru_hole";      break;
+    case PAD_ATTRIB_SMD:               type = "smd";            break;
+    case PAD_ATTRIB_CONN:              type = "connect";        break;
+    case PAD_ATTRIB_HOLE_NOT_PLATED:   type = "np_thru_hole";   break;
 
     default:
         THROW_IO_ERROR( wxString::Format( _( "unknown pad attribute: %d" ),
@@ -1270,7 +1270,7 @@ void PCB_IO::format( D_PAD* aPad, int aNestLevel ) const
     {
         m_out->Print( 0, " (drill" );
 
-        if( aPad->GetDrillShape() == PAD_DRILL_OBLONG )
+        if( aPad->GetDrillShape() == PAD_DRILL_SHAPE_OBLONG )
             m_out->Print( 0, " oval" );
 
         if( sz.GetWidth() > 0 )
@@ -1310,7 +1310,7 @@ void PCB_IO::format( D_PAD* aPad, int aNestLevel ) const
     if( aPad->GetLocalClearance() != 0 )
         StrPrintf( &output, " (clearance %s)", FMT_IU( aPad->GetLocalClearance() ).c_str() );
 
-    if( aPad->GetZoneConnection() != UNDEFINED_CONNECTION )
+    if( aPad->GetZoneConnection() != PAD_ZONE_CONN_INHERITED )
         StrPrintf( &output, " (zone_connect %d)", aPad->GetZoneConnection() );
 
     if( aPad->GetThermalWidth() != 0 )
@@ -1497,18 +1497,18 @@ void PCB_IO::format( ZONE_CONTAINER* aZone, int aNestLevel ) const
     switch( aZone->GetPadConnection() )
     {
     default:
-    case THERMAL_PAD:       // Default option not saved or loaded.
+    case PAD_ZONE_CONN_THERMAL:       // Default option not saved or loaded.
         break;
 
-    case THT_THERMAL:
+    case PAD_ZONE_CONN_THT_THERMAL:
         m_out->Print( 0, " thru_hole_only" );
         break;
 
-    case PAD_IN_ZONE:
+    case PAD_ZONE_CONN_FULL:
         m_out->Print( 0, " yes" );
         break;
 
-    case PAD_NOT_IN_ZONE:
+    case PAD_ZONE_CONN_NONE:
         m_out->Print( 0, " no" );
         break;
     }

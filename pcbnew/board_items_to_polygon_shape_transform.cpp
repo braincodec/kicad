@@ -143,19 +143,19 @@ void MODULE::TransformPadsShapesWithClearanceToPolygon( LAYER_ID aLayer,
 
         // NPTH pads are not drawn on layers if the shape size and pos is the same
         // as their hole:
-        if( aSkipNPTHPadsWihNoCopper && pad->GetAttribute() == PAD_HOLE_NOT_PLATED )
+        if( aSkipNPTHPadsWihNoCopper && pad->GetAttribute() == PAD_ATTRIB_HOLE_NOT_PLATED )
         {
             if( pad->GetDrillSize() == pad->GetSize() && pad->GetOffset() == wxPoint( 0, 0 ) )
             {
                 switch( pad->GetShape() )
                 {
-                case PAD_CIRCLE:
-                    if( pad->GetDrillShape() == PAD_DRILL_CIRCLE )
+                case PAD_SHAPE_CIRCLE:
+                    if( pad->GetDrillShape() == PAD_DRILL_SHAPE_CIRCLE )
                         continue;
                     break;
 
-                case PAD_OVAL:
-                    if( pad->GetDrillShape() != PAD_DRILL_CIRCLE )
+                case PAD_SHAPE_OVAL:
+                    if( pad->GetDrillShape() != PAD_DRILL_SHAPE_CIRCLE )
                         continue;
                     break;
 
@@ -201,11 +201,12 @@ void MODULE::TransformPadsShapesWithClearanceToPolygon( LAYER_ID aLayer,
  *  initial radius * aCorrectionFactor
  */
 void MODULE::TransformGraphicShapesWithClearanceToPolygonSet(
-                        LAYER_ID aLayer,
+                        LAYER_ID        aLayer,
                         SHAPE_POLY_SET& aCornerBuffer,
-                        int                    aInflateValue,
-                        int                    aCircleToSegmentsCount,
-                        double                 aCorrectionFactor )
+                        int             aInflateValue,
+                        int             aCircleToSegmentsCount,
+                        double          aCorrectionFactor,
+                        int             aCircleToSegmentsCountForTexts )
 {
     std::vector<TEXTE_MODULE *> texts;  // List of TEXTE_MODULE to convert
     EDGE_MODULE* outline;
@@ -248,7 +249,12 @@ void MODULE::TransformGraphicShapesWithClearanceToPolygonSet(
         texts.push_back( &Value() );
 
     s_cornerBuffer = &aCornerBuffer;
-    s_textCircle2SegmentCount = aCircleToSegmentsCount;
+
+    // To allow optimization of circles approximated by segments,
+    // aCircleToSegmentsCountForTexts, when not 0, is used.
+    // if 0 (default value) the aCircleToSegmentsCount is used
+    s_textCircle2SegmentCount = aCircleToSegmentsCountForTexts ?
+                                aCircleToSegmentsCountForTexts : aCircleToSegmentsCount;
 
     for( unsigned ii = 0; ii < texts.size(); ii++ )
     {
@@ -563,13 +569,13 @@ void D_PAD:: TransformShapeWithClearanceToPolygon( SHAPE_POLY_SET& aCornerBuffer
 
     switch( GetShape() )
     {
-    case PAD_CIRCLE:
+    case PAD_SHAPE_CIRCLE:
         dx = KiROUND( dx * aCorrectionFactor );
         TransformCircleToPolygon( aCornerBuffer, PadShapePos, dx,
                                   aCircleToSegmentsCount );
         break;
 
-    case PAD_OVAL:
+    case PAD_SHAPE_OVAL:
         // An oval pad has the same shape as a segment with rounded ends
         {
         int width;
@@ -595,8 +601,8 @@ void D_PAD:: TransformShapeWithClearanceToPolygon( SHAPE_POLY_SET& aCornerBuffer
         }
         break;
 
-    case PAD_TRAPEZOID:
-    case PAD_RECT:
+    case PAD_SHAPE_TRAPEZOID:
+    case PAD_SHAPE_RECT:
     {
         wxPoint corners[4];
         BuildPadPolygon( corners, wxSize( 0, 0 ), angle );
@@ -637,14 +643,14 @@ void D_PAD::BuildPadShapePolygon( SHAPE_POLY_SET& aCornerBuffer,
                                                      * the pad position is NOT the shape position */
     switch( GetShape() )
     {
-    case PAD_CIRCLE:
-    case PAD_OVAL:
+    case PAD_SHAPE_CIRCLE:
+    case PAD_SHAPE_OVAL:
         TransformShapeWithClearanceToPolygon( aCornerBuffer, aInflateValue.x,
                                               aSegmentsPerCircle, aCorrectionFactor );
         break;
 
-    case PAD_TRAPEZOID:
-    case PAD_RECT:
+    case PAD_SHAPE_TRAPEZOID:
+    case PAD_SHAPE_RECT:
         aCornerBuffer.NewOutline();
 
         BuildPadPolygon( corners, aInflateValue, m_Orient );
@@ -760,7 +766,7 @@ void    CreateThermalReliefPadPolygon( SHAPE_POLY_SET& aCornerBuffer,
 
     switch( aPad.GetShape() )
     {
-    case PAD_CIRCLE:    // Add 4 similar holes
+    case PAD_SHAPE_CIRCLE:    // Add 4 similar holes
         {
             /* we create 4 copper holes and put them in position 1, 2, 3 and 4
              * here is the area of the rectangular pad + its thermal gap
@@ -842,7 +848,7 @@ void    CreateThermalReliefPadPolygon( SHAPE_POLY_SET& aCornerBuffer,
         }
         break;
 
-    case PAD_OVAL:
+    case PAD_SHAPE_OVAL:
         {
             // Oval pad support along the lines of round and rectangular pads
             std::vector <wxPoint> corners_buffer;               // Polygon buffer as vector
@@ -972,7 +978,7 @@ void    CreateThermalReliefPadPolygon( SHAPE_POLY_SET& aCornerBuffer,
         }
         break;
 
-    case PAD_RECT:       // draw 4 Holes
+    case PAD_SHAPE_RECT:       // draw 4 Holes
         {
             /* we create 4 copper holes and put them in position 1, 2, 3 and 4
              * here is the area of the rectangular pad + its thermal gap
@@ -1069,7 +1075,7 @@ void    CreateThermalReliefPadPolygon( SHAPE_POLY_SET& aCornerBuffer,
         }
         break;
 
-    case PAD_TRAPEZOID:
+    case PAD_SHAPE_TRAPEZOID:
         {
         SHAPE_POLY_SET antipad;       // The full antipad area
 

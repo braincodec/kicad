@@ -206,12 +206,13 @@ const SHAPE_LINE_CHAIN SHAPE_POLY_SET::convertFromClipper( const Path& aPath )
     return lc;
 }
 
-
-void SHAPE_POLY_SET::booleanOp( ClipType type, const SHAPE_POLY_SET& b )
+void SHAPE_POLY_SET::booleanOp( ClipType aType, const SHAPE_POLY_SET& aOtherShape,
+                                bool aFastMode )
 {
     Clipper c;
 
-    c.StrictlySimple( true );
+    if( !aFastMode )
+        c.StrictlySimple( true );
 
     BOOST_FOREACH( const POLYGON& poly, m_polys )
     {
@@ -219,7 +220,7 @@ void SHAPE_POLY_SET::booleanOp( ClipType type, const SHAPE_POLY_SET& b )
             c.AddPath( convertToClipper( poly[i], i > 0 ? false : true ), ptSubject, true );
     }
 
-    BOOST_FOREACH( const POLYGON& poly, b.m_polys )
+    BOOST_FOREACH( const POLYGON& poly, aOtherShape.m_polys )
     {
         for( unsigned int i = 0; i < poly.size(); i++ )
             c.AddPath( convertToClipper( poly[i], i > 0 ? false : true ), ptClip, true );
@@ -227,21 +228,75 @@ void SHAPE_POLY_SET::booleanOp( ClipType type, const SHAPE_POLY_SET& b )
 
     PolyTree solution;
 
-    c.Execute( type, solution, pftNonZero, pftNonZero );
+    c.Execute( aType, solution, pftNonZero, pftNonZero );
 
     importTree( &solution );
 }
 
 
-void SHAPE_POLY_SET::BooleanAdd( const SHAPE_POLY_SET& b )
+void SHAPE_POLY_SET::booleanOp( ClipperLib::ClipType aType,
+                                const SHAPE_POLY_SET& aShape,
+                                const SHAPE_POLY_SET& aOtherShape,
+                                bool aFastMode )
 {
-    booleanOp( ctUnion, b );
+    Clipper c;
+
+    if( !aFastMode )
+        c.StrictlySimple( true );
+
+    BOOST_FOREACH( const POLYGON& poly, aShape.m_polys )
+    {
+        for( unsigned int i = 0; i < poly.size(); i++ )
+            c.AddPath( convertToClipper( poly[i], i > 0 ? false : true ), ptSubject, true );
+    }
+
+    BOOST_FOREACH( const POLYGON& poly, aOtherShape.m_polys )
+    {
+        for( unsigned int i = 0; i < poly.size(); i++ )
+            c.AddPath( convertToClipper( poly[i], i > 0 ? false : true ), ptClip, true );
+    }
+
+    PolyTree solution;
+
+    c.Execute( aType, solution, pftNonZero, pftNonZero );
+
+    importTree( &solution );
 }
 
 
-void SHAPE_POLY_SET::BooleanSubtract( const SHAPE_POLY_SET& b )
+void SHAPE_POLY_SET::BooleanAdd( const SHAPE_POLY_SET& b, bool aFastMode )
 {
-    booleanOp( ctDifference, b );
+    booleanOp( ctUnion, b, aFastMode );
+}
+
+
+void SHAPE_POLY_SET::BooleanSubtract( const SHAPE_POLY_SET& b, bool aFastMode )
+{
+    booleanOp( ctDifference, b, aFastMode );
+}
+
+
+void SHAPE_POLY_SET::BooleanIntersection( const SHAPE_POLY_SET& b, bool aFastMode )
+{
+    booleanOp( ctIntersection, b, aFastMode );
+}
+
+
+void SHAPE_POLY_SET::BooleanAdd( const SHAPE_POLY_SET& a, const SHAPE_POLY_SET& b, bool aFastMode )
+{
+    booleanOp( ctUnion, a, b, aFastMode );
+}
+
+
+void SHAPE_POLY_SET::BooleanSubtract( const SHAPE_POLY_SET& a, const SHAPE_POLY_SET& b, bool aFastMode )
+{
+    booleanOp( ctDifference, a, b, aFastMode );
+}
+
+
+void SHAPE_POLY_SET::BooleanIntersection( const SHAPE_POLY_SET& a, const SHAPE_POLY_SET& b, bool aFastMode )
+{
+    booleanOp( ctIntersection, a, b, aFastMode );
 }
 
 
@@ -495,9 +550,9 @@ void SHAPE_POLY_SET::fractureSingle( POLYGON& paths )
 }
 
 
-void SHAPE_POLY_SET::Fracture()
+void SHAPE_POLY_SET::Fracture( bool aFastMode )
 {
-    Simplify(); // remove overlallping holes/degeneracy
+    Simplify( aFastMode ); // remove overlapping holes/degeneracy
 
     BOOST_FOREACH( POLYGON& paths, m_polys )
     {
@@ -506,11 +561,11 @@ void SHAPE_POLY_SET::Fracture()
 }
 
 
-void SHAPE_POLY_SET::Simplify()
+void SHAPE_POLY_SET::Simplify( bool aFastMode )
 {
     SHAPE_POLY_SET empty;
 
-    booleanOp( ctUnion, empty );
+    booleanOp( ctUnion, empty, aFastMode );
 }
 
 
@@ -638,11 +693,17 @@ bool SHAPE_POLY_SET::Contains( const VECTOR2I& aP, int aSubpolyIndex ) const
 {
     // fixme: support holes!
 
+    if( m_polys.size() == 0 ) // empty set?
+        return false;
+
     if( aSubpolyIndex >= 0 )
         return pointInPolygon( aP, m_polys[aSubpolyIndex][0] );
 
     BOOST_FOREACH ( const POLYGON& polys, m_polys )
     {
+        if( polys.size() == 0 )
+            continue;
+
         if( pointInPolygon( aP, polys[0] ) )
             return true;
     }

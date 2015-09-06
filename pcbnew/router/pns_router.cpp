@@ -72,6 +72,7 @@ PNS_PCBNEW_CLEARANCE_FUNC::PNS_PCBNEW_CLEARANCE_FUNC( PNS_ROUTER* aRouter ) :
 
     PNS_TOPOLOGY topo( world );
     m_clearanceCache.resize( brd->GetNetCount() );
+    m_useDpGap = false;
 
     for( unsigned int i = 0; i < brd->GetNetCount(); i++ )
     {
@@ -125,7 +126,10 @@ int PNS_PCBNEW_CLEARANCE_FUNC::operator()( const PNS_ITEM* aA, const PNS_ITEM* a
 
     bool linesOnly = aA->OfKind( PNS_ITEM::SEGMENT | PNS_ITEM::LINE ) && aB->OfKind( PNS_ITEM::SEGMENT | PNS_ITEM::LINE );
 
-    if( linesOnly && net_a >= 0 && net_b >= 0 && m_clearanceCache[net_a].coupledNet == net_b )
+    if( net_a == net_b )
+        return 0;
+
+    if( m_useDpGap && linesOnly && net_a >= 0 && net_b >= 0 && m_clearanceCache[net_a].coupledNet == net_b )
     {
         cl_a = cl_b = m_router->Sizes().DiffPairGap() - 2 * PNS_HULL_MARGIN;
     }
@@ -160,12 +164,12 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
 
     switch( aPad->GetAttribute() )
     {
-    case PAD_STANDARD:
+    case PAD_ATTRIB_STANDARD:
         break;
 
-    case PAD_SMD:
-    case PAD_HOLE_NOT_PLATED:
-    case PAD_CONN:
+    case PAD_ATTRIB_SMD:
+    case PAD_ATTRIB_HOLE_NOT_PLATED:
+    case PAD_ATTRIB_CONN:
         {
             LSET lmsk = aPad->GetLayerSet();
             bool is_copper = false;
@@ -175,7 +179,7 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                 if( lmsk[i] )
                 {
                     is_copper = true;
-                    if( aPad->GetAttribute() != PAD_HOLE_NOT_PLATED )
+                    if( aPad->GetAttribute() != PAD_ATTRIB_HOLE_NOT_PLATED )
                         layers = PNS_LAYERSET( i );
                     break;
                 }
@@ -211,7 +215,7 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
 
     double orient = aPad->GetOrientation() / 10.0;
 
-    if( aPad->GetShape() == PAD_CIRCLE )
+    if( aPad->GetShape() == PAD_SHAPE_CIRCLE )
     {
         solid->SetShape( new SHAPE_CIRCLE( c, sz.x / 2 ) );
     }
@@ -224,8 +228,7 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
 
             switch( aPad->GetShape() )
             {
-
-            case PAD_OVAL:
+            case PAD_SHAPE_OVAL:
                 if( sz.x == sz.y )
                     solid->SetShape( new SHAPE_CIRCLE( c, sz.x / 2 ) );
                 else
@@ -243,16 +246,16 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                 }
                 break;
 
-            case PAD_RECT:
+            case PAD_SHAPE_RECT:
                 solid->SetShape( new SHAPE_RECT( c - sz / 2, sz.x, sz.y ) );
                 break;
 
-            case PAD_TRAPEZOID:
+            case PAD_SHAPE_TRAPEZOID:
             {
                 wxPoint coords[4];
                 aPad->BuildPadPolygon( coords, wxSize( 0, 0 ), aPad->GetOrientation() );
-
                 SHAPE_CONVEX* shape = new SHAPE_CONVEX();
+
                 for( int ii = 0; ii < 4; ii++ )
                 {
                     shape->Append( wx_c + coords[ii] );
@@ -272,9 +275,9 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
         {
             switch( aPad->GetShape() )
             {
-            // PAD_CIRCLE already handled above
+            // PAD_SHAPE_CIRCLE already handled above
 
-            case PAD_OVAL:
+            case PAD_SHAPE_OVAL:
                 if( sz.x == sz.y )
                     solid->SetShape( new SHAPE_CIRCLE( c, sz.x / 2 ) );
                 else
@@ -288,9 +291,10 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                     int w = aPad->BuildSegmentFromOvalShape( start, end, 0.0, wxSize( 0, 0 ) );
 
                     if( start.y == 0 )
-                        corner = wxPoint( start.x, -(w / 2) );
+                        corner = wxPoint( start.x, -( w / 2 ) );
                     else
                         corner = wxPoint( w / 2, start.y );
+
                     RotatePoint( &start, aPad->GetOrientation() );
                     RotatePoint( &corner, aPad->GetOrientation() );
                     shape->Append( wx_c + corner );
@@ -305,7 +309,8 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                     if( end.y == 0 )
                         corner = wxPoint( end.x, w / 2 );
                     else
-                        corner = wxPoint( -(w / 2), end.y );
+                        corner = wxPoint( -( w / 2 ), end.y );
+
                     RotatePoint( &end, aPad->GetOrientation() );
                     RotatePoint( &corner, aPad->GetOrientation() );
                     shape->Append( wx_c + corner );
@@ -321,8 +326,8 @@ PNS_ITEM* PNS_ROUTER::syncPad( D_PAD* aPad )
                 }
                 break;
 
-            case PAD_RECT:
-            case PAD_TRAPEZOID:
+            case PAD_SHAPE_RECT:
+            case PAD_SHAPE_TRAPEZOID:
             {
                 wxPoint coords[4];
                 aPad->BuildPadPolygon( coords, wxSize( 0, 0 ), aPad->GetOrientation() );
@@ -604,6 +609,8 @@ bool PNS_ROUTER::StartDragging( const VECTOR2I& aP, PNS_ITEM* aStartItem )
 
 bool PNS_ROUTER::StartRouting( const VECTOR2I& aP, PNS_ITEM* aStartItem, int aLayer )
 {
+    m_clearanceFunc->UseDpGap( false );
+
     switch( m_mode )
     {
         case PNS_MODE_ROUTE_SINGLE:
@@ -611,6 +618,7 @@ bool PNS_ROUTER::StartRouting( const VECTOR2I& aP, PNS_ITEM* aStartItem, int aLa
             break;
         case PNS_MODE_ROUTE_DIFF_PAIR:
             m_placer = new PNS_DIFF_PAIR_PLACER( this );
+            m_clearanceFunc->UseDpGap( true );
             break;
         case PNS_MODE_TUNE_SINGLE:
             m_placer = new PNS_MEANDER_PLACER( this );
@@ -1014,11 +1022,12 @@ void PNS_ROUTER::ToggleViaPlacement()
 }
 
 
-int PNS_ROUTER::GetCurrentNet() const
+const std::vector<int> PNS_ROUTER::GetCurrentNets() const
 {
     if( m_placer )
-        return m_placer->CurrentNet();
-    return -1;
+        return m_placer->CurrentNets();
+
+    return std::vector<int>();
 }
 
 
@@ -1038,6 +1047,10 @@ void PNS_ROUTER::DumpLog()
     {
         case DRAG_SEGMENT:
             logger = m_dragger->Logger();
+            break;
+
+        case ROUTE_TRACK:
+            logger = m_placer->Logger();
             break;
 
         default:

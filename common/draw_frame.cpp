@@ -658,7 +658,7 @@ void EDA_DRAW_FRAME::LoadSettings( wxConfigBase* aCfg )
 {
     EDA_BASE_FRAME::LoadSettings( aCfg );
 
-    wxString baseCfgName = GetName();
+    wxString baseCfgName = ConfigBaseName();
 
     aCfg->Read( baseCfgName + CursorShapeEntryKeyword, &m_cursorShape, ( long )0 );
 
@@ -685,7 +685,7 @@ void EDA_DRAW_FRAME::SaveSettings( wxConfigBase* aCfg )
 {
     EDA_BASE_FRAME::SaveSettings( aCfg );
 
-    wxString baseCfgName = GetName();
+    wxString baseCfgName = ConfigBaseName();
 
     aCfg->Write( baseCfgName + CursorShapeEntryKeyword, m_cursorShape );
     aCfg->Write( baseCfgName + ShowGridEntryKeyword, IsGridVisible() );
@@ -745,6 +745,16 @@ void EDA_DRAW_FRAME::UpdateMsgPanel()
         SetMsgPanel( item );
 }
 
+// FIXME: There needs to be a better way for child windows to load preferences.
+//        This function pushes four preferences from a parent window to a child window
+//        i.e. from eeschema to the schematic symbol editor
+void EDA_DRAW_FRAME::PushPreferences( const EDA_DRAW_PANEL* aParentCanvas )
+{
+    m_canvas->SetEnableZoomNoCenter( aParentCanvas->GetEnableZoomNoCenter() );
+    m_canvas->SetEnableMiddleButtonPan( aParentCanvas->GetEnableMiddleButtonPan() );
+    m_canvas->SetMiddleButtonPanLimited( aParentCanvas->GetMiddleButtonPanLimited() );
+    m_canvas->SetEnableAutoPan( aParentCanvas->GetEnableAutoPan() );
+}
 
 wxString EDA_DRAW_FRAME::CoordinateToString( int aValue, bool aConvertToMils ) const
 {
@@ -1049,7 +1059,7 @@ void EDA_DRAW_FRAME::UseGalCanvas( bool aEnable )
     // Display the same view after canvas switching
     if( aEnable )
     {
-        // Switch to GAL rendering
+        // Switch to GAL renderer from legacy
         if( !m_galCanvasActive )
         {
             // Set up viewport
@@ -1070,7 +1080,7 @@ void EDA_DRAW_FRAME::UseGalCanvas( bool aEnable )
     }
     else if( m_galCanvasActive )
     {
-        // Switch to standard rendering
+        // Switch to legacy renderer from GAL
         double zoomFactor = gal->GetWorldScale() / gal->GetZoomFactor();
         // TODO replace it with EDA_DRAW_PANEL_GAL::GetLegacyZoom
         m_canvas->SetZoom( 1.0 / ( zoomFactor * view->GetScale() ) );

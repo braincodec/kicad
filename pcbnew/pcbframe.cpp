@@ -136,6 +136,7 @@ BEGIN_EVENT_TABLE( PCB_EDIT_FRAME, PCB_BASE_FRAME )
     EVT_MENU( ID_PCB_DRAWINGS_WIDTHS_SETUP, PCB_EDIT_FRAME::OnConfigurePcbOptions )
     EVT_MENU( ID_PCB_LIB_TABLE_EDIT, PCB_EDIT_FRAME::Process_Config )
     EVT_MENU( ID_PCB_LIB_WIZARD, PCB_EDIT_FRAME::Process_Config )
+    EVT_MENU( ID_PCB_3DSHAPELIB_WIZARD, PCB_EDIT_FRAME::Process_Config )
     EVT_MENU( ID_PREFERENCES_CONFIGURE_PATHS, PCB_EDIT_FRAME::OnConfigurePaths )
     EVT_MENU( ID_CONFIG_SAVE, PCB_EDIT_FRAME::Process_Config )
     EVT_MENU( ID_CONFIG_READ, PCB_EDIT_FRAME::Process_Config )
@@ -321,7 +322,6 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_hasAutoSave = true;
     m_RecordingMacros = -1;
     m_microWaveToolBar = NULL;
-    EDA_DRAW_PANEL_GAL::GAL_TYPE canvasType = LoadCanvasTypeSetting();
 
     m_rotationAngle = 900;
 
@@ -329,8 +329,10 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
         m_Macros[i].m_Record.clear();
 
     // Create GAL canvas
-    SetGalCanvas( new PCB_DRAW_PANEL_GAL( this, -1, wxPoint( 0, 0 ), m_FrameSize,
-                  canvasType == EDA_DRAW_PANEL_GAL::GAL_TYPE_NONE ? EDA_DRAW_PANEL_GAL::GAL_TYPE_CAIRO : canvasType ) );
+    EDA_DRAW_PANEL_GAL* galCanvas = new PCB_DRAW_PANEL_GAL( this, -1, wxPoint( 0, 0 ),
+                                                m_FrameSize, EDA_DRAW_PANEL_GAL::GAL_TYPE_NONE );
+
+    SetGalCanvas( galCanvas );
 
     SetBoard( new BOARD() );
 
@@ -451,16 +453,18 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_auimgr.Update();
 
     setupTools();
-    enableGALSpecificMenus();
 
     Zoom_Automatique( false );
 
+    EDA_DRAW_PANEL_GAL::GAL_TYPE canvasType = LoadCanvasTypeSetting();
+
     if( canvasType != EDA_DRAW_PANEL_GAL::GAL_TYPE_NONE )
     {
-        GetGalCanvas()->SwitchBackend( canvasType );
-        UseGalCanvas( true );
+        if( GetGalCanvas()->SwitchBackend( canvasType ) )
+            UseGalCanvas( true );
     }
 
+    enableGALSpecificMenus();
 }
 
 
@@ -477,29 +481,14 @@ PCB_EDIT_FRAME::~PCB_EDIT_FRAME()
 
 void PCB_EDIT_FRAME::SetBoard( BOARD* aBoard )
 {
-    bool new_board = ( aBoard != m_Pcb );
-
-    PCB_BASE_FRAME::SetBoard( aBoard );
+    PCB_BASE_EDIT_FRAME::SetBoard( aBoard );
 
     if( IsGalCanvasActive() )
     {
-        PCB_DRAW_PANEL_GAL* drawPanel = static_cast<PCB_DRAW_PANEL_GAL*>( GetGalCanvas() );
-
-        drawPanel->DisplayBoard( aBoard );
         aBoard->GetRatsnest()->Recalculate();
 
         // reload the worksheet
         SetPageSettings( aBoard->GetPageSettings() );
-
-        // update the tool manager with the new board and its view.
-        if( m_toolManager )
-        {
-            m_toolManager->SetEnvironment( aBoard, drawPanel->GetView(),
-                                           drawPanel->GetViewControls(), this );
-
-            if( new_board )
-                m_toolManager->ResetTools( TOOL_BASE::MODEL_RELOAD );
-        }
     }
 }
 
@@ -672,6 +661,18 @@ void PCB_EDIT_FRAME::Show3D_Frame( wxCommandEvent& event )
 
 void PCB_EDIT_FRAME::UseGalCanvas( bool aEnable )
 {
+    if( aEnable )
+    {
+        BOARD* board = GetBoard();
+
+        if( board )
+            board->GetRatsnest()->ProcessBoard();
+    }
+    else
+    {
+        Compile_Ratsnest( NULL, true );
+    }
+
     PCB_BASE_EDIT_FRAME::UseGalCanvas( aEnable );
 
     enableGALSpecificMenus();
@@ -991,14 +992,13 @@ void PCB_EDIT_FRAME::ScriptingConsoleEnableDisable( wxCommandEvent& aEvent )
 {
 
     wxWindow * pythonPanelFrame = findPythonConsole();
-    bool pythonPanelShown = false;
+    bool pythonPanelShown = true;
 
     if( pythonPanelFrame == NULL )
         pythonPanelFrame = new PYTHON_CONSOLE_FRAME( this, pythonConsoleNameId() );
     else
-        pythonPanelShown = pythonPanelFrame->IsShown();
+        pythonPanelShown = ! pythonPanelFrame->IsShown();
 
-    pythonPanelShown = ! pythonPanelShown;
     pythonPanelFrame->Show( pythonPanelShown );
 }
 

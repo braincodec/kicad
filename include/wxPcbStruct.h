@@ -986,11 +986,14 @@ public:
      *                          converted to a STEP model.
      * @param a3D_Subdir = sub directory where 3D shapes files are copied.  This is only used
      *                     when aExport3DFiles == true
+     * @param aXRef = X value of PCB (0,0) reference point
+     * @param aYRef = Y value of PCB (0,0) reference point
      * @return true if Ok.
      */
     bool ExportVRML_File( const wxString & aFullFileName, double aMMtoWRMLunit,
                           bool aExport3DFiles, bool aUseRelativePaths,
-                          bool aUsePlainPCB, const wxString & a3D_Subdir );
+                          bool aUsePlainPCB, const wxString & a3D_Subdir,
+                          double aXRef, double aYRef );
 
     /**
      * Function ExportToIDF3
@@ -1642,7 +1645,7 @@ public:
      * @param aTextSize = the size of ref and value texts ( <= 0 to use board default values )
      * @param aPadCount = number of pads
      * Pads settings are:
-     *  PAD_SMD, rectangular, H size = V size = current track width.
+     *  PAD_ATTRIB_SMD, rectangular, H size = V size = current track width.
      */
     MODULE* CreateMuWaveBaseFootprint( const wxString& aValue, int aTextSize, int aPadCount );
 
@@ -1650,7 +1653,7 @@ public:
      * Create_MuWaveComponent
      * creates a module "GAP" or "STUB" used in micro wave designs.
      *  This module has 2 pads:
-     *  PAD_SMD, rectangular, H size = V size = current track width.
+     *  PAD_ATTRIB_SMD, rectangular, H size = V size = current track width.
      *  the "gap" is isolation created between this 2 pads
      */
     MODULE* Create_MuWaveComponent( int shape_type );
