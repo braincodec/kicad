@@ -154,7 +154,7 @@ public:
         }
 
         // Move the fields
-        for( size_t field_idx = 0; field_idx < m_fields.size(); ++field_idx )
+        for( int field_idx = 0; field_idx < m_fields.size(); ++field_idx )
         {
             SCH_FIELD* field = m_fields[field_idx];
 
@@ -201,7 +201,7 @@ protected:
             max_field_width = std::max( max_field_width, field_width );
         }
 
-        return wxSize( max_field_width, FIELD_V_SPACING * (m_fields.size() - 1) );
+        return wxSize( max_field_width, int( FIELD_V_SPACING * (m_fields.size() - 1) ) );
     }
 
 
