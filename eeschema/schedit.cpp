@@ -1183,8 +1183,8 @@ void SCH_EDIT_FRAME::OnOrient( wxCommandEvent& aEvent )
         break;
 
     default:
-        wxFAIL_MSG( wxString::Format( wxT( "Schematic object type %s cannot be oriented." ),
-                                      GetChars( item->GetClass() ) ) );
+        // This object cannot be oriented.
+        ;
     }
 
     if( item->GetFlags() == 0 )
