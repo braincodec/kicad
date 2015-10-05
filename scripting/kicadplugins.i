@@ -78,33 +78,28 @@ def ReloadPlugins():
             ReloadPlugin(k)
 
 
-def LoadPlugins( plugpath ):
+def LoadPlugins(plugpath):
     import os
     import sys
 
     kicad_path = os.environ.get('KICAD_PATH')
     plugin_directories=[]
 
-    if plugpath and os.path.isdir( plugpath ):
-        plugin_directories.append( plugpath )
+    if plugpath:
+        plugin_directories.append(plugpath)
 
-    if kicad_path and os.path.isdir(kicad_path):
+    if kicad_path:
         plugin_directories.append(os.path.join(kicad_path, 'scripting', 'plugins'))
 
     if sys.platform.startswith('linux'):
         plugin_directories.append(os.environ['HOME']+'/.kicad_plugins/')
         plugin_directories.append(os.environ['HOME']+'/.kicad/scripting/plugins/')
 
-    if sys.platform.startswith('darwin'):
-        for singlepath in sys.path:
-            if os.path.isdir( os.path.join( singlepath, 'scripting', 'plugins') ):
-                plugin_directories.append( os.path.join( singlepath, 'scripting', 'plugins') )
-
     for plugins_dir in plugin_directories:
-        sys.path.append(plugins_dir)
-
         if not os.path.isdir(plugins_dir):
             continue
+
+        sys.path.append(plugins_dir)
 
         for module in os.listdir(plugins_dir):
             if os.path.isdir(plugins_dir+module):
