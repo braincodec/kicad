@@ -40,7 +40,7 @@
 using boost::optional;
 
 PNS_DIFF_PAIR_PLACER::PNS_DIFF_PAIR_PLACER( PNS_ROUTER* aRouter ) :
-    PNS_PLACEMENT_ALGO ( aRouter )
+    PNS_PLACEMENT_ALGO( aRouter )
 {
     m_state = RT_START;
     m_chainedPlacement = false;
@@ -121,6 +121,7 @@ bool PNS_DIFF_PAIR_PLACER::rhMarkObstacles( const VECTOR2I& aP )
     bool collN = static_cast<bool>( m_currentNode->CheckColliding( &m_currentTrace.NLine() ) );
 
     m_fitOk = !( collP || collN ) ;
+
     return m_fitOk;
 }
 
@@ -304,9 +305,9 @@ bool PNS_DIFF_PAIR_PLACER::route( const VECTOR2I& aP )
         case RM_MarkObstacles:
             return rhMarkObstacles( aP );
         case RM_Walkaround:
-            return rhWalkOnly ( aP );
+            return rhWalkOnly( aP );
         case RM_Shove:
-            return rhShoveOnly ( aP );
+            return rhShoveOnly( aP );
         default:
             break;
     }
@@ -319,7 +320,7 @@ bool PNS_DIFF_PAIR_PLACER::rhShoveOnly( const VECTOR2I& aP )
 {
     m_currentNode = m_shove->CurrentNode();
 
-    bool ok = routeHead ( aP );
+    bool ok = routeHead( aP );
 
     m_fitOk  = false;
 
@@ -529,7 +530,7 @@ bool PNS_DIFF_PAIR_PLACER::findDpPrimitivePair( const VECTOR2I& aP, PNS_ITEM* aI
     double bestDist = std::numeric_limits<double>::max();
     bool found = false;
 
-    BOOST_FOREACH(PNS_ITEM* item, items )
+    BOOST_FOREACH( PNS_ITEM* item, items )
     {
         if( item->Kind() == aItem->Kind() )
         {
@@ -590,8 +591,6 @@ bool PNS_DIFF_PAIR_PLACER::Start( const VECTOR2I& aP, PNS_ITEM* aStartItem )
         return false;
     }
 
-    PNS_DP_PRIMITIVE_PAIR start;
-
     m_currentNode = Router()->GetWorld();
 
     if( !findDpPrimitivePair( aP, aStartItem, m_start ) )
@@ -605,12 +604,32 @@ bool PNS_DIFF_PAIR_PLACER::Start( const VECTOR2I& aP, PNS_ITEM* aStartItem )
     m_netP = m_start.PrimP()->Net();
     m_netN = m_start.PrimN()->Net();
 
+    // Check if the current track/via gap & track width settings are violated
+    BOARD* brd = Router()->GetBoard();
+    NETCLASSPTR netclassP = brd->FindNet( m_netP )->GetNetClass();
+    NETCLASSPTR netclassN = brd->FindNet( m_netN )->GetNetClass();
+    int clearance = std::min( m_sizes.DiffPairGap(), m_sizes.DiffPairViaGap() );
+
+    if( clearance < netclassP->GetClearance() || clearance < netclassN->GetClearance() )
+    {
+        Router()->SetFailureReason( _( "Current track/via gap setting violates "
+                                       "design rules for this net." ) );
+        return false;
+    }
+
+    if( m_sizes.DiffPairWidth() < brd->GetDesignSettings().m_TrackMinWidth )
+    {
+        Router()->SetFailureReason( _( "Current track width setting violates design rules." ) );
+        return false;
+    }
+
     m_currentStart = p;
     m_currentEnd = p;
     m_placingVia = false;
     m_chainedPlacement = false;
 
     initPlacement( false );
+
     return true;
 }
 
@@ -748,8 +767,8 @@ bool PNS_DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, PNS_ITEM* aEndItem )
 
     if( !m_snapOnTarget && !m_currentTrace.EndsWithVias() )
     {
-        SHAPE_LINE_CHAIN newP ( m_currentTrace.CP() );
-        SHAPE_LINE_CHAIN newN ( m_currentTrace.CN() );
+        SHAPE_LINE_CHAIN newP( m_currentTrace.CP() );
+        SHAPE_LINE_CHAIN newN( m_currentTrace.CN() );
 
         if( newP.SegmentCount() > 1 && newN.SegmentCount() > 1 )
         {
@@ -765,8 +784,11 @@ bool PNS_DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, PNS_ITEM* aEndItem )
         m_lastNode->Add( m_currentTrace.PLine().Via().Clone() );
         m_lastNode->Add( m_currentTrace.NLine().Via().Clone() );
         m_chainedPlacement = false;
-    } else
+    }
+    else
+    {
         m_chainedPlacement = !m_snapOnTarget;
+    }
 
     PNS_LINE lineP( m_currentTrace.PLine() );
     PNS_LINE lineN( m_currentTrace.NLine() );
