@@ -35,6 +35,8 @@
 #include <class_library.h>
 #include <macros.h>
 
+#include <eda_pattern_match.h>
+
 // Each node gets this lowest score initially, without any matches applied. Matches
 // will then increase this score depending on match quality.
 // This way, an empty search string will result in all components being displayed as they
@@ -259,6 +261,9 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
     unsigned starttime =  GetRunningMicroSecs();
 #endif
 
+    EDA_PATTERN_MATCH_SUBSTR msubstr;
+    EDA_PATTERN_MATCH *matcher = &msubstr;
+
     // We score the list by going through it several time, essentially with a complexity
     // of O(n). For the default library of 2000+ items, this typically takes less than 5ms
     // on an i5. Good enough, no index needed.
@@ -302,14 +307,16 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
 
             if( term == node->MatchName )
                 node->MatchScore += 1000;  // exact match. High score :)
-            else if( (found_pos = node->MatchName.Find( term ) ) != wxNOT_FOUND )
+            else if( (found_pos = matcher->Matches( node->MatchName, term ) )
+                     != EDA_PATTERN_NOT_FOUND )
             {
                 // Substring match. The earlier in the string the better.  score += 20..40
                 node->MatchScore += matchPosScore( found_pos, 20 ) + 20;
             }
             else if( node->Parent->MatchName.Find( term ) != wxNOT_FOUND )
                 node->MatchScore += 19;   // parent name matches.         score += 19
-            else if( ( found_pos = node->SearchText.Find( term ) ) != wxNOT_FOUND )
+            else if( ( found_pos = matcher->Matches( node->SearchText, term ) )
+                     != EDA_PATTERN_NOT_FOUND )
             {
                 // If we have a very short search term (like one or two letters), we don't want
                 // to accumulate scores if they just happen to be in keywords or description as
