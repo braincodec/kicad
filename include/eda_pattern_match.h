@@ -139,9 +139,6 @@ public:
      * substring with wildcards. Otherwise, return EDA_PATTERN_NOT_FOUND.
      */
     virtual int Find( const wxString& aCandidate );
-
-protected:
-    wxString m_pattern;
 };
 
 #endif  // EDA_PATTERN_MATCH_H
