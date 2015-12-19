@@ -109,8 +109,12 @@ void EDA_PATTERN_MATCH_WILDCARD::SetPattern( const wxString& aPattern )
         else if( to_replace.Find( c ) != wxNOT_FOUND )
         {
             regex += "\\";
+            regex += c;
         }
-        regex += c;
+        else
+        {
+            regex += c;
+        }
     }
 
     EDA_PATTERN_MATCH_REGEX::SetPattern( regex );
