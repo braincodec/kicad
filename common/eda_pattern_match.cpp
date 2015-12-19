@@ -134,3 +134,46 @@ int EDA_PATTERN_MATCH_WILDCARD::Find( const wxString& aCandidate )
 {
     return EDA_PATTERN_MATCH_REGEX::Find( aCandidate );
 }
+
+void EDA_PATTERN_MATCH::GetPatternMatcherIds( std::vector<wxString>& aList )
+{
+    aList.push_back( wxT( "SUBSTR" ) );
+    aList.push_back( wxT( "WILDCARD" ) );
+    aList.push_back( wxT( "REGEX" ) );
+}
+
+wxString EDA_PATTERN_MATCH::GetPatternMatcherName( const wxString& aId )
+{
+    if( aId == wxT( "SUBSTR" ) || aId == wxEmptyString )
+        return _( "Simple" );
+
+    else if( aId == wxT( "WILDCARD" ) )
+        return _( "Wildcard" );
+
+    else if( aId == wxT( "REGEX" ) )
+        return _( "Regular expression" );
+
+    else
+    {
+        wxFAIL_MSG( "Invalid pattern matcher ID" );
+        return wxEmptyString;
+    }
+}
+
+EDA_PATTERN_MATCH* EDA_PATTERN_MATCH::CreatePatternMatcher( const wxString& aId )
+{
+    if( aId == wxT( "SUBSTR" ) || aId == wxEmptyString )
+        return new EDA_PATTERN_MATCH_SUBSTR();
+
+    else if( aId == wxT( "WILDCARD" ) )
+        return new EDA_PATTERN_MATCH_WILDCARD();
+
+    else if( aId == wxT( "REGEX" ) )
+        return new EDA_PATTERN_MATCH_REGEX();
+
+    else
+    {
+        wxFAIL_MSG( "Invalid pattern matcher ID" );
+        return new EDA_PATTERN_MATCH_SUBSTR();
+    }
+}

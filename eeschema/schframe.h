@@ -150,6 +150,8 @@ private:
     bool                    m_autoplaceJustify;   ///< allow autoplace to change justification
     bool                    m_autoplaceAlign;     ///< align autoplaced fields to the grid
 
+    wxString                m_componentSearchMethod;    ///< selected component search method ID
+
     /// An index to the last find item in the found items list #m_foundItems.
     int         m_foundItemIndex;
 

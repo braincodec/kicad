@@ -161,6 +161,38 @@ void DIALOG_EESCHEMA_OPTIONS::SetGridSizes( const GRIDS& aGridSizes, int aGridId
 }
 
 
+wxString DIALOG_EESCHEMA_OPTIONS::GetComponentSearchMethod()
+{
+    int sel = m_choiceComponentSearchMethod->GetSelection();
+
+    if( sel == wxNOT_FOUND )
+        return wxEmptyString;
+
+    wxClientData* cd_raw = m_choiceComponentSearchMethod->GetClientObject( sel );
+    wxStringClientData* clientdata = static_cast<wxStringClientData*>( cd_raw );
+    return clientdata->GetData();
+}
+
+
+void DIALOG_EESCHEMA_OPTIONS::SetComponentSearchMethods( const std::vector<wxString>& aIds,
+        const std::vector<wxString>& aNames, const wxString& aId )
+{
+    wxASSERT( aIds.size() > 0 );
+    wxASSERT( aIds.size() == aNames.size() );
+
+    int select = 0;
+
+    for( size_t i = 0; i < aIds.size(); ++i )
+    {
+        m_choiceComponentSearchMethod->Append( aNames[i], new wxStringClientData( aIds[i] ) );
+        if( aIds[i] == aId )
+            select = i;
+    }
+
+    m_choiceComponentSearchMethod->SetSelection( select );
+}
+
+
 void DIALOG_EESCHEMA_OPTIONS::RefreshTemplateFieldView( void )
 {
     // Loop through the template fieldnames and add them to the list control

@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <boost/foreach.hpp>
 #include <set>
+#include <memory>
 
 #include <wx/string.h>
 #include <wx/tokenzr.h>
@@ -35,6 +36,8 @@
 #include <class_library.h>
 #include <macros.h>
 
+#include <kiface_i.h>
+#include <eeschema_config.h>
 #include <eda_pattern_match.h>
 
 // Each node gets this lowest score initially, without any matches applied. Matches
@@ -261,8 +264,9 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
     unsigned starttime =  GetRunningMicroSecs();
 #endif
 
-    EDA_PATTERN_MATCH_WILDCARD  mregex;
-    EDA_PATTERN_MATCH *matcher = &mregex;
+    wxString m_id;
+    Kiface().KifaceSettings()->Read( COMPONENT_SEARCH_METHOD_KEY, &m_id, wxEmptyString );
+    std::auto_ptr<EDA_PATTERN_MATCH> matcher( EDA_PATTERN_MATCH::CreatePatternMatcher( m_id ) );
 
     // We score the list by going through it several time, essentially with a complexity
     // of O(n). For the default library of 2000+ items, this typically takes less than 5ms

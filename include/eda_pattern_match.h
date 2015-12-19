@@ -30,10 +30,16 @@
 #ifndef EDA_PATTERN_MATCH_H
 #define EDA_PATTERN_MATCH_H
 
+#include <vector>
+#include <wx/wx.h>
 #include <wx/string.h>
 #include <wx/regex.h>
 
 static const int EDA_PATTERN_NOT_FOUND = wxNOT_FOUND;
+
+class EDA_PATTERN_MATCH_SUBSTR;
+class EDA_PATTERN_MATCH_REGEX;
+class EDA_PATTERN_MATCH_WILDCARD;
 
 class EDA_PATTERN_MATCH
 {
@@ -48,6 +54,21 @@ public:
      * Otherwise, return EDA_PATTERN_NOT_FOUND.
      */
     virtual int Find( const wxString& aCandidate ) = 0;
+
+    /**
+     * Populate a list of (non-translated) pattern matcher IDs
+     */
+    static void GetPatternMatcherIds( std::vector<wxString>& aList );
+
+    /**
+     * Get the translated name for a pattern matcher ID.
+     */
+    static wxString GetPatternMatcherName( const wxString& aId );
+
+    /**
+     * Return a new pattern matcher given an ID.
+     */
+    static EDA_PATTERN_MATCH* CreatePatternMatcher( const wxString& aID );
 };
 
 

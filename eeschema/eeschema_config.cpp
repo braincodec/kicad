@@ -54,6 +54,8 @@
 
 #include <wildcards_and_files_ext.h>
 
+#include <eda_pattern_match.h>
+
 #define FR_HISTORY_LIST_CNT     10   ///< Maximum number of find and replace strings.
 
 
@@ -309,6 +311,16 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     GRIDS grid_list = GetScreen()->GetGrids();
     bool saveProjectConfig = false;
 
+    std::vector<wxString> search_method_ids;
+    std::vector<wxString> search_method_names;
+
+    EDA_PATTERN_MATCH::GetPatternMatcherIds( search_method_ids );
+    for( size_t i = 0; i < search_method_ids.size(); ++i )
+    {
+        const wxString& id = search_method_ids[i];
+        search_method_names.push_back( EDA_PATTERN_MATCH::GetPatternMatcherName( id ) );
+    }
+
     DIALOG_EESCHEMA_OPTIONS dlg( this );
 
     units.Add( GetUnitsLabel( INCHES ) );
@@ -316,6 +328,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
 
     dlg.SetUnits( units, g_UserUnit );
     dlg.SetGridSizes( grid_list, GetScreen()->GetGridCmdId() );
+    dlg.SetComponentSearchMethods( search_method_ids, search_method_names, m_componentSearchMethod );
     dlg.SetBusWidth( GetDefaultBusThickness() );
     dlg.SetLineWidth( GetDefaultLineThickness() );
     dlg.SetTextSize( GetDefaultTextSize() );
@@ -389,6 +402,7 @@ void SCH_EDIT_FRAME::OnPreferencesOptions( wxCommandEvent& event )
     m_autoplaceFields = dlg.GetAutoplaceFields();
     m_autoplaceJustify = dlg.GetAutoplaceJustify();
     m_autoplaceAlign = dlg.GetAutoplaceAlign();
+    m_componentSearchMethod = dlg.GetComponentSearchMethod();
 
     // Delete all template fieldnames and then restore them using the template field data from
     // the options dialog
@@ -512,6 +526,7 @@ void SCH_EDIT_FRAME::SaveProjectSettings( bool aAskForSave )
 static const wxChar AutoplaceFieldsEntry[] =        wxT( "AutoplaceFields" );
 static const wxChar AutoplaceJustifyEntry[] =       AUTOPLACE_JUSTIFY_KEY;
 static const wxChar AutoplaceAlignEntry[] =         AUTOPLACE_ALIGN_KEY;
+static const wxChar ComponentSearchMethodEntry[] =  COMPONENT_SEARCH_METHOD_KEY;
 static const wxChar DefaultBusWidthEntry[] =        wxT( "DefaultBusWidth" );
 static const wxChar DefaultDrawLineWidthEntry[] =   wxT( "DefaultDrawLineWidth" );
 static const wxChar ShowHiddenPinsEntry[] =         wxT( "ShowHiddenPins" );
@@ -598,6 +613,7 @@ void SCH_EDIT_FRAME::LoadSettings( wxConfigBase* aCfg )
     aCfg->Read( AutoplaceFieldsEntry, &m_autoplaceFields, true );
     aCfg->Read( AutoplaceJustifyEntry, &m_autoplaceJustify, true );
     aCfg->Read( AutoplaceAlignEntry, &m_autoplaceAlign, false );
+    aCfg->Read( ComponentSearchMethodEntry, &m_componentSearchMethod, wxT( "" ) );
 
     // Load print preview window session settings.
     aCfg->Read( PreviewFramePositionXEntry, &tmp, -1 );
@@ -691,6 +707,7 @@ void SCH_EDIT_FRAME::SaveSettings( wxConfigBase* aCfg )
     aCfg->Write( AutoplaceFieldsEntry, m_autoplaceFields );
     aCfg->Write( AutoplaceJustifyEntry, m_autoplaceJustify );
     aCfg->Write( AutoplaceAlignEntry, m_autoplaceAlign );
+    aCfg->Write( ComponentSearchMethodEntry, m_componentSearchMethod );
 
     // Save print preview window session settings.
     aCfg->Write( PreviewFramePositionXEntry, m_previewPosition.x );

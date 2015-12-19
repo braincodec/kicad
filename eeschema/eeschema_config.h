@@ -14,4 +14,6 @@
 #define AUTOPLACE_JUSTIFY_KEY wxT("AutoplaceJustify")
 #define AUTOPLACE_ALIGN_KEY wxT("AutoplaceAlign")
 
+#define COMPONENT_SEARCH_METHOD_KEY wxT("ComponentSearchMethod")
+
 #endif      // EESCHEMA_CONFIG_H

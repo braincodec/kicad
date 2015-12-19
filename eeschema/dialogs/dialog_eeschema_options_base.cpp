@@ -175,6 +175,18 @@ DIALOG_EESCHEMA_OPTIONS_BASE::DIALOG_EESCHEMA_OPTIONS_BASE( wxWindow* parent, wx
 	
 	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
 	
+	m_staticText22 = new wxStaticText( m_panel1, wxID_ANY, _("Component search method:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText22->Wrap( -1 );
+	fgSizer1->Add( m_staticText22, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 3 );
+	
+	wxArrayString m_choiceComponentSearchMethodChoices;
+	m_choiceComponentSearchMethod = new wxChoice( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choiceComponentSearchMethodChoices, 0 );
+	m_choiceComponentSearchMethod->SetSelection( 0 );
+	fgSizer1->Add( m_choiceComponentSearchMethod, 0, wxALL|wxEXPAND, 3 );
+	
+	
+	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
+	
 	
 	bSizer3->Add( fgSizer1, 0, wxEXPAND, 0 );
 	

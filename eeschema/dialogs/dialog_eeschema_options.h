@@ -191,6 +191,23 @@ public:
     void SetGridSizes( const GRIDS& aGridSizes, int aGridId );
 
     /**
+     * Function GetComponentSearchMethod
+     * Returns the current component search method selected in the dialog
+     */
+    wxString GetComponentSearchMethod();
+
+    /**
+     * Function SetComponentSearchMethods
+     * Sets the available component search methods and select the current option.
+     *
+     * @param aIds - list of search method IDs
+     * @param aNames - list of search method names
+     * @param aId - ID of selected method
+     */
+    void SetComponentSearchMethods( const std::vector<wxString>& aIds,
+            const std::vector<wxString>& aNames, const wxString& aId );
+
+    /**
      * Function GetBusWidth
      * Get the current bus width setting from the dialog
      */
