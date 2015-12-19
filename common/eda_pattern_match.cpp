@@ -69,7 +69,7 @@ void EDA_PATTERN_MATCH_REGEX::SetPattern( const wxString& aPattern )
     // though it promises to just return false. Silence the error.
     WX_LOGLEVEL_CONTEXT ctx( wxLOG_FatalError );
 
-    m_regex.Compile( aPattern );
+    m_regex.Compile( aPattern, wxRE_ADVANCED );
 }
 
 
