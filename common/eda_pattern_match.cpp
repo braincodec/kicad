@@ -24,6 +24,7 @@
 
 #include <eda_pattern_match.h>
 #include <wx/log.h>
+#include <climits>
 
 void EDA_PATTERN_MATCH_SUBSTR::SetPattern( const wxString& aPattern )
 {
@@ -74,10 +75,18 @@ void EDA_PATTERN_MATCH_REGEX::SetPattern( const wxString& aPattern )
 
 int EDA_PATTERN_MATCH_REGEX::Find( const wxString& aCandidate )
 {
-    // TODO: Return the actual index
     if( m_regex.IsValid() )
     {
-        return m_regex.Matches( aCandidate ) ? 0 : EDA_PATTERN_NOT_FOUND;
+        if( m_regex.Matches( aCandidate ) )
+        {
+            size_t start, len;
+            m_regex.GetMatch( &start, &len, 0 );
+            return ( start > INT_MAX ) ? INT_MAX : start;
+        }
+        else
+        {
+            return EDA_PATTERN_NOT_FOUND;
+        }
     }
     else
     {
