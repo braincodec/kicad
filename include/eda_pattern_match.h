@@ -31,6 +31,7 @@
 #define EDA_PATTERN_MATCH_H
 
 #include <wx/string.h>
+#include <wx/regex.h>
 
 static const int EDA_PATTERN_NOT_FOUND = wxNOT_FOUND;
 
@@ -38,11 +39,17 @@ class EDA_PATTERN_MATCH
 {
 public:
     /**
-     * Return the location of a match iff a given candidate string matches a
-     * pattern. Otherwise, return EDA_PATTERN_NOT_FOUND.
+     * Set the pattern against which candidates will be matched.
      */
-    virtual int Matches( const wxString& aCandidate, const wxString& aPattern ) = 0;
+    virtual void SetPattern( const wxString& aPattern ) = 0;
+
+    /**
+     * Return the location of a match iff a given candidate string matches the set pattern.
+     * Otherwise, return EDA_PATTERN_NOT_FOUND.
+     */
+    virtual int Find( const wxString& aCandidate ) = 0;
 };
+
 
 class EDA_PATTERN_MATCH_SUBSTR : public EDA_PATTERN_MATCH
 {
@@ -53,13 +60,67 @@ public:
     EDA_PATTERN_MATCH_SUBSTR() {}
 
     /**
-     * Return the location of a match iff a given candidate string contains a
-     * substring. Otherwise, return EDA_PATTERN_NOT_FOUND.
-     *
-     * @param aCandidate - the candidate string
-     * @param aPattern - the substring
+     * Set the pattern against which candidates will be matched.
      */
-    virtual int Matches( const wxString& aCandidate, const wxString& aPattern );
+    virtual void SetPattern( const wxString& aPattern );
+
+    /**
+     * Return the location of a match iff a given candidate string contains the set
+     * substring. Otherwise, return EDA_PATTERN_NOT_FOUND.
+     */
+    virtual int Find( const wxString& aCandidate );
+
+protected:
+    wxString m_pattern;
+};
+
+
+class EDA_PATTERN_MATCH_REGEX : public EDA_PATTERN_MATCH
+{
+public:
+    /**
+     * Construct an EDA_PATTERN_MATCH_REGEX
+     */
+    EDA_PATTERN_MATCH_REGEX() {}
+
+    /**
+     * Set the pattern against which candidates will be matched.
+     */
+    virtual void SetPattern( const wxString& aPattern );
+
+    /**
+     * Return the location of a match iff a given candidate string contains the set
+     * substring with wildcards. Otherwise, return EDA_PATTERN_NOT_FOUND.
+     */
+    virtual int Find( const wxString& aCandidate );
+
+protected:
+    wxString m_pattern;
+    wxRegEx m_regex;
+};
+
+
+class EDA_PATTERN_MATCH_WILDCARD : public EDA_PATTERN_MATCH_REGEX
+{
+public:
+    /**
+     * Construct an EDA_PATTERN_MATCH_WILDCARD
+     */
+    EDA_PATTERN_MATCH_WILDCARD() {}
+
+    /**
+     * Set the pattern against which candidates will be matched.
+     */
+    virtual void SetPattern( const wxString& aPattern );
+
+    /**
+     * Return the location of a match iff a given candidate string contains the set
+     * substring with wildcards. Otherwise, return EDA_PATTERN_NOT_FOUND.
+     */
+    virtual int Find( const wxString& aCandidate );
+
+protected:
+    wxString m_pattern;
 };
 
 #endif  // EDA_PATTERN_MATCH_H

@@ -261,8 +261,8 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
     unsigned starttime =  GetRunningMicroSecs();
 #endif
 
-    EDA_PATTERN_MATCH_SUBSTR msubstr;
-    EDA_PATTERN_MATCH *matcher = &msubstr;
+    EDA_PATTERN_MATCH_WILDCARD  mregex;
+    EDA_PATTERN_MATCH *matcher = &mregex;
 
     // We score the list by going through it several time, essentially with a complexity
     // of O(n). For the default library of 2000+ items, this typically takes less than 5ms
@@ -291,6 +291,7 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
     while ( tokenizer.HasMoreTokens() )
     {
         const wxString term = tokenizer.GetNextToken().Lower();
+        matcher->SetPattern( term );
 
         BOOST_FOREACH( TREE_NODE* node, m_nodes )
         {
@@ -307,16 +308,14 @@ void COMPONENT_TREE_SEARCH_CONTAINER::UpdateSearchTerm( const wxString& aSearch 
 
             if( term == node->MatchName )
                 node->MatchScore += 1000;  // exact match. High score :)
-            else if( (found_pos = matcher->Matches( node->MatchName, term ) )
-                     != EDA_PATTERN_NOT_FOUND )
+            else if( (found_pos = matcher->Find( node->MatchName ) ) != EDA_PATTERN_NOT_FOUND )
             {
                 // Substring match. The earlier in the string the better.  score += 20..40
                 node->MatchScore += matchPosScore( found_pos, 20 ) + 20;
             }
-            else if( node->Parent->MatchName.Find( term ) != wxNOT_FOUND )
+            else if( matcher->Find( node->Parent->MatchName ) != EDA_PATTERN_NOT_FOUND )
                 node->MatchScore += 19;   // parent name matches.         score += 19
-            else if( ( found_pos = matcher->Matches( node->SearchText, term ) )
-                     != EDA_PATTERN_NOT_FOUND )
+            else if( ( found_pos = matcher->Find( node->SearchText ) ) != EDA_PATTERN_NOT_FOUND )
             {
                 // If we have a very short search term (like one or two letters), we don't want
                 // to accumulate scores if they just happen to be in keywords or description as

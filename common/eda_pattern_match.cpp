@@ -23,12 +23,101 @@
  */
 
 #include <eda_pattern_match.h>
+#include <wx/log.h>
 
-int EDA_PATTERN_MATCH_SUBSTR::Matches( const wxString& aCandidate, const wxString& aPattern )
+void EDA_PATTERN_MATCH_SUBSTR::SetPattern( const wxString& aPattern )
 {
-    int loc = aCandidate.Find( aPattern );
+    m_pattern = aPattern;
+}
+
+
+int EDA_PATTERN_MATCH_SUBSTR::Find( const wxString& aCandidate )
+{
+    int loc = aCandidate.Find( m_pattern );
 
     return ( loc == wxNOT_FOUND ) ? EDA_PATTERN_NOT_FOUND : loc;
 }
 
 
+/**
+ * Context class to set wx loglevel for a block, and always restore it at the end.
+ */
+class WX_LOGLEVEL_CONTEXT
+{
+    wxLogLevel m_old_level;
+
+public:
+    WX_LOGLEVEL_CONTEXT( wxLogLevel level )
+    {
+        m_old_level = wxLog::GetLogLevel();
+        wxLog::SetLogLevel( level );
+    }
+
+    ~WX_LOGLEVEL_CONTEXT()
+    {
+        wxLog::SetLogLevel( m_old_level );
+    }
+};
+
+
+void EDA_PATTERN_MATCH_REGEX::SetPattern( const wxString& aPattern )
+{
+    m_pattern = aPattern;
+
+    // Evil and undocumented: wxRegEx::Compile calls wxLogError on error, even
+    // though it promises to just return false. Silence the error.
+    WX_LOGLEVEL_CONTEXT ctx( wxLOG_FatalError );
+
+    m_regex.Compile( aPattern );
+}
+
+
+int EDA_PATTERN_MATCH_REGEX::Find( const wxString& aCandidate )
+{
+    // TODO: Return the actual index
+    if( m_regex.IsValid() )
+    {
+        return m_regex.Matches( aCandidate ) ? 0 : EDA_PATTERN_NOT_FOUND;
+    }
+    else
+    {
+        int loc = aCandidate.Find( m_pattern );
+        return ( loc == wxNOT_FOUND ) ? EDA_PATTERN_NOT_FOUND : loc;
+    }
+}
+
+
+void EDA_PATTERN_MATCH_WILDCARD::SetPattern( const wxString& aPattern )
+{
+    // Compile the wildcard string to a regular expression
+    wxString regex;
+    regex.Alloc( 2 * aPattern.Length() );   // no need to keep resizing, we know the size roughly
+
+    const wxString to_replace = wxT( ".*+?^${}()|[]/\\" );
+
+    for( wxString::const_iterator it = aPattern.begin(); it < aPattern.end(); ++it )
+    {
+        wxUniChar c = *it;
+        if( c == '?' )
+        {
+            regex += wxT( "." );
+        }
+        else if( c == '*' )
+        {
+            regex += wxT( ".*" );
+        }
+        else if( to_replace.Find( c ) != wxNOT_FOUND )
+        {
+            regex += "\\";
+        }
+        regex += c;
+    }
+
+    EDA_PATTERN_MATCH_REGEX::SetPattern( regex );
+}
+
+
+int EDA_PATTERN_MATCH_WILDCARD::Find( const wxString& aCandidate )
+{
+    return EDA_PATTERN_MATCH_REGEX::Find( aCandidate );
+}
