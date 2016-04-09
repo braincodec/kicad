@@ -515,7 +515,28 @@ void PCB_PARSER::parseHeader() throw( IO_ERROR, PARSE_ERROR )
         Expecting( GetTokenText( T_version ) );
 
     // Get the file version.
-    m_board->SetFileFormatVersionAtLoad( parseInt( GetTokenText( T_version ) ) );
+    int pcb_version = parseInt( GetTokenText( T_version ) );
+    m_board->SetFileFormatVersionAtLoad( pcb_version );
+
+    if( pcb_version > SEXPR_BOARD_FILE_VERSION )
+    {
+        wxASSERT( pcb_version > 4 ); // After version 4 we're switching to YYYYMMDD
+        int year, month, day;
+
+        year = pcb_version / 10000;
+        month = ( pcb_version / 100 ) - ( year * 100 );
+        day = pcb_version - ( year * 10000 ) - ( month * 100 );
+
+        wxDateTime date( day, (wxDateTime::Month)( month - 1 ), year, 0, 0, 0, 0 );
+        wxString error;
+        error.Printf( _( "KiCad was unable to open this file, as it was created with a more "
+                         "recent version than the one you are running. To open it, you'll need "
+                         "to upgrade KiCad to a more recent version.\n\n"
+                         "File: %s\n"
+                         "Date of KiCad version required (or newer): %s" ),
+                    GetChars( CurSource() ), date.FormatDate() );
+        THROW_IO_ERROR( error );
+    }
 
     // Skip the host name and host build version information.
     NeedRIGHT();
