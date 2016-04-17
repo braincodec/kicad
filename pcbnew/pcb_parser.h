@@ -252,6 +252,13 @@ class PCB_PARSER : public PCB_LEXER
 
     bool parseBool() throw( PARSE_ERROR );
 
+    /**
+     * Parse a format version tag like (version 20160417) return the version.
+     * Expects to start on 'version', and eats the closing paren.
+     */
+    int parseVersion() throw( IO_ERROR, PARSE_ERROR );
+
+    void throwVersionError( int aVersion ) throw( IO_ERROR );
 
 public:
 
