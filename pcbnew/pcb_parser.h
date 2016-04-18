@@ -68,6 +68,7 @@ class PCB_PARSER : public PCB_LEXER
     LAYER_ID_MAP        m_layerIndices;     ///< map layer name to it's index
     LSET_MAP            m_layerMasks;       ///< map layer names to their masks
     std::vector<int>    m_netCodes;         ///< net codes mapping for boards being loaded
+    bool                m_tooRecent;        ///< true if version parses as later than supported
 
     ///> Converts net code using the mapping table if available,
     ///> otherwise returns unchanged net code if < 0 or if is is out of range
@@ -257,6 +258,14 @@ class PCB_PARSER : public PCB_LEXER
      * Expects to start on 'version', and eats the closing paren.
      */
     int parseVersion() throw( IO_ERROR, PARSE_ERROR );
+
+    /**
+     * Return whether a version number, if any was parsed, was too recent
+     */
+    bool isTooRecent()
+    {
+        return m_tooRecent;
+    }
 
     void throwVersionError( int aVersion ) throw( IO_ERROR );
 

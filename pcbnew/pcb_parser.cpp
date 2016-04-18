@@ -60,6 +60,7 @@ using namespace PCB_KEYS_T;
 
 void PCB_PARSER::init()
 {
+    m_tooRecent = false;
     m_layerIndices.clear();
     m_layerMasks.clear();
 
@@ -546,8 +547,7 @@ void PCB_PARSER::parseHeader() throw( IO_ERROR, PARSE_ERROR )
 
     if( pcb_version > SEXPR_BOARD_FILE_VERSION )
     {
-        wxASSERT( pcb_version > 4 ); // After version 4 we're switching to YYYYMMDD
-        throwVersionError( pcb_version );
+        m_tooRecent = true;
     }
 
     // Skip the host name and host build version information.
@@ -1705,7 +1705,7 @@ MODULE* PCB_PARSER::parseMODULE( wxArrayString* aInitialComments ) throw( IO_ERR
 
         if( version > SEXPR_BOARD_FILE_VERSION )
         {
-            throwVersionError( version );
+            m_tooRecent = true;
         }
 
         token = NextTok();
