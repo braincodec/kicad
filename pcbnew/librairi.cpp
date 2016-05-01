@@ -149,7 +149,7 @@ static IO_MGR::PCB_FILE_T detect_file_type( FILE* aFile, const wxFileName& aFile
         file_type = IO_MGR::KICAD;
         *aName = aFileName.GetName();
     }
-    else if( !strnicmp( line, FOOTPRINT_LIBRARY_HEADER, strlen( FOOTPRINT_LIBRARY_HEADER ) ) )
+    else if( !strnicmp( line, FOOTPRINT_LIBRARY_HEADER, FOOTPRINT_LIBRARY_HEADER_CNT ) )
     {
         file_type = IO_MGR::LEGACY;
         while( reader.ReadLine() )

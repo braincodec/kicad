@@ -30,8 +30,11 @@
 #include <string>
 #include <layers_id_colors_and_visibility.h>
 
+// FOOTPRINT_LIBRARY_HEADER_CNT gives the number of characters to compare to detect
+// a footprint library. A few variants may have been used, and so we can only be
+// sure that the header contains "PCBNEW-LibModule-V", not "PCBNEW-LibModule-V1".
 #define FOOTPRINT_LIBRARY_HEADER       "PCBNEW-LibModule-V1"
-
+#define FOOTPRINT_LIBRARY_HEADER_CNT    18
 
 class PCB_TARGET;
 class MODULE;
