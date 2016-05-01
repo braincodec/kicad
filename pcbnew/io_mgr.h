@@ -154,26 +154,13 @@ public:
      * @param aProperties is an associative array that allows the caller to
      *  pass additional tuning parameters to the PLUGIN.
      *
-     * @param aRequiredVersion is a wxString to receive the name of the version
-     *  of KiCad required to properly read this file. If the file is not too new, it
-     *  will be populated with an empty string instead. Presence of non-empty data
-     *  in this string suggests that even if a board seemed to read in correctly,
-     *  it may not be accurate.
-     *
-     *  This will be populated even in the case of an exception being thrown.
-     *  If an exception is thrown and this is populated, it is probably because
-     *  the file is too new.
-     *
-     *  Safe to set NULL, version string will just be discarded.
-     *
      * @return BOARD* - caller owns it, never NULL because exception thrown if error.
      *
      * @throw IO_ERROR if the PLUGIN cannot be found, file cannot be found,
      *  or file cannot be loaded.
      */
     static BOARD* Load( PCB_FILE_T aFileType, const wxString& aFileName,
-                        BOARD* aAppendToMe = NULL, const PROPERTIES* aProperties = NULL,
-                        wxString* aRequiredVersion = NULL );
+                        BOARD* aAppendToMe = NULL, const PROPERTIES* aProperties = NULL );
 
     /**
      * Function Save
@@ -262,17 +249,6 @@ public:
      *  this object (plugin may not delete it), and plugins should expect it to
      *  be optionally NULL.
      *
-     * @param aRequiredVersion is a wxString to receive the name of the version
-     *  of KiCad required to properly read this file. If the file is not too new, it
-     *  will be populated with an empty string instead. Presence of non-empty data
-     *  in this string suggests that even if a board seemed to read in correctly,
-     *  it may not be accurate.
-     *
-     *  Note that IO_MGR::Load will pre-populate this with an empty string, so
-     *  there is no need to do this preemptively.
-     *
-     *  Must be NULL-safe; do not try populating this unless non-NULL.
-     *
      * @return BOARD* - the successfully loaded board, or the same one as aAppendToMe
      *  if aAppendToMe was not NULL, and caller owns it.
      *
@@ -281,8 +257,7 @@ public:
      *  input file if possible.
      */
     virtual BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe,
-                         const PROPERTIES* aProperties = NULL,
-                         wxString* aRequiredVersion = NULL );
+                         const PROPERTIES* aProperties = NULL );
 
     /**
      * Function Save
@@ -345,21 +320,13 @@ public:
      *  The caller continues to own this object (plugin may not delete it), and
      *  plugins should expect it to be optionally NULL.
      *
-     * @param aRequiredVersion is a wxString to receive the name of the version
-     *  of KiCad required to properly read this file. If the file is not too new, it
-     *  should be populated with an empty string instead. Presence of non-empty data
-     *  in this string suggests that even if a footprint seemed to read in correctly,
-     *  it may not be accurate.
-     *
-     *  Must be NULL-safe; do not try populating this unless non-NULL.
-     *
      * @return  MODULE* - if found caller owns it, else NULL if not found.
      *
      * @throw   IO_ERROR if the library cannot be found or read.  No exception
      *          is thrown in the case where aFootprintName cannot be found.
      */
     virtual MODULE* FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-            const PROPERTIES* aProperties = NULL, wxString* aRequiredVersion = NULL );
+            const PROPERTIES* aProperties = NULL );
 
     /**
      * Function FootprintSave

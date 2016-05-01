@@ -388,12 +388,9 @@ static inline long hexParse( const char* next, const char** out = NULL )
 
 
 BOARD* LEGACY_PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe,
-        const PROPERTIES* aProperties, wxString* aRequiredVersion )
+        const PROPERTIES* aProperties )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 
@@ -3436,13 +3433,9 @@ wxArrayString LEGACY_PLUGIN::FootprintEnumerate( const wxString& aLibraryPath, c
 
 
 MODULE* LEGACY_PLUGIN::FootprintLoad( const wxString& aLibraryPath,
-        const wxString& aFootprintName, const PROPERTIES* aProperties,
-        wxString* aRequiredVersion )
+        const wxString& aFootprintName, const PROPERTIES* aProperties )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 

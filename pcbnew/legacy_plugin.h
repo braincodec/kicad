@@ -80,13 +80,13 @@ public:
     }
 
     BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe,
-            const PROPERTIES* aProperties = NULL, wxString *aRequiredVersion= NULL );
+            const PROPERTIES* aProperties = NULL );
 
     wxArrayString FootprintEnumerate( const wxString& aLibraryPath,
             const PROPERTIES* aProperties = NULL );
 
     MODULE* FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-            const PROPERTIES* aProperties = NULL, wxString *aRequiredVersion = NULL );
+            const PROPERTIES* aProperties = NULL );
 
     bool FootprintLibDelete( const wxString& aLibraryPath, const PROPERTIES* aProperties = NULL );
 

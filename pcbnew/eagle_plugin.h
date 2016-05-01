@@ -81,15 +81,14 @@ public:
     //-----<PUBLIC PLUGIN API>--------------------------------------------------
     const wxString PluginName() const;
 
-    BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe,  const PROPERTIES* aProperties = NULL,
-            wxString* aRequiredVersion = NULL );
+    BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe,  const PROPERTIES* aProperties = NULL );
 
     const wxString GetFileExtension() const;
 
     wxArrayString FootprintEnumerate( const wxString& aLibraryPath, const PROPERTIES* aProperties = NULL);
 
     MODULE* FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-            const PROPERTIES* aProperties = NULL, wxString* aRequiredVersion = NULL );
+            const PROPERTIES* aProperties = NULL );
 
     bool IsFootprintLibWritable( const wxString& aLibraryPath )
     {

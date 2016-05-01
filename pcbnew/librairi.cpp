@@ -180,11 +180,10 @@ static IO_MGR::PCB_FILE_T detect_file_type( FILE* aFile, const wxFileName& aFile
  * @param aFileName - file name to parse
  * @param aFileType - type of the file
  * @param aName - name of the footprint
- * @param aRequiredVersion - will receive the required kicad format version to parse this file
  */
 static MODULE* parse_module_with_plugin(
         const wxFileName& aFileName, IO_MGR::PCB_FILE_T aFileType,
-        const wxString& aName, wxString* aRequiredVersion )
+        const wxString& aName )
 {
     wxString path;
 
@@ -202,16 +201,15 @@ static MODULE* parse_module_with_plugin(
 
     PLUGIN::RELEASER pi( IO_MGR::PluginFind( aFileType ) );
 
-    return pi->FootprintLoad( path, aName, NULL, aRequiredVersion );
+    return pi->FootprintLoad( path, aName );
 }
 
 
 /**
  * Parse a KICAD footprint.
  * @param aFileName - file name to parse
- * @param aRequiredVersion - will receive the required kicad format version to parse this file
  */
-static MODULE* parse_module_kicad( const wxFileName& aFileName, wxString* aRequiredVersion )
+static MODULE* parse_module_kicad( const wxFileName& aFileName )
 {
     wxString fcontents;
     PCB_IO   pcb_io;
@@ -222,7 +220,7 @@ static MODULE* parse_module_kicad( const wxFileName& aFileName, wxString* aRequi
 
     f.ReadAll( &fcontents );
 
-    return dynamic_cast<MODULE*>( pcb_io.Parse( fcontents, aRequiredVersion ) );
+    return dynamic_cast<MODULE*>( pcb_io.Parse( fcontents ) );
 }
 
 
@@ -231,10 +229,9 @@ static MODULE* parse_module_kicad( const wxFileName& aFileName, wxString* aRequi
  * @param aFileName - file name to load
  * @param aFileType - type of the file to load
  * @param aName - footprint name
- * @param aRequiredVersion - will receive the required kicad format version to parse this file
  */
 MODULE* try_load_footprint( const wxFileName& aFileName, IO_MGR::PCB_FILE_T aFileType,
-        const wxString& aName, wxString* aRequiredVersion )
+        const wxString& aName )
 {
     MODULE* module;
 
@@ -242,11 +239,11 @@ MODULE* try_load_footprint( const wxFileName& aFileName, IO_MGR::PCB_FILE_T aFil
     {
     case IO_MGR::GEDA_PCB:
     case IO_MGR::LEGACY:
-        module = parse_module_with_plugin( aFileName, aFileType, aName, aRequiredVersion );
+        module = parse_module_with_plugin( aFileName, aFileType, aName );
         break;
 
     case IO_MGR::KICAD:
-        module = parse_module_kicad( aFileName, aRequiredVersion );
+        module = parse_module_kicad( aFileName );
         break;
 
     default:
@@ -296,12 +293,11 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
     }
 
     MODULE*    module;
-    wxString   reqVersion;
     wxString   errMessage;
 
     try
     {
-        module = try_load_footprint( fn, fileType, moduleName, &reqVersion );
+        module = try_load_footprint( fn, fileType, moduleName );
 
         if( !module )
         {

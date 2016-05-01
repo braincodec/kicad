@@ -483,7 +483,6 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
     else
     {
         BOARD* loadedBoard = 0;   // it will be set to non-NULL if loaded OK
-        wxString requiredVersion;
 
         PLUGIN::RELEASER pi( IO_MGR::PluginFind( pluginType ) );
 
@@ -505,7 +504,7 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
             unsigned startTime = GetRunningMicroSecs();
 #endif
 
-            loadedBoard = pi->Load( fullFileName, NULL, &props, &requiredVersion );
+            loadedBoard = pi->Load( fullFileName, NULL, &props );
 
 #if USE_INSTRUMENTATION
             unsigned stopTime = GetRunningMicroSecs();

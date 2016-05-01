@@ -242,20 +242,14 @@ IO_MGR::PCB_FILE_T IO_MGR::GuessPluginTypeFromLibPath( const wxString& aLibPath 
 
 
 BOARD* IO_MGR::Load( PCB_FILE_T aFileType, const wxString& aFileName,
-                     BOARD* aAppendToMe, const PROPERTIES* aProperties,
-                     wxString* aRequiredVersion )
+                     BOARD* aAppendToMe, const PROPERTIES* aProperties )
 {
-    // aRequiredVersion is to be populated with an empty string
-    // even if exceptions are thrown. Do this first.
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
-
     // release the PLUGIN even if an exception is thrown.
     PLUGIN::RELEASER pi( PluginFind( aFileType ) );
 
     if( (PLUGIN*) pi )  // test pi->plugin
     {
-        return pi->Load( aFileName, aAppendToMe, aProperties, aRequiredVersion );  // virtual
+        return pi->Load( aFileName, aAppendToMe, aProperties );  // virtual
     }
 
     THROW_IO_ERROR( wxString::Format( FMT_NOTFOUND, ShowType( aFileType ).GetData() ) );

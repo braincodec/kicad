@@ -1178,14 +1178,10 @@ wxSize inline EAGLE_PLUGIN::kicad_fontz( double d ) const
 }
 
 
-BOARD* EAGLE_PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe,  const PROPERTIES* aProperties,
-        wxString* aRequiredVersion )
+BOARD* EAGLE_PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe,  const PROPERTIES* aProperties )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
     PTREE       doc;
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 
@@ -3125,11 +3121,8 @@ wxArrayString EAGLE_PLUGIN::FootprintEnumerate( const wxString& aLibraryPath, co
 
 
 MODULE* EAGLE_PLUGIN::FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-        const PROPERTIES* aProperties, wxString* aRequiredVersion )
+        const PROPERTIES* aProperties )
 {
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
-
     init( aProperties );
 
     cacheLib( aLibraryPath );

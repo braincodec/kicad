@@ -993,12 +993,9 @@ wxArrayString GPCB_PLUGIN::FootprintEnumerate( const wxString&   aLibraryPath,
 
 
 MODULE* GPCB_PLUGIN::FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-                                    const PROPERTIES* aProperties, wxString* aRequiredVersion )
+                                    const PROPERTIES* aProperties )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 

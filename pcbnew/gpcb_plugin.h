@@ -66,7 +66,7 @@ public:
                                       const PROPERTIES* aProperties = NULL);
 
     MODULE* FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-            const PROPERTIES* aProperties = NULL, wxString* aRequiredVersion = NULL );
+            const PROPERTIES* aProperties = NULL );
 
     void FootprintDelete( const wxString& aLibraryPath, const wxString& aFootprintName,
             const PROPERTIES* aProperties = NULL );

@@ -166,12 +166,8 @@ wxArrayString GITHUB_PLUGIN::FootprintEnumerate(
 
 
 MODULE* GITHUB_PLUGIN::FootprintLoad( const wxString& aLibraryPath,
-        const wxString& aFootprintName, const PROPERTIES* aProperties,
-        wxString* aRequiredVersion )
+        const wxString& aFootprintName, const PROPERTIES* aProperties )
 {
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
-
     // D(printf("%s: this:%p  aLibraryPath:'%s'\n", __func__, this, TO_UTF8(aLibraryPath) );)
 
     // clear or set to valid the variable m_pretty_dir
@@ -180,8 +176,7 @@ MODULE* GITHUB_PLUGIN::FootprintLoad( const wxString& aLibraryPath,
     if( m_pretty_dir.size() )
     {
         // API has FootprintLoad() *not* throwing an exception if footprint not found.
-        MODULE* local = PCB_IO::FootprintLoad( m_pretty_dir, aFootprintName, aProperties,
-                aRequiredVersion );
+        MODULE* local = PCB_IO::FootprintLoad( m_pretty_dir, aFootprintName, aProperties );
 
         if( local )
         {

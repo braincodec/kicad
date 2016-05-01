@@ -171,8 +171,7 @@ public:
             const PROPERTIES* aProperties = NULL );
 
     MODULE* FootprintLoad( const wxString& aLibraryPath,
-            const wxString& aFootprintName, const PROPERTIES* aProperties,
-            wxString* aRequiredVersion = NULL );
+            const wxString& aFootprintName, const PROPERTIES* aProperties );
 
     void FootprintSave( const wxString& aLibraryPath, const MODULE* aFootprint,
             const PROPERTIES* aProperties = NULL );

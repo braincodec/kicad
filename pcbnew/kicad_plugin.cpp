@@ -417,12 +417,9 @@ void PCB_IO::Save( const wxString& aFileName, BOARD* aBoard, const PROPERTIES* a
 }
 
 
-BOARD_ITEM* PCB_IO::Parse( const wxString& aClipboardSourceInput,
-        wxString* aRequiredVersion ) throw( PARSE_ERROR, IO_ERROR )
+BOARD_ITEM* PCB_IO::Parse( const wxString& aClipboardSourceInput )
+    throw( FUTURE_FORMAT_ERROR, PARSE_ERROR, IO_ERROR )
 {
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
-
     std::string input = TO_UTF8( aClipboardSourceInput );
 
     STRING_LINE_READER  reader( input, wxT( "clipboard" ) );
@@ -433,11 +430,12 @@ BOARD_ITEM* PCB_IO::Parse( const wxString& aClipboardSourceInput,
     {
         return m_parser->Parse();
     }
-    catch(...)
+    catch( const PARSE_ERROR& parse_error )
     {
-        if( aRequiredVersion && m_parser->IsTooRecent() )
-            *aRequiredVersion = m_parser->GetRequiredVersion();
-        throw;
+        if( m_parser->IsTooRecent() )
+            throw FUTURE_FORMAT_ERROR( parse_error, m_parser->GetRequiredVersion() );
+        else
+            throw;
     }
 }
 
@@ -1724,13 +1722,9 @@ PCB_IO::~PCB_IO()
 }
 
 
-BOARD* PCB_IO::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties,
-        wxString* aRequiredVersion )
+BOARD* PCB_IO::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties )
 {
     FILE_LINE_READER    reader( aFileName );
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 
@@ -1743,11 +1737,12 @@ BOARD* PCB_IO::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPER
     {
         board = dynamic_cast<BOARD*>( m_parser->Parse() );
     }
-    catch(...)
+    catch( const PARSE_ERROR& parse_error )
     {
-        if( aRequiredVersion && m_parser->IsTooRecent() )
-            *aRequiredVersion = m_parser->GetRequiredVersion();
-        throw;
+        if( m_parser->IsTooRecent() )
+            throw FUTURE_FORMAT_ERROR( parse_error, m_parser->GetRequiredVersion() );
+        else
+            throw;
     }
 
     wxASSERT( board );
@@ -1825,12 +1820,9 @@ wxArrayString PCB_IO::FootprintEnumerate( const wxString&   aLibraryPath,
 
 
 MODULE* PCB_IO::FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-                               const PROPERTIES* aProperties, wxString* aRequiredVersion )
+                               const PROPERTIES* aProperties )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
-
-    if( aRequiredVersion )
-        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 
