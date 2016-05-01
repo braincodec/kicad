@@ -483,6 +483,7 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
     else
     {
         BOARD* loadedBoard = 0;   // it will be set to non-NULL if loaded OK
+        wxString requiredVersion;
 
         PLUGIN::RELEASER pi( IO_MGR::PluginFind( pluginType ) );
 
@@ -504,7 +505,7 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
             unsigned startTime = GetRunningMicroSecs();
 #endif
 
-            loadedBoard = pi->Load( fullFileName, NULL, &props );
+            loadedBoard = pi->Load( fullFileName, NULL, &props, &requiredVersion );
 
 #if USE_INSTRUMENTATION
             unsigned stopTime = GetRunningMicroSecs();
@@ -513,9 +514,17 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         }
         catch( const IO_ERROR& ioe )
         {
-            if( pi->isTooRecent() )
+            if( !requiredVersion.IsEmpty() )
             {
-                pi->throwVersionError( 0 );
+                wxString msg = wxString::Format( _(
+                    "KiCad was unable to open this file, as it was created with a more "
+                    "recent version than the one you are running. To open it, you'll need "
+                    "to upgrade KiCad to a more recent version.\n\n"
+                    "File: %s\n"
+                    "Date of KiCad version required (or newer): %s\n\n"
+                    "Full error text:\n%s" ),
+                        fullFileName, requiredVersion, GetChars( ioe.errorText ) );
+                DisplayError( this, msg );
             }
             else
             {

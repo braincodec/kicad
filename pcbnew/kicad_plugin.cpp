@@ -418,15 +418,28 @@ void PCB_IO::Save( const wxString& aFileName, BOARD* aBoard, const PROPERTIES* a
 }
 
 
-BOARD_ITEM* PCB_IO::Parse( const wxString& aClipboardSourceInput ) throw( PARSE_ERROR, IO_ERROR )
+BOARD_ITEM* PCB_IO::Parse( const wxString& aClipboardSourceInput,
+        wxString* aRequiredVersion ) throw( PARSE_ERROR, IO_ERROR )
 {
+    if( aRequiredVersion )
+        *aRequiredVersion = wxEmptyString;
+
     std::string input = TO_UTF8( aClipboardSourceInput );
 
     STRING_LINE_READER  reader( input, wxT( "clipboard" ) );
 
     m_parser->SetLineReader( &reader );
 
-    return m_parser->Parse();
+    try
+    {
+        return m_parser->Parse();
+    }
+    catch(...)
+    {
+        if( aRequiredVersion && m_parser->IsTooRecent() )
+            *aRequiredVersion = m_parser->GetRequiredVersion();
+        throw;
+    }
 }
 
 
@@ -1712,16 +1725,32 @@ PCB_IO::~PCB_IO()
 }
 
 
-BOARD* PCB_IO::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties )
+BOARD* PCB_IO::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties,
+        wxString* aRequiredVersion )
 {
     FILE_LINE_READER    reader( aFileName );
+
+    if( aRequiredVersion )
+        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 
     m_parser->SetLineReader( &reader );
     m_parser->SetBoard( aAppendToMe );
 
-    BOARD* board = dyn_cast<BOARD*>( m_parser->Parse() );
+    BOARD* board;
+
+    try
+    {
+        board = dyn_cast<BOARD*>( m_parser->Parse() );
+    }
+    catch(...)
+    {
+        if( aRequiredVersion && m_parser->IsTooRecent() )
+            *aRequiredVersion = m_parser->GetRequiredVersion();
+        throw;
+    }
+
     wxASSERT( board );
 
     // Give the filename to the board if it's new
@@ -1797,9 +1826,12 @@ wxArrayString PCB_IO::FootprintEnumerate( const wxString&   aLibraryPath,
 
 
 MODULE* PCB_IO::FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-                               const PROPERTIES* aProperties )
+                               const PROPERTIES* aProperties, wxString* aRequiredVersion )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
+
+    if( aRequiredVersion )
+        *aRequiredVersion = wxEmptyString;
 
     init( aProperties );
 

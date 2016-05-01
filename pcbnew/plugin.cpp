@@ -42,8 +42,12 @@ static void not_implemented( PLUGIN* aPlugin, const char* aCaller )
 }
 
 
-BOARD* PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties )
+BOARD* PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties,
+                     wxString* aRequiredVersion )
 {
+    if( aRequiredVersion )
+        *aRequiredVersion = wxEmptyString;
+
     not_implemented( this, __FUNCTION__ );
     return NULL;
 }
@@ -65,8 +69,11 @@ wxArrayString PLUGIN::FootprintEnumerate( const wxString& aLibraryPath, const PR
 
 
 MODULE* PLUGIN::FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-                                    const PROPERTIES* aProperties )
+                                    const PROPERTIES* aProperties, wxString* aRequiredVersion )
 {
+    if( aRequiredVersion )
+        *aRequiredVersion = wxEmptyString;
+
     // not pure virtual so that plugins only have to implement subset of the PLUGIN interface.
     not_implemented( this, __FUNCTION__ );
     return NULL;

@@ -187,16 +187,33 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
     }
 
     MODULE*   module;
+    wxString requiredVersion;
 
-    if( isGeda )
+    try
     {
-        try
+        if( isGeda || isLegacy )
         {
+            IO_MGR::PCB_FILE_T filetype;
             wxFileName fn = dlg.GetPath();
-            PLUGIN::RELEASER pi( IO_MGR::PluginFind( IO_MGR::GEDA_PCB ) );
+            wxString path;
 
-            moduleName = fn.GetName();
-            module = pi->FootprintLoad( fn.GetPath(), moduleName );
+            if( isGeda )
+            {
+                filetype = IO_MGR::GEDA_PCB;
+                moduleName = fn.GetName();
+                path = fn.GetPath();
+            }
+            else
+            {
+                wxASSERT( isLegacy );
+                filetype = IO_MGR::LEGACY;
+                path = dlg.GetPath();
+            }
+
+            PLUGIN::RELEASER pi( IO_MGR::PluginFind( filetype ) );
+
+
+            module = pi->FootprintLoad( path, moduleName, NULL, &requiredVersion );
 
             if( !module )
             {
@@ -207,42 +224,8 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
                 return NULL;
             }
         }
-        catch( const IO_ERROR& ioe )
+        else
         {
-            DisplayError( this, ioe.errorText );
-            return NULL;
-        }
-    }
-    else if( isLegacy )
-    {
-        try
-        {
-            PLUGIN::RELEASER pi( IO_MGR::PluginFind( IO_MGR::LEGACY ) );
-
-            module = pi->FootprintLoad( dlg.GetPath(), moduleName );
-
-            if( !module )
-            {
-                wxString msg = wxString::Format(
-                    FMT_MOD_NOT_FOUND, GetChars( moduleName ), GetChars( dlg.GetPath() ) );
-
-                DisplayError( this, msg );
-                return NULL;
-            }
-        }
-        catch( const IO_ERROR& ioe )
-        {
-            DisplayError( this, ioe.errorText );
-            return NULL;
-        }
-    }
-    else    //  if( isKicad )
-    {
-        try
-        {
-            // This technique was chosen to create an example of how reading
-            // the s-expression format from clipboard could be done.
-
             wxString    fcontents;
             PCB_IO      pcb_io;
             wxFFile     f( dlg.GetPath() );
@@ -257,7 +240,7 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
 
             f.ReadAll( &fcontents );
 
-            module = dyn_cast<MODULE*>( pcb_io.Parse( fcontents ) );
+            module = dyn_cast<MODULE*>( pcb_io.Parse( fcontents, &requiredVersion ) );
 
             if( !module )
             {
@@ -267,11 +250,26 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
                 return NULL;
             }
         }
-        catch( const IO_ERROR& ioe )
+    }
+    catch( const IO_ERROR& ioe )
+    {
+        if( !requiredVersion.IsEmpty() )
+        {
+            wxString msg = wxString::Format( _(
+                "KiCad was unable to open this file, as it was created with a more "
+                "recent version than the one you are running. To open it, you'll need "
+                "to upgrade KiCad to a more recent version.\n\n"
+                "File: %s\n"
+                "Date of KiCad version required (or newer): %s\n\n"
+                "Full error text:\n%s" ),
+                    GetChars( dlg.GetPath() ), requiredVersion, GetChars( ioe.errorText ) );
+            DisplayError( this, msg );
+        }
+        else
         {
             DisplayError( this, ioe.errorText );
-            return NULL;
         }
+        return NULL;
     }
 
     // Insert footprint in list

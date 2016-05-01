@@ -69,6 +69,7 @@ class PCB_PARSER : public PCB_LEXER
     LSET_MAP            m_layerMasks;       ///< map layer names to their masks
     std::vector<int>    m_netCodes;         ///< net codes mapping for boards being loaded
     bool                m_tooRecent;        ///< true if version parses as later than supported
+    int                 m_requiredVersion;  ///< set to the KiCad format version this board requires
 
     ///> Converts net code using the mapping table if available,
     ///> otherwise returns unchanged net code if < 0 or if is is out of range
@@ -259,16 +260,6 @@ class PCB_PARSER : public PCB_LEXER
      */
     int parseVersion() throw( IO_ERROR, PARSE_ERROR );
 
-    /**
-     * Return whether a version number, if any was parsed, was too recent
-     */
-    bool isTooRecent()
-    {
-        return m_tooRecent;
-    }
-
-    void throwVersionError( int aVersion ) throw( IO_ERROR );
-
 public:
 
     PCB_PARSER( LINE_READER* aReader = NULL ) :
@@ -300,6 +291,21 @@ public:
     }
 
     BOARD_ITEM* Parse() throw( IO_ERROR, PARSE_ERROR );
+
+    /**
+     * Return whether a version number, if any was parsed, was too recent
+     */
+    bool IsTooRecent()
+    {
+        return m_tooRecent;
+    }
+
+    /**
+     * Return a string representing the version of kicad required to open this
+     * file. Not particularly meaningful if IsTooRecent() returns false.
+     */
+    wxString GetRequiredVersion();
+
 };
 
 

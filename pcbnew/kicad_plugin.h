@@ -106,12 +106,14 @@ public:
     void Save( const wxString& aFileName, BOARD* aBoard,
                const PROPERTIES* aProperties = NULL );          // overload
 
-    BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties = NULL );
+    BOARD* Load( const wxString& aFileName, BOARD* aAppendToMe, const PROPERTIES* aProperties = NULL,
+            wxString* aRequiredVersion = NULL );
 
-    wxArrayString FootprintEnumerate( const wxString& aLibraryPath, const PROPERTIES* aProperties = NULL);
+    wxArrayString FootprintEnumerate( const wxString& aLibraryPath,
+            const PROPERTIES* aProperties = NULL );
 
     MODULE* FootprintLoad( const wxString& aLibraryPath, const wxString& aFootprintName,
-                           const PROPERTIES* aProperties = NULL );
+            const PROPERTIES* aProperties = NULL, wxString* aRequiredVersion = NULL );
 
     void FootprintSave( const wxString& aLibraryPath, const MODULE* aFootprint,
                         const PROPERTIES* aProperties = NULL );
@@ -152,7 +154,7 @@ public:
 
     void SetOutputFormatter( OUTPUTFORMATTER* aFormatter ) { m_out = aFormatter; }
 
-    BOARD_ITEM* Parse( const wxString& aClipboardSourceInput )
+    BOARD_ITEM* Parse( const wxString& aClipboardSourceInput, wxString* aRequiredVersion = NULL )
         throw( PARSE_ERROR, IO_ERROR );
 
 protected:

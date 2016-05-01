@@ -61,6 +61,7 @@ using namespace PCB_KEYS_T;
 void PCB_PARSER::init()
 {
     m_tooRecent = false;
+    m_requiredVersion = 0;
     m_layerIndices.clear();
     m_layerMasks.clear();
 
@@ -183,23 +184,27 @@ int PCB_PARSER::parseVersion() throw( IO_ERROR, PARSE_ERROR )
 }
 
 
-void PCB_PARSER::throwVersionError( int aVersion ) throw( IO_ERROR )
+wxString PCB_PARSER::GetRequiredVersion()
 {
     int year, month, day;
 
-    year = aVersion / 10000;
-    month = ( aVersion / 100 ) - ( year * 100 );
-    day = aVersion - ( year * 10000 ) - ( month * 100 );
+    year = m_requiredVersion / 10000;
+    month = ( m_requiredVersion / 100 ) - ( year * 100 );
+    day = m_requiredVersion - ( year * 10000 ) - ( month * 100 );
+
+    // wx throws an assertion, not a catchable exception, when the date is invalid.
+    // User input shouldn't give wx asserts, so check manually and throw a proper
+    // error instead
+    if( day <= 0 || month <= 0 || month > 12 ||
+            day > wxDateTime::GetNumberOfDays( (wxDateTime::Month)( month - 1 ), year ) )
+    {
+        wxString err;
+        err.Printf( _( "cannot interpret date code %d" ), m_requiredVersion );
+        THROW_PARSE_ERROR( err, CurSource(), CurLine(), CurLineNumber(), CurOffset() );
+    }
 
     wxDateTime date( day, (wxDateTime::Month)( month - 1 ), year, 0, 0, 0, 0 );
-    wxString error;
-    error.Printf( _( "KiCad was unable to open this file, as it was created with a more "
-                "recent version than the one you are running. To open it, you'll need "
-                "to upgrade KiCad to a more recent version.\n\n"
-                "File: %s\n"
-                "Date of KiCad version required (or newer): %s" ),
-            GetChars( CurSource() ), date.FormatDate() );
-    THROW_IO_ERROR( error );
+    return date.FormatDate();
 }
 
 
@@ -542,20 +547,32 @@ void PCB_PARSER::parseHeader() throw( IO_ERROR, PARSE_ERROR )
 
     NeedLEFT();
 
-    int pcb_version = parseVersion();
-    m_board->SetFileFormatVersionAtLoad( pcb_version );
-
-    if( pcb_version > SEXPR_BOARD_FILE_VERSION )
+    T tok = NextTok();
+    if( tok == T_version )
     {
-        m_tooRecent = true;
+        m_requiredVersion = parseInt( FromUTF8() );
+        m_tooRecent = ( m_requiredVersion > SEXPR_BOARD_FILE_VERSION );
+        NeedRIGHT();
+
+        // Skip the host name and host build version information.
+        NeedLEFT();
+        NeedSYMBOL();
+        NeedSYMBOL();
+        NeedSYMBOL();
+        NeedRIGHT();
+    }
+    else
+    {
+        m_requiredVersion = SEXPR_BOARD_FILE_VERSION;
+        m_tooRecent = ( m_requiredVersion > SEXPR_BOARD_FILE_VERSION );
+
+        // Skip the host name and host build version information.
+        NeedSYMBOL();
+        NeedSYMBOL();
+        NeedRIGHT();
     }
 
-    // Skip the host name and host build version information.
-    NeedLEFT();
-    NeedSYMBOL();
-    NeedSYMBOL();
-    NeedSYMBOL();
-    NeedRIGHT();
+    m_board->SetFileFormatVersionAtLoad( m_requiredVersion );
 }
 
 
@@ -1699,18 +1716,6 @@ MODULE* PCB_PARSER::parseMODULE( wxArrayString* aInitialComments ) throw( IO_ERR
 
     token = NextTok();
 
-    if( token == T_LEFT )
-    {
-        int version = parseVersion();
-
-        if( version > SEXPR_BOARD_FILE_VERSION )
-        {
-            m_tooRecent = true;
-        }
-
-        token = NextTok();
-    }
-
     if( !IsSymbol( token ) && token != T_NUMBER )
         Expecting( "symbol|number" );
 
@@ -1731,6 +1736,18 @@ MODULE* PCB_PARSER::parseMODULE( wxArrayString* aInitialComments ) throw( IO_ERR
 
         switch( token )
         {
+        case T_version:
+        {
+            // Theoretically a module nested in a PCB could declare its own version, though
+            // as of writing this comment we don't do that. Just in case, take the greater
+            // version.
+            int this_version = parseInt( FromUTF8() );
+            NeedRIGHT();
+            m_requiredVersion = std::max( m_requiredVersion, this_version );
+            m_tooRecent = ( m_requiredVersion > SEXPR_BOARD_FILE_VERSION );
+            break;
+        }
+
         case T_locked:
             module->SetLocked( true );
             break;
