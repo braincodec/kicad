@@ -514,27 +514,11 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         }
         catch( const IO_ERROR& ioe )
         {
-            if( !requiredVersion.IsEmpty() )
-            {
-                wxString msg = wxString::Format( _(
-                    "KiCad was unable to open this file, as it was created with a more "
-                    "recent version than the one you are running. To open it, you'll need "
-                    "to upgrade KiCad to a more recent version.\n\n"
-                    "File: %s\n"
-                    "Date of KiCad version required (or newer): %s\n\n"
-                    "Full error text:\n%s" ),
-                        fullFileName, requiredVersion, GetChars( ioe.errorText ) );
-                DisplayError( this, msg );
-            }
-            else
-            {
-                wxString msg = wxString::Format( _(
-                        "Error loading board.\n%s" ),
-                        GetChars( ioe.errorText )
-                        );
-                DisplayError( this, msg );
-
-            }
+            wxString msg = wxString::Format( _(
+                    "Error loading board.\n%s" ),
+                    GetChars( ioe.errorText )
+                    );
+            DisplayError( this, msg );
             return false;
         }
 

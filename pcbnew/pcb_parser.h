@@ -116,12 +116,20 @@ class PCB_PARSER : public PCB_LEXER
     DIMENSION*      parseDIMENSION() throw( IO_ERROR, PARSE_ERROR );
 
     /**
-     * Function parseModule
+     * Function parseMODULE
      * @param aInitialComments may be a pointer to a heap allocated initial comment block
      *   or NULL.  If not NULL, then caller has given ownership of a wxArrayString to
      *   this function and care must be taken to delete it even on exception.
      */
-    MODULE*         parseMODULE( wxArrayString* aInitialComments = 0 ) throw( IO_ERROR, PARSE_ERROR );
+    MODULE*         parseMODULE( wxArrayString* aInitialComments = 0 )
+                        throw( IO_ERROR, PARSE_ERROR, FUTURE_FORMAT_ERROR );
+
+    /**
+     * Function parseMODULE_unchecked
+     * Parse a module, but do not replace PARSE_ERROR with FUTURE_FORMAT_ERROR automatically.
+     */
+    MODULE*         parseMODULE_unchecked( wxArrayString* aInitialComments = 0 )
+                        throw( IO_ERROR, PARSE_ERROR );
     TEXTE_MODULE*   parseTEXTE_MODULE() throw( IO_ERROR, PARSE_ERROR );
     EDGE_MODULE*    parseEDGE_MODULE() throw( IO_ERROR, PARSE_ERROR );
     D_PAD*          parseD_PAD( MODULE* aParent = NULL ) throw( IO_ERROR, PARSE_ERROR );
@@ -129,7 +137,13 @@ class PCB_PARSER : public PCB_LEXER
     VIA*            parseVIA() throw( IO_ERROR, PARSE_ERROR );
     ZONE_CONTAINER* parseZONE_CONTAINER() throw( IO_ERROR, PARSE_ERROR );
     PCB_TARGET*     parsePCB_TARGET() throw( IO_ERROR, PARSE_ERROR );
-    BOARD*          parseBOARD() throw( IO_ERROR, PARSE_ERROR );
+    BOARD*          parseBOARD() throw( IO_ERROR, PARSE_ERROR, FUTURE_FORMAT_ERROR );
+
+    /**
+     * Function parseBOARD_unchecked
+     * Parse a module, but do not replace PARSE_ERROR with FUTURE_FORMAT_ERROR automatically.
+     */
+    BOARD*          parseBOARD_unchecked() throw( IO_ERROR, PARSE_ERROR );
 
 
     /**

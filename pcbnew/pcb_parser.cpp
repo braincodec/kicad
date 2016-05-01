@@ -449,7 +449,23 @@ BOARD_ITEM* PCB_PARSER::Parse() throw( IO_ERROR, PARSE_ERROR )
 }
 
 
-BOARD* PCB_PARSER::parseBOARD() throw( IO_ERROR, PARSE_ERROR )
+BOARD* PCB_PARSER::parseBOARD() throw( IO_ERROR, PARSE_ERROR, FUTURE_FORMAT_ERROR )
+{
+    try
+    {
+        return parseBOARD_unchecked();
+    }
+    catch( const PARSE_ERROR& parse_error )
+    {
+        if( m_tooRecent )
+            throw FUTURE_FORMAT_ERROR( parse_error, GetRequiredVersion() );
+        else
+            throw;
+    }
+}
+
+
+BOARD* PCB_PARSER::parseBOARD_unchecked() throw( IO_ERROR, PARSE_ERROR )
 {
     T token;
 
@@ -1699,7 +1715,25 @@ DIMENSION* PCB_PARSER::parseDIMENSION() throw( IO_ERROR, PARSE_ERROR )
 }
 
 
-MODULE* PCB_PARSER::parseMODULE( wxArrayString* aInitialComments ) throw( IO_ERROR, PARSE_ERROR )
+MODULE* PCB_PARSER::parseMODULE( wxArrayString* aInitialComments )
+        throw( IO_ERROR, PARSE_ERROR, FUTURE_FORMAT_ERROR )
+{
+    try
+    {
+        return parseMODULE_unchecked( aInitialComments );
+    }
+    catch( const PARSE_ERROR& parse_error )
+    {
+        if( m_tooRecent )
+            throw FUTURE_FORMAT_ERROR( parse_error, GetRequiredVersion() );
+        else
+            throw;
+    }
+}
+
+
+MODULE* PCB_PARSER::parseMODULE_unchecked( wxArrayString* aInitialComments )
+        throw( IO_ERROR, PARSE_ERROR )
 {
     wxCHECK_MSG( CurTok() == T_module, NULL,
                  wxT( "Cannot parse " ) + GetTokenString( CurTok() ) + wxT( " as MODULE." ) );

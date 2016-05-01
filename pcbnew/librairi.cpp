@@ -313,22 +313,7 @@ MODULE* FOOTPRINT_EDIT_FRAME::Import_Module()
     }
     catch( const IO_ERROR& ioe )
     {
-        if( !reqVersion.IsEmpty() )
-        {
-            wxString msg = wxString::Format( _(
-                "KiCad was unable to open this file, as it was created with a more "
-                "recent version than the one you are running. To open it, you'll need "
-                "to upgrade KiCad to a more recent version.\n\n"
-                "File: %s\n"
-                "Date of KiCad version required (or newer): %s\n\n"
-                "Full error text:\n%s" ),
-                    GetChars( fn.GetFullPath() ), reqVersion, GetChars( ioe.errorText ) );
-            DisplayError( this, msg );
-        }
-        else
-        {
-            DisplayError( this, ioe.errorText );
-        }
+        DisplayError( this, ioe.errorText );
         return NULL;
     }
 
