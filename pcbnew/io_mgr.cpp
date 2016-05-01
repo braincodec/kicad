@@ -98,6 +98,9 @@ PLUGIN* IO_MGR::PluginFind( PCB_FILE_T aFileType )
 #else
         THROW_IO_ERROR( "BUILD_GITHUB_PLUGIN not enabled in cmake build environment" );
 #endif
+
+    case FILE_TYPE_NONE:
+        return NULL;
     }
 
     return NULL;
