@@ -28,6 +28,9 @@
  
 class TOOLBAR_ART : public wxAuiDefaultToolBarArt
 {
+public:
+    TOOLBAR_ART() : m_toolbar( NULL ) {}
+
     // Only this function needs to be overriden so far
     virtual int ShowDropDown( wxWindow* aWindow, const wxAuiToolBarItemArray& aItems );
 
