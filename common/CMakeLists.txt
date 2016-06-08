@@ -248,6 +248,7 @@ set( COMMON_SRCS
     search_stack.cpp
     selcolor.cpp
     systemdirsappend.cpp
+    toolbar_art.cpp
     trigo.cpp
     utf8.cpp
     validators.cpp
