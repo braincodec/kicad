@@ -46,6 +46,8 @@
 #include <hotkeys.h>
 #include <class_pcb_layer_box_selector.h>
 
+#include <toolbar_art.h>
+
 #include <wx/wupdlock.h>
 
 extern bool IsWxPythonLoaded();
@@ -327,7 +329,8 @@ void PCB_EDIT_FRAME::ReCreateOptToolbar()
     wxWindowUpdateLocker dummy( this );
 
     m_optionsToolBar = new wxAuiToolBar( this, ID_OPT_TOOLBAR, wxDefaultPosition, wxDefaultSize,
-                                         wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_VERTICAL );
+                                         wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_VERTICAL | wxAUI_TB_OVERFLOW );
+    m_optionsToolBar->SetArtProvider( new TOOLBAR_ART );
 
     m_optionsToolBar->AddTool( ID_TB_OPTIONS_DRC_OFF, wxEmptyString, KiBitmap( drc_off_xpm ),
                                _( "Enable design rule checking" ), wxITEM_CHECK );
