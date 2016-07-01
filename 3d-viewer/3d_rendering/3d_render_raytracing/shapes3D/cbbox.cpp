@@ -1,8 +1,8 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2015 Mario Luzeiro <mrluzeiro@gmail.com>
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2015-2016 Mario Luzeiro <mrluzeiro@ua.pt>
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,11 +26,11 @@
  * @file cbbox.cpp
  * @brief Bounding Box class implementation
  */
-#include "3d_math/3d_fastmath.h"
+#include "3d_fastmath.h"
 
 #include "cbbox.h"
 #include <stdio.h>
-#include <wx/debug.h>                                                           // For the wxASSERT
+#include <wx/debug.h>   // For the wxASSERT
 
 
 CBBOX::CBBOX()
@@ -54,6 +54,13 @@ CBBOX::CBBOX( const SFVEC3F &aPbMin, const SFVEC3F &aPbMax )
 
 CBBOX::~CBBOX()
 {
+}
+
+
+void CBBOX::Set( const SFVEC3F &aPoint )
+{
+    m_min = aPoint;
+    m_max = aPoint;
 }
 
 
@@ -111,8 +118,7 @@ void CBBOX::Union( const SFVEC3F &aPoint )
 
 void CBBOX::Union( const CBBOX &aBBox )
 {
-    if( !aBBox.IsInitialized() )
-        return;
+    wxASSERT( aBBox.IsInitialized() );
 
     // get the minimun value between the added bounding box and the existent bounding box
     m_min.x =  fmin( m_min.x, aBBox.m_min.x );
@@ -295,7 +301,9 @@ bool CBBOX::Intersect( const RAY &aRay, float *aOutHitt0, float *aOutHitt1 )
 }
 #else
 // https://github.com/mmp/pbrt-v2/blob/master/src/accelerators/bvh.cpp#L126
-bool CBBOX::Intersect( const RAY &aRay, float *aOutHitt0, float *aOutHitt1 ) const
+bool CBBOX::Intersect( const RAY &aRay,
+                       float *aOutHitt0,
+                       float *aOutHitt1 ) const
 {
     wxASSERT( aOutHitt0 );
     wxASSERT( aOutHitt1 );
@@ -338,8 +346,11 @@ void CBBOX::ApplyTransformation( glm::mat4 aTransformMatrix )
 {
     wxASSERT( IsInitialized() );
 
-    SFVEC3F v1 = SFVEC3F( aTransformMatrix * glm::vec4( m_min.x, m_min.y, m_min.z, 1.0f ) );
-    SFVEC3F v2 = SFVEC3F( aTransformMatrix * glm::vec4( m_max.x, m_max.y, m_max.z, 1.0f ) );
+    SFVEC3F v1 = SFVEC3F( aTransformMatrix *
+                          glm::vec4( m_min.x, m_min.y, m_min.z, 1.0f ) );
+
+    SFVEC3F v2 = SFVEC3F( aTransformMatrix *
+                          glm::vec4( m_max.x, m_max.y, m_max.z, 1.0f ) );
 
     Reset();
     Union( v1 );
@@ -349,19 +360,27 @@ void CBBOX::ApplyTransformation( glm::mat4 aTransformMatrix )
 
 void CBBOX::ApplyTransformationAA( glm::mat4 aTransformMatrix )
 {
-    // XXX - CB - commented out because it spams the legacy renderer
-    // wxASSERT( IsInitialized() );
+    wxASSERT( IsInitialized() );
 
     // apply the transformation matrix for each of vertices of the bounding box
     // and make a union with all vertices
-    CBBOX tmpBBox = CBBOX(  SFVEC3F( aTransformMatrix * glm::vec4( m_min.x, m_min.y, m_min.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_max.x, m_min.y, m_min.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_min.x, m_max.y, m_min.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_min.x, m_min.y, m_max.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_min.x, m_max.y, m_max.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_max.x, m_max.y, m_min.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_max.x, m_min.y, m_max.z, 1.0f ) ) );
-    tmpBBox.Union(          SFVEC3F( aTransformMatrix * glm::vec4( m_max.x, m_max.y, m_max.z, 1.0f ) ) );
+    CBBOX tmpBBox = CBBOX(
+                   SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_min.x, m_min.y, m_min.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_max.x, m_min.y, m_min.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_min.x, m_max.y, m_min.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_min.x, m_min.y, m_max.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_min.x, m_max.y, m_max.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_max.x, m_max.y, m_min.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_max.x, m_min.y, m_max.z, 1.0f ) ) );
+    tmpBBox.Union( SFVEC3F( aTransformMatrix *
+                            glm::vec4( m_max.x, m_max.y, m_max.z, 1.0f ) ) );
 
     m_min = tmpBBox.m_min;
     m_max = tmpBBox.m_max;
