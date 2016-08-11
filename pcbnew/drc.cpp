@@ -504,11 +504,13 @@ void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar,
     wxProgressDialog * progressDialog = NULL;
     const int delta = 256;  // This is the number of tests between 2 calls to the
                             // progress bar
-    int n_tracks = 0;
-    for( TRACK* segm = m_pcb->m_Track; segm && segm->Next(); segm = segm->Next() )
-        n_tracks++;
+    std::vector<TRACK*> tracks;
+    for( TRACK* segm = m_pcb->m_Track; segm; segm = segm->Next() )
+    {
+        tracks.push_back( segm );
+    }
 
-    int deltamax = n_tracks/delta;
+    int deltamax = tracks.size()/delta;
 
     if( aShowProgressBar && deltamax > 3 )
     {
@@ -527,26 +529,23 @@ void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar,
         progressDialog->SetRange( deltamax );
     }
 
-    int i_track = 0;
-
-    for( TRACK* segm = m_pcb->m_Track; segm && segm->Next(); segm = segm->Next() )
+    for( size_t i = 0; i < tracks.size() - 1; ++i )
     {
-        ++i_track;
-        if ( i_track % delta == 0 && progressDialog )
+        if ( i % delta == 0 && progressDialog )
         {
             wxString msg;
-            msg.Printf( _( "Checking track clearances (%d/%d)..." ), i_track, n_tracks );
-            if( !progressDialog->Update( i_track / delta, msg ) )
+            msg.Printf( _( "Checking track clearances (%d/%d)..." ), (int) i, (int) tracks.size() );
+            if( !progressDialog->Update( i / delta, msg ) )
                 break;  // Aborted by user
 
 #ifdef __WXMAC__
-            if( i_track > n_track - delta )
+            if( i > n_track - delta )
                 aActiveWindow->Raise();
 #endif
 
         }
 
-        if( !doTrackDrc( segm, segm->Next(), true ) )
+        if( !doTrackDrc( tracks[i], tracks[i+1], true ) )
         {
             wxASSERT( m_currentMarker );
             m_pcb->Add( m_currentMarker );
