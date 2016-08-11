@@ -63,6 +63,7 @@ class REPORTER;
 struct PARSE_ERROR;
 struct IO_ERROR;
 class FP_LIB_TABLE;
+class wxProgressDialog;
 
 namespace PCB { struct IFACE; }     // KIFACE_I is in pcbnew.cpp
 
@@ -1416,8 +1417,11 @@ public:
      * @param aActiveWindow = the current active window, if a progress bar is shown
      *                      = NULL to do not display a progress bar
      * @param aVerbose = true to show error messages
+     * @param aProgressDialog = if non-NULL, use this progress dialog instead of
+     *      creating one.
      */
-    int Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose = true );
+    int Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose = true,
+            wxProgressDialog *aProgressDialog = NULL );
 
 
     /**

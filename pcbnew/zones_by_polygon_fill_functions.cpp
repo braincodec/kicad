@@ -1,12 +1,8 @@
 /*
- * @file zones_by_polygon_fill_functions.cpp
- */
-
-/*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2009 Jean-Pierre Charras <jean-pierre.charras@gipsa-lab.inpg.fr>
- * Copyright (C) 2007 KiCad Developers, see change_log.txt for contributors.
+ * Copyright (C) 2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,6 +20,10 @@
  * or you may search the http://www.gnu.org website for the version 2 license,
  * or you may write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ */
+
+/*
+ * @file zones_by_polygon_fill_functions.cpp
  */
 
 #include <wx/progdlg.h>
@@ -124,7 +124,8 @@ int PCB_EDIT_FRAME::Fill_Zone( ZONE_CONTAINER* aZone )
 }
 
 
-int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose )
+int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose,
+        wxProgressDialog *aProgressDialog )
 {
     int errorLevel = 0;
     int areaCount = GetBoard()->GetAreaCount();
@@ -137,10 +138,21 @@ int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose )
     msg.Printf( FORMAT_STRING, 000, areaCount, wxT("XXXXXXXXXXXXXXXXX" ) );
 
     if( aActiveWindow )
-        progressDialog = new wxProgressDialog( _( "Fill All Zones" ), msg,
-                                     areaCount+2, aActiveWindow,
-                                     wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
-                                     wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
+    {
+        if( aProgressDialog )
+        {
+            progressDialog = aProgressDialog;
+        }
+        else
+        {
+            progressDialog = new wxProgressDialog( _( "Fill All Zones" ), msg,
+                    areaCount + 2, aActiveWindow,
+                    wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
+        }
+        progressDialog->Update( 0, msg );
+        progressDialog->SetRange( areaCount + 2 );
+    }
+
     // Display the actual message
     if( progressDialog )
         progressDialog->Update( 0, _( "Starting zone fill..." ) );
@@ -182,7 +194,7 @@ int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose )
 
     // Recalculate the active ratsnest, i.e. the unconnected links
     TestForActiveLinksInRatsnest( 0 );
-    if( progressDialog )
+    if( progressDialog && !aProgressDialog )
         progressDialog->Destroy();
     return errorLevel;
 }

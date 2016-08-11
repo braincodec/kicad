@@ -91,6 +91,7 @@ class TRACK;
 class MARKER_PCB;
 class DRC_ITEM;
 class NETCLASS;
+class wxProgressDialog;
 
 
 /**
@@ -274,8 +275,10 @@ private:
      * @param aActiveWindow = the active window ued as parent for the progress bar
      * @param aShowProgressBar = true to show a progress bar
      * (Note: it is shown only if there are many tracks)
+     * @param aProgressDialog = an existing wxProgressDialog, or NULL to create one
      */
-    void testTracks( wxWindow * aActiveWindow, bool aShowProgressBar );
+    void testTracks( wxWindow * aActiveWindow, bool aShowProgressBar,
+            wxProgressDialog *aProgressDialog );
 
     void testPad2Pad();
 

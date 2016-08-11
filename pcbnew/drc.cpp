@@ -1,10 +1,9 @@
-
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2004-2015 Jean-Pierre Charras, jp.charras at wanadoo.fr
  * Copyright (C) 2014 Dick Hollenbeck, dick@softplc.com
- * Copyright (C) 2016 KiCad Developers, see change_log.txt for contributors.
+ * Copyright (C) 2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -187,6 +186,11 @@ void DRC::RunTests( wxTextCtrl* aMessages )
     // ( the board can be reloaded )
     m_pcb = m_pcbEditorFrame->GetBoard();
 
+    wxProgressDialog *progressDialog = new wxProgressDialog( _( "Design Rule Check" ), wxEmptyString,
+            100, aMessages ? aMessages->GetParent() : m_pcbEditorFrame,
+            wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
+
+
     // Ensure ratsnest is up to date:
     if( (m_pcb->m_Status_Pcb & LISTE_RATSNEST_ITEM_OK) == 0 )
     {
@@ -213,7 +217,7 @@ void DRC::RunTests( wxTextCtrl* aMessages )
         // update the m_drcDialog listboxes
         updatePointers();
 
-        return;
+        goto out;
     }
 
     // test pad to pad clearances, nothing to do with tracks, vias or zones.
@@ -235,7 +239,7 @@ void DRC::RunTests( wxTextCtrl* aMessages )
         wxSafeYield();
     }
 
-    testTracks( aMessages ? aMessages->GetParent() : m_pcbEditorFrame, true );
+    testTracks( aMessages ? aMessages->GetParent() : m_pcbEditorFrame, true, progressDialog );
 
     // Before testing segments and unconnected, refill all zones:
     // this is a good caution, because filled areas can be outdated.
@@ -246,7 +250,7 @@ void DRC::RunTests( wxTextCtrl* aMessages )
     }
 
     m_pcbEditorFrame->Fill_All_Zones( aMessages ? aMessages->GetParent() : m_pcbEditorFrame,
-                                  false );
+                                  false, progressDialog );
 
     // test zone clearances to other zones
     if( aMessages )
@@ -299,6 +303,9 @@ void DRC::RunTests( wxTextCtrl* aMessages )
         // to unnecessarily scroll.
         aMessages->AppendText( _( "Finished" ) );
     }
+
+out:
+    progressDialog->Destroy();
 }
 
 
@@ -491,46 +498,52 @@ void DRC::testPad2Pad()
 }
 
 
-void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar )
+void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar,
+        wxProgressDialog *aProgressDialog )
 {
     wxProgressDialog * progressDialog = NULL;
-    const int delta = 500;  // This is the number of tests between 2 calls to the
+    const int delta = 256;  // This is the number of tests between 2 calls to the
                             // progress bar
-    int count = 0;
+    int n_tracks = 0;
     for( TRACK* segm = m_pcb->m_Track; segm && segm->Next(); segm = segm->Next() )
-        count++;
+        n_tracks++;
 
-    int deltamax = count/delta;
+    int deltamax = n_tracks/delta;
 
     if( aShowProgressBar && deltamax > 3 )
     {
-        progressDialog = new wxProgressDialog( _( "Track clearances" ), wxEmptyString,
-                                               deltamax, aActiveWindow,
-                                               wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
-                                               wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
-        progressDialog->Update( 0, wxEmptyString );
+        if( aProgressDialog )
+        {
+            progressDialog = aProgressDialog;
+        }
+        else
+        {
+            progressDialog = new wxProgressDialog( _( "Track clearances" ), wxEmptyString,
+                    deltamax, aActiveWindow,
+                    wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
+                    wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
+        }
+        progressDialog->Update( 0, _( "Checking track clearances..." ) );
+        progressDialog->SetRange( deltamax );
     }
 
-    int ii = 0;
-    count = 0;
+    int i_track = 0;
 
     for( TRACK* segm = m_pcb->m_Track; segm && segm->Next(); segm = segm->Next() )
     {
-        if ( ii++ > delta )
+        ++i_track;
+        if ( i_track % delta == 0 && progressDialog )
         {
-            ii = 0;
-            count++;
+            wxString msg;
+            msg.Printf( _( "Checking track clearances (%d/%d)..." ), i_track, n_tracks );
+            if( !progressDialog->Update( i_track / delta, msg ) )
+                break;  // Aborted by user
 
-            if( progressDialog )
-            {
-                if( !progressDialog->Update( count, wxEmptyString ) )
-                    break;  // Aborted by user
 #ifdef __WXMAC__
-                // Work around a dialog z-order issue on OS X
-                if( count == deltamax )
-                    aActiveWindow->Raise();
+            if( i_track > n_track - delta )
+                aActiveWindow->Raise();
 #endif
-            }
+
         }
 
         if( !doTrackDrc( segm, segm->Next(), true ) )
@@ -542,7 +555,7 @@ void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar )
         }
     }
 
-    if( progressDialog )
+    if( progressDialog && !aProgressDialog )
         progressDialog->Destroy();
 }
 
