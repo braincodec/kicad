@@ -311,10 +311,9 @@ private:
      * @param aRefSeg The segment to test
      * @param aStart The head of a list of tracks to test against (usually BOARD::m_Track)
      * @param doPads true if should do pads test
-     * @return bool - true if no poblems, else false and m_currentMarker is
-     *          filled in with the problem information.
+     * @return a new marker if there are problems, else NULL
      */
-    bool doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool doPads = true );
+    MARKER_PCB* doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool doPads = true );
 
     /**
      * Function doTrackKeepoutDrc

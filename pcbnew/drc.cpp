@@ -27,6 +27,10 @@
  * @file drc.cpp
  */
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 #include <fctsys.h>
 #include <wxPcbStruct.h>
 #include <trigo.h>
@@ -529,30 +533,62 @@ void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar,
         progressDialog->SetRange( deltamax );
     }
 
-    for( size_t i = 0; i < tracks.size() - 1; ++i )
+    const size_t total = tracks.size();
+    volatile size_t n = 0;
+
+#ifdef USE_OPENMP
+#   pragma omp parallel
+#   pragma omp for
+#endif
+    for( size_t i = 0; i < total - 1; ++i )
     {
         if ( i % delta == 0 && progressDialog )
         {
-            wxString msg;
-            msg.Printf( _( "Checking track clearances (%d/%d)..." ), (int) i, (int) tracks.size() );
-            if( !progressDialog->Update( i / delta, msg ) )
-                break;  // Aborted by user
-
+#ifdef USE_OPENMP
+#           pragma omp cancellation point for
+            bool user_abort = false;
+#           pragma omp critical(progressupdate)
+#endif
+            {
+                n = (n + delta > total) ? total : n + delta;
+                wxString msg;
+                msg.Printf( _( "Checking track clearances (%d/%d)..." ),
+                        (int) n, (int) total );
+                if( !progressDialog->Update( n / delta, msg ) )
+                {
+#ifdef USE_OPENMP
+                    user_abort = true;
+#else
+                    break;
+#endif
+                }
 #ifdef __WXMAC__
-            if( i > n_track - delta )
-                aActiveWindow->Raise();
+                if( i > n_track - delta )
+                    aActiveWindow->Raise();
+#endif
+            }
+#ifdef USE_OPENMP
+            if( user_abort )
+            {
+#               pragma omp cancel for
+            }
 #endif
 
         }
 
-        if( !doTrackDrc( tracks[i], tracks[i+1], true ) )
+        MARKER_PCB* marker = doTrackDrc( tracks[i], tracks[i+1], true );
+        if( marker )
         {
-            wxASSERT( m_currentMarker );
-            m_pcb->Add( m_currentMarker );
-            m_pcbEditorFrame->GetGalCanvas()->GetView()->Add( m_currentMarker );
-            m_currentMarker = 0;
+#ifdef USE_OPENMP
+#           pragma omp critical(addmarker)
+#endif
+            {
+                m_pcb->Add( marker );
+                m_pcbEditorFrame->GetGalCanvas()->GetView()->Add( marker );
+            }
         }
     }
+    m_currentMarker = NULL;
 
     if( progressDialog && !aProgressDialog )
         progressDialog->Destroy();
